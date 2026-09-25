@@ -1,0 +1,22 @@
+{
+  "name": "@project-xray/application",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --exclude dist/**",
+    "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@project-xray/analyzer-core": "workspace:*",
+    "@project-xray/analyzer-python": "workspace:*",
+    "@project-xray/analyzer-typescript": "workspace:*",
+    "@project-xray/contracts": "workspace:*",
+    "@project-xray/git": "workspace:*",
+    "@project-xray/graph": "workspace:*",
+    "@project-xray/ownership": "workspace:*"
+  }
+}

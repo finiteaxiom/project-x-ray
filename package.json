@@ -1,0 +1,66 @@
+{
+  "name": "project-x-ray",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "apps/desktop/dist/main.js",
+  "packageManager": "pnpm@11.19.0",
+  "scripts": {
+    "dev": "concurrently -k -n UI,DESKTOP -c cyan,magenta \"pnpm --filter @project-xray/ui dev\" \"wait-on tcp:5173 && pnpm --filter @project-xray/desktop dev\"",
+    "build": "turbo run build",
+    "rebuild:native": "electron-rebuild -f -w better-sqlite3",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "verify": "pnpm typecheck && pnpm test && pnpm build",
+    "test:e2e": "pnpm build && pnpm --filter @project-xray/desktop test:e2e",
+    "benchmark": "tsx benchmarks/run.ts",
+    "dist:win": "pnpm build && electron-builder --win portable --x64"
+  },
+  "build": {
+    "appId": "com.projectxray.desktop",
+    "productName": "Project X-Ray",
+    "electronVersion": "44.4.3",
+    "electronDist": "apps/desktop/node_modules/electron/dist",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "apps/desktop/dist/**/*",
+      "apps/desktop/package.json",
+      "apps/ui/dist/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "**/*.node"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "Project-X-Ray-${version}-portable.${ext}"
+    }
+  },
+  "dependencies": {
+    "better-sqlite3": "13.0.3"
+  },
+  "devDependencies": {
+    "@electron/get": "4.0.3",
+    "@electron/rebuild": "4.2.0",
+    "@types/node": "^24.10.0",
+    "concurrently": "^9.2.1",
+    "electron-builder": "^26.15.3",
+    "playwright-core": "1.55.0",
+    "tsx": "^4.20.6",
+    "turbo": "^2.6.0",
+    "typescript": "5.9.3",
+    "vitest": "^4.0.0",
+    "wait-on": "^9.0.1"
+  }
+}

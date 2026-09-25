@@ -1,0 +1,60 @@
+# Dependencies and generated build output
+node_modules/
+dist/
+.turbo/
+.vite/
+coverage/
+out/
+release/
+# Logs, caches, local application data and databases
+*.log
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.sqlite-journal
+*.sqlite3
+*.sqlite3-*
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+.project-xray/
+.benchmarks/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Local credentials and environment settings (keep real values out of templates)
+.env
+.env.*
+.npmrc
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+id_rsa
+id_ed25519
+credentials.json
+service-account*.json
+
+# Personal tooling, handoff notes and local overrides
+.idea/
+.vscode/
+.codex/
+*.local
+*.local.*
+
+# Raw acceptance artifacts may contain local paths or imported project source
+/docs/screenshots/
+/docs/benchmarks/latest.json
+playwright-report/
+test-results/
+*.tsbuildinfo
+
+# Operating system metadata
+.DS_Store
+Thumbs.db
+Desktop.ini

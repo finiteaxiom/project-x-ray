@@ -1,0 +1,29 @@
+{
+  "name": "@project-xray/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "tsup --watch --onSuccess \"electron .\"",
+    "build": "tsup && node scripts/copy-python-worker.cjs",
+    "smoke:worker": "node scripts/worker-smoke.cjs",
+    "test:e2e": "node scripts/electron-e2e.cjs",
+    "test:e2e:ui": "node scripts/ui-workspace-e2e.cjs",
+    "test:e2e:ownership": "node scripts/ownership-training-e2e.cjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "test:design": "node scripts/design-audit.cjs"
+  },
+  "dependencies": {
+    "@project-xray/application": "workspace:*",
+    "@project-xray/contracts": "workspace:*",
+    "better-sqlite3": "^13.0.3",
+    "electron": "^44.4.3",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.0"
+  }
+}

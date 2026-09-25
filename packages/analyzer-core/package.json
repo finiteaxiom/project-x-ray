@@ -1,0 +1,17 @@
+{
+  "name": "@project-xray/analyzer-core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --exclude dist/**",
+    "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@project-xray/contracts": "workspace:*",
+    "fast-glob": "^3.3.3"
+  }
+}
