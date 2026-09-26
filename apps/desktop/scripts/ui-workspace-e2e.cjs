@@ -46,5 +46,5 @@ async function verifyLargeSymbolFixture() {
   } finally { await app.close(); await rm(base, { recursive: true, force: true }); }
 }
 
-async function main() { const screenshots = resolve(__dirname, "../../../docs/screenshots", process.env.XRAY_UI_SCREENSHOT_SET || "."); await mkdir(screenshots, { recursive: true }); const byteAtlas = await verifyByteAtlas(screenshots); const fixture = await verifyLargeSymbolFixture(); process.stdout.write(`ui-workspace-e2e: passed ${JSON.stringify({ byteAtlas, fixture, screenshots, captured: process.env.XRAY_UI_CAPTURE !== "0" })}\n`); }
+async function main() { const screenshots = resolve(__dirname, "../../../docs/screenshots", process.env.XRAY_UI_SCREENSHOT_SET || "."); await mkdir(screenshots, { recursive: true }); const byteAtlas = process.env.XRAY_UI_FIXTURE_ONLY === "1" ? null : await verifyByteAtlas(screenshots); const fixture = await verifyLargeSymbolFixture(); process.stdout.write(`ui-workspace-e2e: passed ${JSON.stringify({ byteAtlas, fixture, screenshots, captured: process.env.XRAY_UI_CAPTURE !== "0" })}\n`); }
 main().catch((error) => { console.error(error); process.exitCode = 1; });

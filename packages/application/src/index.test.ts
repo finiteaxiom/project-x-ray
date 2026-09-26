@@ -31,6 +31,7 @@ describe("XRayApplication 可信快照闭环", () => {
     expect(snapshot.health.status).toBe("ready"); expect(snapshot.analysisIdentity.graphIrVersion).toBeTruthy(); expect(snapshot.sourceFiles).toHaveLength(3);
     const call = snapshot.edges.find((edge) => edge.kind === "CALLS" && edge.confidence === "verified" && snapshot.nodes.find((node) => node.id === edge.source)?.name === "login");
     const proof = snapshot.evidence.find((item) => item.id === call?.evidenceId)!;
+    expect(application.getEvidence({ ...ref, evidenceId: proof.id })).toMatchObject({ repositoryId: snapshot.repositoryId, snapshotId: snapshot.snapshotId, id: proof.id });
     const source = await application.readSource({ ...ref, ...proof.span, evidenceId: proof.id });
     expect(source.content).toContain("validate(token)"); expect(source.targetSpan?.startLine).toBe(proof.span.startLine); expect(source.workspaceStatus).toBe("current");
     application.close();

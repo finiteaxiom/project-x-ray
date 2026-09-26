@@ -1,0 +1,38 @@
+/* Document defaults and reset. Element defaults live here; control variants live in controls.css. */
+
+:root {
+  color-scheme: dark;
+  font-family: "Segoe UI Variable", "Segoe UI", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  background: var(--canvas);
+  font-synthesis: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 0;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+body {
+  font-size: 13px;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #464857 var(--surface-workbench);
+}
+
+body {
+  background: var(--canvas);
+  color: var(--text-primary);
+}
+
+

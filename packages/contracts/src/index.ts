@@ -33,6 +33,9 @@ export const evidenceSchema = z.object({
   confidence: confidenceSchema, reason: z.string(), span: sourceSpanSchema,
 });
 export type Evidence = z.infer<typeof evidenceSchema>;
+/** Repository identity is added by the snapshot-scoped evidence lookup boundary. */
+export const identifiedEvidenceSchema = evidenceSchema.extend({ repositoryId: z.string().min(1) });
+export type IdentifiedEvidence = z.infer<typeof identifiedEvidenceSchema>;
 
 export const nodeKindSchema = z.enum(["repository", "module", "file", "function", "class", "method", "variable", "endpoint", "external-dependency", "unresolved-call", "unsupported-semantic"]);
 export type NodeKind = z.infer<typeof nodeKindSchema>;
@@ -361,7 +364,7 @@ export interface XRayApi {
   getModuleRelationEdges(input: ModuleRelationEdgesRequest): Promise<ModuleRelationEdgesResponse>;
   search(input: SearchRequest): Promise<SearchResponse>;
   queryGraph(input: GraphQueryRequest): Promise<GraphQueryResponse>;
-  getEvidence(input: EvidenceRequest): Promise<Evidence>;
+  getEvidence(input: EvidenceRequest): Promise<IdentifiedEvidence>;
   findEvidence(input: EvidenceRangeRequest): Promise<EvidenceRangeResponse>;
   getFlow(ref: SnapshotRef, nodeId: string, depth?: number): Promise<FlowResult>;
   explainFeature(ref: SnapshotRef, query: string): Promise<FeatureExplanation>;

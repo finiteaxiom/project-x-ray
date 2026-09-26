@@ -11,6 +11,7 @@
     "test:e2e": "node scripts/electron-e2e.cjs",
     "test:e2e:ui": "node scripts/ui-workspace-e2e.cjs",
     "test:e2e:ownership": "node scripts/ownership-training-e2e.cjs",
+    "test:e2e:workspace": "node scripts/ownership-training-e2e.cjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run --passWithNoTests",
     "lint": "tsc -p tsconfig.json --noEmit",

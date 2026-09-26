@@ -3,7 +3,6 @@ import { createRoot } from "react-dom/client";
 import { App } from "./App";
 import type { XRayApi } from "@project-xray/contracts";
 import "./styles.css";
-import "./design-system.css";
 
 if (!window.xray) {
   const desktopOnly = async (): Promise<never> => { throw new Error("此操作仅在 Project X-Ray 桌面端可用"); };

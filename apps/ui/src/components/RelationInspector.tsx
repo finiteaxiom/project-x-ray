@@ -16,7 +16,7 @@ export function RelationInspector({ project, edge, direction, onOpen, onClose }:
     if (!edge.evidenceId) { setError("此关系没有可导航的源码证据。"); return; }
     void window.xray.getEvidence({ ...project, evidenceId: edge.evidenceId }).then((value) => {
       if (!active) return;
-      if (value.snapshotId !== project.snapshotId || value.id !== edge.evidenceId) { setError("证据与当前快照不匹配，请重新选择关系。"); return; }
+      if (value.repositoryId !== project.repositoryId || value.snapshotId !== project.snapshotId || value.id !== edge.evidenceId) { setError("证据与当前项目快照不匹配，请重新选择关系。"); return; }
       setEvidence(value);
     }).catch(() => { if (active) setError("证据读取失败，请重试。"); });
     return () => { active = false; };

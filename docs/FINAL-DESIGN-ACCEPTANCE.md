@@ -4,7 +4,7 @@
 
 ## 交付范围
 
-六个页面统一使用石墨表面、蓝紫操作色、较高对比度的正文与次级文字，以及固定的已验证/推断/未知语义色。设计变量集中在 apps/ui/src/design-system.css。
+六个页面统一使用石墨表面、蓝紫操作色、较高对比度的正文与次级文字，以及固定的已验证/推断/未知语义色。2026-09-22 当时的变量文件为 `apps/ui/src/design-system.css`；该文件在 2026-09-26 CSS 维护重构中移除，当前唯一入口及变量归属见 [UI-DESIGN.md](UI-DESIGN.md) 的 CSS 样式维护约定。
 
 - 项目概览增加通往架构、功能追踪和所有权训练的真实操作入口；健康状态中文化，忽略规则与限制可展开查看，静态分析边界始终显示。
 - 调用流保留搜索、关系类型和查询主操作；深度、方向和置信筛选收进可展开选项，图和结果可在本面板滚动。
@@ -14,7 +14,9 @@
 - 所有权训练与文件列表自适应排列，源码工具栏换行而不挤压标题。
 - 全局正文与控件颜色、占位文本、禁用状态、焦点轮廓、图谱配色与源码主题统一。
 
-## 本轮实测
+## 历史实测（2026-09-22，不属于当前轮次）
+
+以下 19 项 UI 测试、41 个视觉场景及 4.90:1 最低文字对比度来自 2026-09-22 的验收，只保留为历史记录。2026-09-25 的实际结果另列于本文末尾，不从旧记录继承。
 
 - UI 组件测试：19/19。UI TypeScript 检查和生产构建通过。
 - 本轮查询状态改进重跑真实 Electron 核心 E2E 并通过；架构工作区与所有权训练 E2E 在上一轮阅读与检索打磨时通过，本轮未重复运行。架构工作区使用 XRAY_UI_CAPTURE=0，仅关闭截图采集，保留全部功能断言；验证分栏、源码范围、视角恢复和 106 个符号分页。
@@ -56,3 +58,67 @@ Windows 下架构工作区的 Playwright 截图多次超时；原生捕获尝试
 ## 查询状态改进
 
 调用查询新增搜索/查询中反馈、无匹配说明、结果起点与数量、参数错误及条件修改提示。新搜索不会保留不存在的旧选项；条件变化禁止旧游标续查；深度/节点预算须为范围内整数且至少选择一类置信度。中文输入法组合输入的 Enter 不触发搜索。新增三项回归覆盖这些状态，视觉审计增加参数错误和条件修改场景。
+
+## V1 UI 交互深化（2026-09-25）
+
+### 已交付
+
+- 功能解释显示真实请求状态，并区分已提交问题与正在编辑的问题；请求序号、仓库/快照身份和卸载保护可阻止旧解释覆盖当前结果。无结果和过期错误可见并能重试；结果顺序为问题摘要、解释步骤、源码证据、不确定性。来源导航读取当前不可变快照并保留证据位置。
+- 所有权训练具有范围、生成、结构化回答/引用、提交核验、复习/下一题的操作阶段；请求进行时不可重复提交，失败可重试。引用展示完整路径、范围和证据 ID，可重定位/移除；删除引用后重排 variable-flow 的 citationIndex/角色映射。定位表现、结构理解、自由文本语义分开报告；自由文本仍标注未评估，答案与补救证据仅在提交后显示。
+- Git 比较在请求发起时即锁定重复生成，并检查父提交范围。报告固定显示其真实模式、左右快照及报告身份，选择器变动会明确提示需重算；失败重试不会覆盖旧报告。左右源码请求绑定报告、文件、比较侧、路径和快照，快切文件会丢弃迟到响应；影响路径读取同时携带证据 ID。无变化、空筛选、某侧源码缺失/读取失败、部分分析和过期状态有独立反馈。修正详情滚动区，让 hunk、直接变化与影响列表不再互相覆盖。
+- 六个页面通过键盘焦点审计。视觉审计实际操作功能解释无结果/过期、比较空筛选/缺侧源码/过期/失败重试、训练空范围/生成错误状态。
+
+### 本轮验证结果
+
+- `pnpm --filter @project-xray/ui test`：10 个测试文件、35/35 项通过。
+- `pnpm --filter @project-xray/ui build`：TypeScript 检查与 Vite 生产构建通过。
+- `pnpm build`：10 个工作区包构建通过。Vite 仍提示 UI 主包和 Monaco 资源超过 500 KB；本轮未拆分代码包。
+- `pnpm --filter @project-xray/desktop test:design`：73 个视口/状态审计结果、13 个真实交互转换通过；采样 2,880 个可见文字，最低 4.903:1。47 组文字/图形调色板检查均达到各自 4.5:1/3:1 阈值；0 个对比度、页面横向溢出、未声明内部溢出、控件中心遮挡或控件边界失败。
+- 尺寸覆盖 1440×900、1280×800、1024×768 与 1280×800 窗口下 125% 页面缩放。该轮场景同时在当前六页和新增状态下执行；125% 结果以实时 DOM 检查为准，Windows 分数页面缩放的 Electron 截图有裁切问题，未将其报告为无裁切的视觉确认。
+- `pnpm --filter @project-xray/desktop test:e2e`：真实 Electron 核心流程通过，覆盖导入、调用证据导航、暂存比较、重命名/删除旧侧映射、带 evidence ID 的影响源码定位、过期识别、安全重算与重新索引。首次可操作 998 ms、导入 1,051 ms、证据查询 503 ms、比较 1,824 ms、过期检测 2,803 ms、重算 1,822 ms、重索引 817 ms；均为单次回归观测，不是性能 SLA。
+- `pnpm --filter @project-xray/desktop test:e2e:ui`：真实 ByteAtlas 工作区通过并采集截图；1920×1080 与 1280×800 状态无页面横向溢出，关系总览与模块边界可读，精确 Monaco 范围、源码开合、视角恢复及 106 个符号分页通过。此测试按 README 使用本机 `D:\Projects\ByteAtlas`，只在本地读取。
+- `pnpm --filter @project-xray/desktop test:e2e:ownership`：两快照训练与提交后结构反馈通过，源码引用具有 evidence ID，并采集了所有权状态截图。
+
+### 本轮截图
+
+这些图片和审计 JSON 均由真实 Electron 应用生成。核心多状态截图及逐状态尺寸结果位于 `docs/screenshots/ui-deepening-2026-09-25/`；ByteAtlas 工作区验收位于其 `ui-workspace/` 子目录。
+
+- 1440×900 Git 比较：[正常详情](screenshots/ui-deepening-2026-09-25/5-1440.png)、[缺少左侧源码](screenshots/ui-deepening-2026-09-25/comparison-missing-left-source-1440.png)、[失败并可重试](screenshots/ui-deepening-2026-09-25/comparison-retryable-error-1440.png)
+- 1440×900 功能解释无结果：[截图](screenshots/ui-deepening-2026-09-25/explanation-no-results-1440.png)
+- 1440×900 所有权生成失败：[截图](screenshots/ui-deepening-2026-09-25/ownership-generation-error-1440.png)
+- 真实 ByteAtlas 架构总览：[1920×1080](screenshots/ui-deepening-2026-09-25/ui-workspace/architecture-relations-overview-1920x1080.png)；训练结构反馈：[截图](screenshots/ownership-structured-feedback.png)
+- [完整视觉审计 JSON](screenshots/ui-deepening-2026-09-25/audit.json)
+
+### 未完成事项与保证边界
+
+- 界面仍只呈现当前静态分析证据；没有已知影响路径不等于确认无影响，也不表示真实运行时调用路径。动态图分派、反射、依赖注入和配置行为保持 V1 既有限制。
+- 功能解释继续使用本地确定性证据模板；未增加远程 LLM。所有权自由文本仍保存为本地学习记录，不参与语义评分。
+- 125% 页面缩放已做 DOM/交互检查，但本机 Electron 捕获存在裁切；没有用该捕获声称已目视检查完整 125% 画面，也没有验证其他 Windows 显示缩放、操作系统主题或跨平台布局。
+- 本轮没有生成安装包、扩展分析器语义或提交 Git。剩余静态分析限制与安装生命周期事项继续以本文“保证边界”及 [DEVELOPMENT.md](DEVELOPMENT.md) 为准。
+
+## 第四批界面交互与首屏验收（2026-09-26）
+
+本节数字与截图来自 2026-09-26 本轮执行，不继承前文历史结果。基线和结果来自同一确定性本地 fixture 的真实 Electron 应用；截图保存于仓库忽略的 `docs/screenshots/`，没有提交私人仓库源码或凭据。
+
+### 前后对照
+
+- 架构文件层 + 源码分栏，1440×900： [基线](screenshots/ui-polish-baseline-architecture-source-1440x900.png) / [结果](screenshots/ui-polish-final-architecture-source-1440x900.png)。文件视图先显示可搜索符号列表；选中符号后读取有界局部关系，无关全文件符号图不再占据默认视图。
+- Git 变更页，1024×800：[基线](screenshots/ui-polish-baseline-git-1024x800.png) / [结果](screenshots/ui-polish-final-git-1024x800.png)。首屏优先展示真实比较基准、报告状态和变化文件；长哈希、配置与分析详情改为折叠区域。
+- 部分作答与源码引用，1440×900：[基线](screenshots/ui-polish-baseline-training-partial-1440x900.png) / [结果](screenshots/ui-polish-final-training-partial-1440x900.png)。当前结构答案与引用在笔记前；已填写笔记折叠且显示保留状态。
+- 架构宽视口 1920×1080：[结果](screenshots/ui-polish-final-architecture-source-1920x1080.png)。
+- 功能解释步骤就近核验、右侧真实源码和返回步骤入口：[Electron 截图](screenshots/feature-explanation-session.png)。
+- [本轮完整审计 JSON](screenshots/ui-polish-2026-09-26/audit.json)。
+
+### 本轮实际验证
+
+- UI 全量：11 个文件、68/68 项；定向布局/行为回归：6 个文件、34/34 项。
+- `pnpm typecheck`：10 个工作区包通过。`pnpm build`：10 个工作区包通过；末次 UI 样式变更后 `pnpm --filter @project-xray/ui build` 通过。构建仍提示主 UI 与 Monaco 资源大于 500 KB，本轮未拆包。
+- Electron 跨页 E2E：`pnpm --filter @project-xray/desktop test:e2e:workspace -- final` 通过。实际操作了 Git 比较离页继续和回看、筛选/源码、训练答案与引用跨页恢复、架构选中符号/源码/拖动分栏/最大化/还原、解释步骤证据定位与返回、过期后重索引。场景捕获 1024×800、1440×900、1920×1080，Electron DPR 1.5。
+- 默认 `pnpm --filter @project-xray/desktop test:e2e:ui` 因缺少 `XRAY_UI_PROJECT` 在应用启动前退出；没有执行 ByteAtlas 专用分支。确定性 UI 工作区 E2E：PowerShell 执行 `$env:XRAY_UI_FIXTURE_ONLY='1'; $env:XRAY_UI_SCREENSHOT_SET='ui-polish-fixture-2026-09-26'; pnpm --filter @project-xray/desktop test:e2e:ui` 通过，真实应用加载 106 个样例符号并采集截图。
+- PowerShell 命令 `$env:XRAY_DESIGN_AUDIT_SET='ui-polish-2026-09-26'; pnpm --filter @project-xray/desktop test:design`：73 个状态/视口结果、13 个键盘焦点/交互转换、3,124 个文字样本、最低对比度 4.903:1；47 组调色板检查通过；0 个审计错误、文字对比度失败、页面横向溢出、内部溢出、控件中心遮挡或边界失败。覆盖六页、状态页以及 1440×900、1280×800、1024×768、1920×1080；另对 1280×800 的 125% 页面缩放做 DOM 审计。首两次审计因脚本未切到左源码侧、以及旧的过期页生成预期而失败；修正为执行真实切换并断言过期生成门禁后通过，没有移除产品断言或降低阈值。
+- 关键宽窄视口 Electron 截图已实际查看并与本轮基线对照。125% 场景的 Windows Electron 截图仍发生分数缩放裁切；因此这里只报告 DOM/交互检查通过，不声明完整 125% 截图目视通过。
+- 跨页 E2E 首次因旧 UI `dist` 尚未构建及脚本在 Monaco 选择属性更新前读取而未通过；重建并补上等待实际选择状态后，完整 Electron 流程通过。
+
+### 当前保证边界
+
+普通页面切换继续使用前三批已验证的会话与任务控制器；本批没有重写生命周期。会话在当前应用运行期间恢复，关闭应用后恢复仍未实现。Git 后台比较只保证页面离开后继续，不保证进程关闭/重启后恢复。静态图仍不代表运行时路径；解释语义、评分算法和分析器事实未改变。其他 Windows 显示缩放、操作系统主题和非 Windows 平台未验收。

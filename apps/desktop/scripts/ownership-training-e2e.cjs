@@ -1,37 +1,171 @@
 const { _electron: electron } = require("playwright-core");
 const electronPath = require("electron");
-const { appendFile, cp, mkdir, mkdtemp, rm } = require("node:fs/promises");
-const { join, resolve } = require("node:path");
+const { appendFile, cp, mkdir, mkdtemp, readFile, rm, writeFile } = require("node:fs/promises");
+const { join, resolve, sep } = require("node:path");
 const { tmpdir } = require("node:os");
 const assert = require("node:assert/strict");
+const { execFileSync } = require("node:child_process");
 
 async function launch(userData) {
   const app = await electron.launch({ executablePath: electronPath, args: [resolve(__dirname, "..")], env: { ...process.env, XRAY_E2E: "1", XRAY_E2E_USER_DATA: userData } });
   return { app, page: await app.firstWindow() };
 }
+async function resizeContent(app, page, width, height) {
+  await app.evaluate(({ BrowserWindow }, bounds) => {
+    const window = BrowserWindow.getAllWindows()[0];
+    if (!window) throw new Error("missing Electron window while resizing the UI fixture");
+    // The 1920px viewport is wider than this Windows display's 1707px CSS work area;
+    // leave the maximized state and restore an on-screen origin before resizing back down.
+    if (window.isMaximized()) window.unmaximize();
+    window.setPosition(0, 0);
+    window.setContentSize(bounds.width, bounds.height);
+  }, { width, height });
+  try {
+    await page.waitForFunction((expected) => window.innerWidth === expected.width && window.innerHeight === expected.height, { width, height }, { timeout: 10_000 });
+  } catch (error) {
+    const actual = await page.evaluate(() => ({ width: window.innerWidth, height: window.innerHeight, devicePixelRatio: window.devicePixelRatio }));
+    const bounds = await app.evaluate(({ BrowserWindow }) => { const window = BrowserWindow.getAllWindows()[0]; return window ? { ...window.getBounds(), maximized: window.isMaximized() } : null; });
+    throw new Error(`Electron fixture resize did not reach ${width}x${height}; viewport=${JSON.stringify(actual)} bounds=${JSON.stringify(bounds)}; ${error.message}`);
+  }
+}
 async function importFixture(page, fixture) {
   await page.getByRole("textbox", { name: "测试项目路径" }).fill(fixture);
   await page.getByRole("button", { name: "导入测试项目" }).click();
-  await page.getByText("不可变证据快照").waitFor({ timeout: 180_000 });
+  try { await page.getByText("不可变证据快照").waitFor({ timeout: Number(process.env.XRAY_E2E_IMPORT_TIMEOUT ?? 180_000) }); }
+  catch (error) {
+    const state = await page.evaluate(async () => {
+      let project = null; try { project = await window.xray.getCurrentProject(); } catch { /* diagnostic only */ }
+      return { project: project ? { repositoryId: project.repositoryId, snapshotId: project.snapshotId } : null, task: document.querySelector(".task-status b")?.textContent ?? null, errorTitle: document.querySelector(".error-banner b")?.textContent ?? null, errorMessage: document.querySelector(".error-banner span")?.textContent?.replace(/[A-Z]:\\[^\s]+/g, "<path>").slice(0, 180) ?? null, snapshotLabel: document.querySelector(".snapshot span")?.textContent ?? null, welcomeVisible: Boolean(document.querySelector(".welcome-grid")) };
+    });
+    throw new Error(`fixture import did not activate: ${JSON.stringify(state)}; ${error.message}`);
+  }
 }
 async function openOwnership(page) {
   await page.getByRole("button", { name: /所有权模式/ }).click();
   await page.getByRole("heading", { name: "选择学习范围", exact: true }).waitFor({ timeout: 30_000 });
 }
+async function capturePolishScene(app, page, screenshots, mode, scene, width, height) {
+  if (!mode) return null;
+  await resizeContent(app, page, width, height);
+  const viewport = await page.evaluate(() => {
+    const styleFields = ["color", "backgroundColor", "borderColor", "borderRadius", "outlineColor", "fontSize", "width", "height", "gridTemplateColumns", "gridTemplateRows", "overflowX", "overflowY", "minWidth", "minHeight"];
+    const selectors = { shell: ".app-shell", primaryButton: ".button.primary", formControl: "input, select, textarea", evidenceWorkspace: ".evidence-workspace", sourcePanel: ".source-panel", architectureStage: ".architecture-stage", ownershipQuiz: ".ownership-quiz", changeLayout: ".change-layout", comparisonSources: ".comparison-sources", explanationPanel: ".explanation-panel" };
+    const computed = {};
+    for (const [name, selector] of Object.entries(selectors)) {
+      const element = [...document.querySelectorAll(selector)].find(item => item.getBoundingClientRect().width > 0 && item.getBoundingClientRect().height > 0);
+      if (!element) continue;
+      const style = getComputedStyle(element); const rect = element.getBoundingClientRect();
+      computed[name] = { selector, values: Object.fromEntries(styleFields.map(field => [field, style[field]])), rect: { width: Math.round(rect.width), height: Math.round(rect.height) } };
+    }
+    return { width: window.innerWidth, height: window.innerHeight, scale: window.devicePixelRatio, computed };
+  });
+  const projectPath = await page.locator(".overview-hero p").textContent().catch(() => null);
+  if (projectPath !== null) await page.locator(".overview-hero p").evaluate(element => { element.textContent = "D:\\Projects\\Project X-Ray\\test-fixtures\\ownership-training\\.working-copy"; });
+  try { await page.screenshot({ path: join(screenshots, `ui-polish-${mode}-${scene}.png`) }); }
+  finally { if (projectPath !== null) await page.locator(".overview-hero p").evaluate((element, value) => { element.textContent = value; }, projectPath); }
+  process.stdout.write(`ui-polish-viewport ${JSON.stringify({ scene, requestedWindow: `${width}x${height}`, ...viewport })}\n`);
+  return { scene, requestedWindow: `${width}x${height}`, ...viewport };
+}
+
+async function waitForActivatedSnapshot(page, snapshotId) {
+  await page.waitForFunction(async (expected) => {
+    const project = await window.xray.getCurrentProject();
+    const label = document.querySelector(".snapshot span")?.textContent ?? "";
+    return project?.snapshotId === expected && label.includes("current") && !document.querySelector('[data-testid="stale-banner"]');
+  }, snapshotId, { timeout: 180_000 });
+  await page.locator(".graph-panel .stale-banner").waitFor({ state: "detached", timeout: 30_000 }).catch(() => undefined);
+}
+
+async function reindexAndWait(page, expectedSnapshotId) {
+  await page.getByRole("button", { name: "更新索引" }).first().click();
+  await page.getByTestId("index-progress").waitFor({ state: "attached", timeout: 30_000 });
+  await page.getByTestId("index-progress").waitFor({ state: "detached", timeout: 180_000 });
+  const actual = await page.evaluate(async () => (await window.xray.getCurrentProject())?.snapshotId ?? null);
+  if (expectedSnapshotId) assert.equal(actual, expectedSnapshotId, "index completion must return the requested snapshot identity");
+  assert.ok(actual, "index completion must install a project snapshot");
+  await waitForActivatedSnapshot(page, actual);
+  return actual;
+}
+
+async function runFlowSearchAndQuery(page, searchText, expectedSymbol) {
+  await page.getByRole("button", { name: /调用 \/ 数据流/ }).click();
+  const readiness = await page.locator(".graph-panel").evaluate((panel) => ({ stale: panel.querySelector(".stale-banner")?.textContent ?? null, searchDisabled: (panel.querySelector('.flow-controls button[aria-label="搜索"]') ?? panel.querySelector(".flow-controls button"))?.hasAttribute("disabled") ?? true, queryDisabled: panel.querySelector('.flow-controls button.primary')?.hasAttribute("disabled") ?? true, status: [...panel.querySelectorAll('[role="status"]')].map((item) => item.textContent).filter(Boolean) }));
+  if (readiness.stale || readiness.searchDisabled) throw new Error(`call-flow session was not activated: ${JSON.stringify(readiness)}`);
+  await page.getByRole("textbox", { name: "搜索符号" }).fill(searchText);
+  await page.locator(".flow-controls").getByRole("button", { name: "搜索" }).click();
+  const symbolSelect = page.getByRole("combobox", { name: "选择符号" });
+  const option = symbolSelect.locator("option", { hasText: expectedSymbol });
+  await option.waitFor({ state: "attached", timeout: 30_000 });
+  await symbolSelect.selectOption(await option.getAttribute("value"));
+  await page.getByRole("button", { name: "查询关系" }).click();
+  await page.locator(".result-context").getByText(expectedSymbol).waitFor({ timeout: 30_000 });
+}
 
 async function main() {
   const base = await mkdtemp(join(tmpdir(), "xray-ownership-e2e-"));
-  const fixture = join(base, "fixture"); const userData = join(base, "user-data"); const screenshots = resolve(__dirname, "../../../docs/screenshots");
+  const fixture = join(base, "fixture"); const userData = join(base, "user-data");
+  const screenshotsRoot = resolve(__dirname, "../../../docs/screenshots");
+  const screenshots = resolve(screenshotsRoot, process.env.XRAY_UI_SCREENSHOT_SET ?? ".");
+  if (screenshots !== screenshotsRoot && !screenshots.startsWith(`${screenshotsRoot}${sep}`)) throw new Error("Screenshot output must stay under docs/screenshots");
   await cp(resolve(__dirname, "../../../test-fixtures/ownership-training"), fixture, { recursive: true }); await mkdir(userData); await mkdir(screenshots, { recursive: true });
-  let firstSnapshot; let conceptLabel; let conceptName; let sourceFile; let selectedEvidence;
+  const git = (...args) => execFileSync("git", args, { cwd: fixture, stdio: "pipe" });
+  const comparisonFile = join(fixture, "comparison.ts");
+  await writeFile(comparisonFile, "export const comparisonMarker = 'base'\n", "utf8");
+  git("init"); git("config", "user.email", "xray@example.test"); git("config", "user.name", "X-Ray E2E"); git("add", "."); git("commit", "-m", "fixture base");
+  await writeFile(comparisonFile, "export const comparisonMarker = 'working-one'\n", "utf8");
+  const polishCapture = process.argv.find((argument) => ["baseline", "final"].includes(argument)) ?? "";
+  const visualSamples = [];
+  let firstSnapshot; let firstSnapshotId; let secondSnapshot; let secondSnapshotId; let conceptLabel; let conceptName; let sourceFile; let sourceOriginal; let selectedEvidence; let trainingCitationCount;
   let launched = await launch(userData);
   try {
     const { app, page } = launched; await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.setBounds({ x: 0, y: 0, width: 1600, height: 1000 }));
     await importFixture(page, fixture); firstSnapshot = await page.locator(".snapshot code").textContent();
+    firstSnapshotId = await page.evaluate(async () => (await window.xray.getCurrentProject())?.snapshotId ?? null);
+    assert.ok(firstSnapshotId); assert.equal(firstSnapshot, firstSnapshotId.slice(0, 10));
+    if (polishCapture) {
+      const shellScene = await capturePolishScene(app, page, screenshots, polishCapture, "shell-controls-1440x900", 1440, 900);
+      if (shellScene) visualSamples.push(shellScene);
+    }
+    await page.getByRole("button", { name: /Git 变更/ }).click(); await page.getByRole("button", { name: "生成比较报告" }).click();
+    await page.getByRole("button", { name: /架构地图/ }).click(); await page.getByTestId("architecture-overview").waitFor({ timeout: 30_000 });
+    await page.waitForFunction(() => document.querySelector('[data-testid="comparison-task-tray"]')?.textContent?.includes("报告已生成"), undefined, { timeout: 120_000 });
+    await page.getByRole("button", { name: "打开任务" }).click(); const backgroundReport = page.getByTestId("comparison-identities"); await backgroundReport.waitFor({ timeout: 30_000 });
+    const initialReportId = await backgroundReport.getAttribute("data-report-id"); assert.ok(initialReportId);
+    const initialReport = await page.evaluate(async (reportId) => { const project = await window.xray.getCurrentProject(); if (!project) throw new Error("missing project"); return window.xray.loadChangeReport({ repositoryId: project.repositoryId, reportId }); }, initialReportId);
+    assert.equal(initialReport.mode, "working"); assert.match(initialReport.left.label, /^Index/); assert.match(initialReport.right.label, /Working tree/); assert.ok(initialReport.files.some((file) => file.newPath === "comparison.ts"));
+    const gitScene = await capturePolishScene(app, page, screenshots, polishCapture, "git-1024x800", 1024, 800); if (gitScene) visualSamples.push(gitScene);
+    const leftSourceTab = page.getByRole("tab", { name: /左侧/ }); const rightSourceTab = page.getByRole("tab", { name: /右侧/ });
+    if (await leftSourceTab.count()) {
+      await leftSourceTab.click(); const leftSide = page.locator('.comparison-source-side[aria-label^="左侧"]');
+      await leftSide.locator('[data-testid="source-viewer"][data-source-file="comparison.ts"]').waitFor();
+      assert.equal(await leftSide.locator('[data-testid="source-viewer"]').getAttribute("data-snapshot-id"), initialReport.left.snapshot.snapshotId);
+      const leftSourceScene = await capturePolishScene(app, page, screenshots, polishCapture, "git-left-source-1024x800", 1024, 800); if (leftSourceScene) visualSamples.push(leftSourceScene);
+      await rightSourceTab.click(); const rightSide = page.locator('.comparison-source-side[aria-label^="右侧"]');
+      await rightSide.locator('[data-testid="source-viewer"][data-source-file="comparison.ts"]').waitFor();
+      assert.equal(await rightSide.locator('[data-testid="source-viewer"]').getAttribute("data-snapshot-id"), initialReport.right.snapshot.snapshotId);
+      const rightSourceScene = await capturePolishScene(app, page, screenshots, polishCapture, "git-right-source-1024x800", 1024, 800); if (rightSourceScene) visualSamples.push(rightSourceScene);
+      await page.getByRole("textbox", { name: "搜索变化文件" }).fill("no-such-file"); await page.getByText("没有匹配的变化文件。").waitFor(); await page.getByRole("button", { name: "清除筛选" }).click(); await page.getByRole("button", { name: /comparison\.ts/ }).waitFor();
+    }
+    if (polishCapture) await resizeContent(app, page, 1600, 1000);
+    await page.screenshot({ path: join(screenshots, "comparison-returned-after-navigation.png") });
     await page.getByRole("button", { name: /调用 \/ 数据流/ }).click(); await page.getByRole("textbox", { name: "搜索符号" }).fill("login"); await page.locator(".flow-controls").getByRole("button", { name: "搜索" }).click();
     const symbolSelect = page.getByRole("combobox", { name: "选择符号" }); const loginOption = symbolSelect.locator("option", { hasText: "pkg/api.py::login" }); await loginOption.waitFor({ state: "attached" }); const loginId = await loginOption.getAttribute("value"); assert.ok(loginId); await symbolSelect.selectOption(loginId); await page.getByRole("button", { name: "查询关系" }).click(); await page.locator(".relation-list button", { hasText: "CALLS" }).first().waitFor();
     const aliasEvidence = await page.evaluate(async (rootNodeId) => { const project = await window.xray.getCurrentProject(); if (!project) throw new Error("missing project"); const graph = await window.xray.queryGraph({ version: "1.0.0", repositoryId: project.repositoryId, snapshotId: project.snapshotId, rootNodeIds: [rootNodeId], view: "call", direction: "outgoing", maxDepth: 3, maxNodes: 120, maxEdges: 240, maxWork: 3600, confidences: ["verified", "inferred", "unknown"] }); const edge = graph.edges.find((item) => item.source === rootNodeId && item.kind === "CALLS" && item.confidence === "verified" && item.reason.includes("import 本地绑定")); if (!edge) throw new Error("missing verified alias call"); const evidence = await window.xray.getEvidence({ repositoryId: project.repositoryId, snapshotId: project.snapshotId, evidenceId: edge.evidenceId }); return { evidenceId: evidence.id, snapshotId: project.snapshotId, filePath: evidence.span.filePath, range: `${evidence.span.startLine}:${evidence.span.startColumn}-${evidence.span.endLine}:${evidence.span.endColumn}` }; }, loginId);
     await page.locator(".relation-list button", { hasText: "Python import 本地绑定" }).click(); const aliasViewer = page.getByTestId("source-viewer"); await page.waitForFunction((expected) => { const viewer = document.querySelector('[data-testid="source-viewer"]'); return viewer?.getAttribute("data-evidence-id") === expected.evidenceId && viewer.getAttribute("data-monaco-selection") === expected.range; }, aliasEvidence); assert.equal(await aliasViewer.getAttribute("data-source-file"), aliasEvidence.filePath); assert.equal(await aliasViewer.getAttribute("data-snapshot-id"), aliasEvidence.snapshotId);
+
+    await page.getByRole("button", { name: /功能解释/ }).click(); await page.getByRole("textbox", { name: "需要解释的功能" }).fill("登录"); await page.getByRole("button", { name: "开始追踪" }).click();
+    await page.waitForFunction(() => ["已完成", "无结果"].includes(document.querySelector('[data-testid="explanation-state"]')?.textContent ?? ""), undefined, { timeout: 30_000 });
+    const submittedExplanation = page.locator(".submitted-question span"); await submittedExplanation.waitFor(); assert.equal(await submittedExplanation.textContent(), "登录");
+    const firstExplanationStep = page.locator(".explanation-steps > li").first(); const stepEvidencePicker = firstExplanationStep.locator("details.step-evidence-picker");
+    if (await stepEvidencePicker.count()) await stepEvidencePicker.locator("summary").click();
+    const explanationEvidence = firstExplanationStep.getByRole("button", { name: /核验第/ });
+    if (await explanationEvidence.count()) { await explanationEvidence.first().click(); await page.getByTestId("source-viewer").waitFor(); }
+    const explanationFile = await page.getByTestId("source-viewer").getAttribute("data-source-file"); assert.ok(explanationFile);
+    const returnToExplanation = page.getByRole("button", { name: /返回第 .* 步说明/ }); if (await returnToExplanation.count()) await returnToExplanation.first().click();
+    const explanationScene = await capturePolishScene(app, page, screenshots, polishCapture, "feature-explanation-evidence-1440x900", 1440, 900); if (explanationScene) visualSamples.push(explanationScene);
+    await page.screenshot({ path: join(screenshots, "feature-explanation-session.png") });
+    await page.getByRole("button", { name: /调用 \/ 数据流/ }).click(); await page.getByRole("button", { name: /功能解释/ }).click();
+    assert.equal(await submittedExplanation.textContent(), "登录"); await page.waitForFunction((expected) => document.querySelector('[data-testid="source-viewer"]')?.getAttribute("data-source-file") === expected, explanationFile);
     await openOwnership(page);
     await page.getByRole("button", { name: "生成结构化题目" }).click(); await page.locator(".quiz-progress b", { hasText: "调用方向" }).waitFor();
     conceptLabel = await page.locator(".difficulty").textContent(); conceptName = conceptLabel?.split(" · ").slice(1).join(" · ");
@@ -39,11 +173,84 @@ async function main() {
     const values = await caller.locator("option").evaluateAll((options) => options.slice(1).map((option) => ({ value: option.value, text: option.textContent ?? "" })));
     assert.equal(values.length, 2, "call direction must expose exactly the two structural choices");
     const nodes = await page.evaluate(async (ids) => { const project = await window.xray.getCurrentProject(); if (!project) throw new Error("missing project"); const result = await window.xray.search({ repositoryId: project.repositoryId, snapshotId: project.snapshotId, query: "", kinds: ["function", "method"], limit: 100 }); return result.items.filter((item) => ids.includes(item.id)); }, values.map((item) => item.value));
-    sourceFile = nodes.find((node) => node.id === values[0].value)?.filePath; assert.ok(sourceFile, "caller source file missing");
+    sourceFile = nodes.find((node) => node.id === values[0].value)?.filePath; assert.ok(sourceFile, "caller source file missing"); sourceOriginal = await readFile(join(fixture, sourceFile));
     await page.getByRole("button", { name: sourceFile, exact: true }).click(); await page.locator(".monaco-editor").waitFor({ timeout: 30_000 });
-    await page.getByRole("button", { name: "引用选中范围" }).click(); await page.getByText(/源码引用 [1-9]/).waitFor();
+    await page.getByRole("button", { name: "引用选中范围" }).click(); await page.getByText(/源码引用 [1-9]/).waitFor(); trainingCitationCount = await page.locator(".citation-row").count();
+    const trainingNote = "调用关系的方向需要从源码证据核对。";
+    await caller.selectOption(values[0].value); await page.locator(".ownership-notes summary").click(); await page.getByRole("textbox", { name: "自由文本学习记录" }).fill(trainingNote); await page.locator(".ownership-notes summary").click();
+    const noteLayout = await page.evaluate(() => { const notes=document.querySelector(".ownership-notes"), citations=document.querySelector(".citations"), submit=document.querySelector(".ownership-quiz > .button.primary"); return { notesOpen: notes?.hasAttribute("open"), notesAfterCitations: Boolean(notes && citations && (citations.compareDocumentPosition(notes) & Node.DOCUMENT_POSITION_FOLLOWING)), notesAfterSubmit: Boolean(notes && submit && (submit.compareDocumentPosition(notes) & Node.DOCUMENT_POSITION_FOLLOWING)) }; });
+    assert.deepEqual(noteLayout, { notesOpen: false, notesAfterCitations: true, notesAfterSubmit: true }, "notes should stay folded after required answer and citation actions");
+    await page.locator(".citation-row").first().getByRole("button", { name: "重新定位" }).click();
+    const trainingViewer = page.getByTestId("source-viewer");
+    await page.waitForFunction((expected) => { const viewer = document.querySelector('[data-testid="source-viewer"]'); return viewer?.getAttribute("data-source-file") === expected && Boolean(viewer.getAttribute("data-monaco-selection")); }, sourceFile);
+    const trainingSelection = await trainingViewer.getAttribute("data-monaco-selection");
+    assert.ok(trainingSelection, "training editor must expose its selected source range");
+    const trainingScene = await capturePolishScene(app, page, screenshots, polishCapture, "training-partial-1440x900", 1440, 900); if (trainingScene) visualSamples.push(trainingScene);
+
+    await page.getByRole("button", { name: /架构地图/ }).click();
+    await page.getByRole("button", { name: "列表", exact: true }).click();
+    const architectureTarget = await page.evaluate(async (avoidFile) => {
+      const project = await window.xray.getCurrentProject(); if (!project) throw new Error("missing project");
+      const overview = await window.xray.getModuleOverview({ version: "1.0.0", repositoryId: project.repositoryId, snapshotId: project.snapshotId, query: "", limit: 80, relationLimit: 160, referenceLimit: 40 });
+      for (const module of overview.modules) {
+        const expansion = await window.xray.expandModule({ repositoryId: project.repositoryId, snapshotId: project.snapshotId, moduleId: module.id, limit: 100 });
+        const file = expansion.nodes.find((node) => node.kind === "file" && node.filePath === "pkg/service.py" && node.filePath !== avoidFile);
+        if (file?.filePath) return { modulePath: module.qualifiedName, filePath: file.filePath };
+      }
+      return null;
+    }, sourceFile);
+    assert.ok(architectureTarget, "fixture must include a second architecture file");
+    const moduleCard = page.locator(".module-card").filter({ hasText: architectureTarget.modulePath });
+    await moduleCard.getByRole("button", { name: /展开文件/ }).click();
+    const fileCard = page.locator(".file-card-list article").filter({ hasText: architectureTarget.filePath });
+    await fileCard.getByRole("button", { name: /符号与源码/ }).click();
+    const architectureSymbol = page.locator('.symbol-list button[title="pkg/service.py::normalize"]'); await architectureSymbol.waitFor({ timeout: 30_000 }); await architectureSymbol.click();
+    try { await page.waitForFunction(() => document.querySelector(".local-graph .graph-canvas")?.dataset.nodesInBounds === "true", undefined, { timeout: 10_000 }); }
+    catch (error) { const state = await page.locator(".local-graph .graph-canvas").evaluate((canvas) => ({ ...canvas.dataset, rect: canvas.getBoundingClientRect().toJSON(), layers: [...canvas.querySelectorAll("canvas")].map((layer) => ({ width: layer.width, height: layer.height })) })); throw new Error(`${error.message}; graph pane state: ${JSON.stringify(state)}`); }
+    const localGraphLayout = await page.locator(".local-graph .graph-canvas").evaluate((canvas) => ({ inBounds: canvas.dataset.nodesInBounds, renderedBounds: canvas.dataset.renderedBounds, size: { width: canvas.clientWidth, height: canvas.clientHeight }, nodeLayers: [...canvas.querySelectorAll("canvas")].map((layer) => ({ width: layer.width, height: layer.height })) }));
+    assert.equal(localGraphLayout.inBounds, "true", `selected symbol relationships should render inside the available graph pane: ${JSON.stringify(localGraphLayout)}`);
+    await page.getByRole("button", { name: "打开文件源码" }).click();
+    await page.waitForFunction((expected) => document.querySelector('[data-testid="source-viewer"]')?.getAttribute("data-source-file") === expected, architectureTarget.filePath);
+    const graphWidthBesideSource = await page.locator(".local-graph .graph-canvas").evaluate((canvas) => canvas.getBoundingClientRect().width);
+    assert.ok(graphWidthBesideSource >= 360, `selected-symbol graph should use the actual pane width beside source instead of shrinking into an unreadable column: ${graphWidthBesideSource}px`);
+    const architectureSelection = await page.getByTestId("source-viewer").getAttribute("data-monaco-selection");
+    await page.getByRole("button", { name: /调用 \/ 数据流/ }).click(); await page.waitForFunction((expected) => document.querySelector('[data-testid="source-viewer"]')?.getAttribute("data-source-file") === expected, aliasEvidence.filePath);
+    await page.getByRole("button", { name: /架构地图/ }).click(); await page.waitForFunction((expected) => document.querySelector('[data-testid="source-viewer"]')?.getAttribute("data-source-file") === expected, architectureTarget.filePath);
+    assert.equal(await page.getByTestId("source-viewer").getAttribute("data-monaco-selection"), architectureSelection);
+    assert.match(await page.locator(".local-graph .section-caption span").textContent(), new RegExp(architectureTarget.filePath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    const divider = page.getByRole("separator", { name: "调整源码面板宽度" });
+    if (await divider.count()) {
+      const before = Number(await divider.getAttribute("aria-valuenow")); const dividerBox = await divider.boundingBox(); assert.ok(dividerBox);
+      await page.mouse.move(dividerBox.x + dividerBox.width / 2, dividerBox.y + dividerBox.height / 2); await page.mouse.down(); await page.mouse.move(dividerBox.x + dividerBox.width / 2 - 60, dividerBox.y + dividerBox.height / 2); await page.mouse.up();
+      assert.notEqual(Number(await divider.getAttribute("aria-valuenow")), before, "dragging the divider should adjust the source width preference");
+      const sourceViewer = page.getByTestId("source-viewer"); await sourceViewer.getByRole("button", { name: "最大化" }).click(); assert.ok((await page.getByTestId("evidence-workspace").getAttribute("class"))?.includes("source-maximized"));
+      await sourceViewer.getByRole("button", { name: "还原" }).click(); assert.ok(!(await page.getByTestId("evidence-workspace").getAttribute("class"))?.includes("source-maximized"));
+    }
+    const architectureScene = await capturePolishScene(app, page, screenshots, polishCapture, "architecture-source-1440x900", 1440, 900); if (architectureScene) visualSamples.push(architectureScene);
+    if (polishCapture) {
+      await resizeContent(app, page, 1024, 800);
+      await page.waitForFunction(() => document.querySelector(".evidence-workspace")?.classList.contains("compact-layout"));
+      assert.equal(await page.getByTestId("source-viewer").getAttribute("data-source-file"), architectureTarget.filePath);
+      const paneSwitch = page.locator(".compact-pane-switch");
+      if (await paneSwitch.isVisible()) { await paneSwitch.getByRole("button", { name: "架构地图" }).click(); assert.equal(await page.locator(".symbol-list button[aria-pressed=true]").getAttribute("title"), "pkg/service.py::normalize"); await paneSwitch.getByRole("button", { name: "源码" }).click(); }
+      await resizeContent(app, page, 1440, 900);
+      assert.equal(await page.getByTestId("source-viewer").getAttribute("data-source-file"), architectureTarget.filePath); assert.equal(await page.getByTestId("source-viewer").getAttribute("data-monaco-selection"), architectureSelection);
+      const wideScene = await capturePolishScene(app, page, screenshots, polishCapture, "architecture-source-1920x1080", 1920, 1080); if (wideScene) visualSamples.push(wideScene);
+      await resizeContent(app, page, 1440, 900);
+    }
+    await page.screenshot({ path: join(screenshots, "architecture-context-restored.png") });
+    await page.getByRole("button", { name: /所有权模式/ }).click();
+    await page.locator(".quiz-progress b", { hasText: "调用方向" }).waitFor();
+    await page.waitForFunction((expected) => document.querySelector('[data-testid="source-viewer"]')?.getAttribute("data-source-file") === expected, sourceFile);
+    assert.equal(await caller.inputValue(), values[0].value, "partial structural answer must survive page changes");
+    await page.locator(".ownership-notes summary").click(); assert.equal(await page.getByRole("textbox", { name: "自由文本学习记录" }).inputValue(), trainingNote);
+    assert.equal(await page.locator(".citation-row").count(), trainingCitationCount, "source restoration must not create an extra citation");
+    assert.equal(await page.getByTestId("source-viewer").getAttribute("data-monaco-selection"), trainingSelection);
+
     await caller.selectOption(values[1].value); await callee.selectOption(values[0].value); await page.getByRole("button", { name: "提交并核验结构" }).click();
     await page.getByText("调用方向错误：调用者和被调用者不能互换。").waitFor(); assert.equal(await page.getByText("未评估", { exact: true }).count(), 1); await page.locator(".structured-grade").scrollIntoViewIfNeeded();
+    await page.getByRole("button", { name: "关闭源码" }).click();
+    await page.locator(".structured-grade").scrollIntoViewIfNeeded();
     await page.screenshot({ path: join(screenshots, "ownership-structured-feedback.png") });
     await page.getByRole("button", { name: "修正后重试" }).click(); await caller.selectOption(values[0].value); await callee.selectOption(values[1].value); await page.getByRole("button", { name: "提交并核验结构" }).click(); await page.locator(".structured-grade").waitFor();
     assert.deepEqual(await page.locator(".structured-grade strong").allTextContents(), ["通过", "通过", "未评估"]);
@@ -51,14 +258,77 @@ async function main() {
     const expected = await page.evaluate(async (evidenceId) => { const project = await window.xray.getCurrentProject(); if (!project) throw new Error("missing project"); const evidence = await window.xray.getEvidence({ repositoryId: project.repositoryId, snapshotId: project.snapshotId, evidenceId }); return { snapshotId: project.snapshotId, filePath: evidence.span.filePath, range: `${evidence.span.startLine}:${evidence.span.startColumn}-${evidence.span.endLine}:${evidence.span.endColumn}` }; }, selectedEvidence);
     const viewer = page.getByTestId("source-viewer"); await page.waitForFunction((range) => document.querySelector('[data-testid="source-viewer"]')?.getAttribute("data-monaco-selection") === range, expected.range);
     assert.equal(await viewer.getAttribute("data-snapshot-id"), expected.snapshotId); assert.equal(await viewer.getAttribute("data-source-file"), expected.filePath); assert.equal(await viewer.getAttribute("data-monaco-selection"), expected.range);
+    await writeFile(comparisonFile, "export const comparisonMarker = 'working-two'\n", "utf8");
+    await appendFile(join(fixture, sourceFile), "\n# source changed after mastery\n", "utf8");
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await page.getByTestId("stale-banner").waitFor({ timeout: 30_000 }); await page.getByTestId("training-stale").waitFor({ timeout: 30_000 });
+    assert.match(await page.locator(".structured-grade").innerText(), /通过/);
+    await page.getByRole("button", { name: /Git 变更/ }).click(); await page.getByTestId("change-report-stale").waitFor({ timeout: 30_000 });
+    await page.getByRole("button", { name: "安全重算" }).click();
+    await page.waitForFunction((prior) => document.querySelector('[data-testid="comparison-identities"]')?.getAttribute("data-report-id") !== prior, initialReportId, { timeout: 120_000 });
+    await page.getByTestId("change-report-stale").waitFor({ state: "detached", timeout: 30_000 });
+    await page.locator(".health.current").waitFor({ timeout: 30_000 });
+    assert.equal(await page.locator(".report-state-error").count(), 0, "recomputed report state must remain readable after the compare worker completes");
+    await page.screenshot({ path: join(screenshots, "comparison-recomputed-after-stale.png") });
+    // Restore every indexed byte to the original contents, then prove the backend
+    // publishes the exact original snapshot identity rather than a mock/new ID.
+    await writeFile(comparisonFile, "export const comparisonMarker = 'working-one'\n", "utf8");
+    await writeFile(join(fixture, sourceFile), sourceOriginal);
+    const sameSnapshotAfterRestore = await reindexAndWait(page, firstSnapshotId);
+    assert.equal(sameSnapshotAfterRestore, firstSnapshotId, "restoring exact source bytes must reactivate the original snapshot A");
+    await runFlowSearchAndQuery(page, "login", "pkg/api.py::login");
+    await page.locator(".relation-list button", { hasText: "CALLS" }).first().waitFor({ timeout: 30_000 });
+
+    // Repeat the exact A -> B -> A cycle. B's page state uses a different query
+    // so returning to A proves the old search/result cache remains snapshot-bound.
+    await writeFile(comparisonFile, "export const comparisonMarker = 'working-two'\n", "utf8");
+    await appendFile(join(fixture, sourceFile), "\n# source changed for snapshot B\n", "utf8");
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await page.getByTestId("stale-banner").waitFor({ timeout: 30_000 });
+    await page.getByRole("button", { name: "更新索引" }).first().click();
+    await page.getByTestId("index-progress").waitFor({ state: "attached", timeout: 30_000 });
+    await page.getByTestId("index-progress").waitFor({ state: "detached", timeout: 180_000 });
+    secondSnapshotId = await page.evaluate(async () => (await window.xray.getCurrentProject())?.snapshotId ?? null);
+    assert.ok(secondSnapshotId); assert.notEqual(secondSnapshotId, firstSnapshotId);
+    secondSnapshot = secondSnapshotId.slice(0, 10);
+    await waitForActivatedSnapshot(page, secondSnapshotId);
+    await runFlowSearchAndQuery(page, "normalize", "pkg/service.py::normalize");
+    await openOwnership(page);
+    const revalidationOnB = page.locator(".mastery-panel div", { hasText: conceptName });
+    await revalidationOnB.waitFor({ timeout: 30_000 }); assert.match(await revalidationOnB.innerText(), /需要重新验证/);
+    await page.getByRole("button", { name: /调用 \/ 数据流/ }).click();
+
+    await writeFile(comparisonFile, "export const comparisonMarker = 'working-one'\n", "utf8");
+    await writeFile(join(fixture, sourceFile), sourceOriginal);
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await page.getByTestId("stale-banner").waitFor({ timeout: 30_000 });
+    const restoredSnapshotA = await reindexAndWait(page, firstSnapshotId);
+    assert.equal(restoredSnapshotA, firstSnapshotId, "A -> B -> A must return to the original content identity");
+    await page.getByRole("button", { name: /调用 \/ 数据流/ }).click();
+    assert.equal(await page.getByRole("textbox", { name: "搜索符号" }).inputValue(), "login", "A's query draft must be restored instead of B's");
+    await page.locator(".result-context").getByText("pkg/api.py::login").waitFor();
+    await runFlowSearchAndQuery(page, "login", "pkg/api.py::login");
+    await page.locator(".relation-list button", { hasText: "CALLS" }).first().waitFor({ timeout: 30_000 });
+
+    await openOwnership(page);
+    await page.getByRole("heading", { name: "选择学习范围" }).waitFor();
+    const oldDraftButtons = page.getByRole("button", { name: new RegExp(`查看快照 ${firstSnapshot}`) });
+    let archivedText = "";
+    for (let index = 0; index < await oldDraftButtons.count(); index += 1) {
+      await oldDraftButtons.nth(index).click();
+      archivedText = await page.getByTestId("archived-training-preview").innerText();
+      if (archivedText.includes("已提交评分")) break;
+    }
+    const archived = page.getByTestId("archived-training-preview");
+    await archived.waitFor(); assert.match(archivedText, /调用方向/); assert.match(archivedText, /调用关系的方向需要从源码证据核对/);
+    assert.match(archivedText, /已提交评分/);
+    assert.ok(await page.getByRole("button", { name: new RegExp(`丢弃旧草稿 ${firstSnapshot}`) }).count());
     await app.close();
 
     launched = await launch(userData); await openOwnership(launched.page); assert.ok(conceptName); const mastered = launched.page.locator(".mastery-panel div", { hasText: conceptName }); await mastered.waitFor({ timeout: 30_000 }); assert.match(await mastered.innerText(), /本快照已通过/);
-    await appendFile(join(fixture, sourceFile), "\n# source changed after mastery\n", "utf8"); await launched.page.evaluate(() => window.dispatchEvent(new Event("focus"))); await launched.page.getByTestId("stale-banner").waitFor({ timeout: 30_000 });
-    await launched.page.getByRole("button", { name: "更新索引" }).click(); await launched.page.getByText("不可变证据快照").waitFor({ timeout: 180_000 }); await openOwnership(launched.page);
-    await launched.page.getByText("需要重新验证").waitFor({ timeout: 30_000 }); await launched.page.screenshot({ path: join(screenshots, "ownership-needs-revalidation.png") });
-    const secondSnapshot = await launched.page.locator(".snapshot code").textContent(); assert.notEqual(secondSnapshot, firstSnapshot); assert.ok(conceptLabel?.includes("调用方向"));
-    process.stdout.write(`ownership-training-e2e: passed ${JSON.stringify({ firstSnapshot, secondSnapshot, sourceFile, evidenceId: selectedEvidence, screenshots })}\n`);
+    await launched.page.screenshot({ path: join(screenshots, "ownership-needs-revalidation.png") });
+    assert.ok(conceptLabel?.includes("调用方向"));
+    process.stdout.write(`cross-page-workspace-e2e: passed ${JSON.stringify({ firstSnapshot, firstSnapshotId, sameSnapshotAfterRestore, secondSnapshotId, restoredSnapshotA, secondSnapshot, sourceFile, evidenceId: selectedEvidence, comparisonReportId: initialReportId, explanationFile, architectureFile: architectureTarget.filePath, visualSamples, screenshotFiles: ["comparison-returned-after-navigation.png", "feature-explanation-session.png", "architecture-context-restored.png", "comparison-recomputed-after-stale.png", "ownership-structured-feedback.png", "ownership-needs-revalidation.png"] })}\n`);
   } finally {
     await launched.app.close().catch(() => undefined); await rm(base, { recursive: true, force: true });
   }

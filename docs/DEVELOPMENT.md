@@ -1,6 +1,57 @@
 # V1 开发状态
 
-更新日期：2026-09-21
+更新日期：2026-09-26
+
+## CSS 职责归属与级联整理（2026-09-26）
+
+- 当前唯一入口是 `apps/ui/src/main.tsx` → `apps/ui/src/styles.css`，导入顺序为 tokens、base、controls、layout、components、pages、responsive。旧 `design-system.css` 已移除，避免两套完整基础控件规则依赖导入顺序互相覆盖。
+- 规则归属：原生按钮、表单、通用 focus/disabled 放 `controls.css`；应用外壳、导航、共享分栏和拖动区域放 `layout.css`；共享状态提示、面板、图表/源码表面放 `components.css`；架构、调用流、解释、训练和 Git 专有内容按页面分段放 `pages.css`；所有窗口媒体查询、容器查询和 reduced-motion 规则放 `responsive.css`。Monaco 与 Cytoscape 继续用各自运行时主题。
+- 级联审计清理了 202 条已被同选择器后值覆盖或失效的声明。按选择器、属性及相同媒体/容器条件复核后，重复声明组为 0；保留的是状态、控件变体及断点下实际需要的布局覆盖。没有引入 `@layer`。原来被后加载基础规则遮住的 max-width 1180px 页面内边距属于无效旧规则，已删除；基础 20px 24px 和 max-width 900px 的 12px 紧凑内边距保持不变。
+- 颜色 token 共 56 个，全部被样式引用；用途包含控件/列表/架构边界、可选行和卡片表面、错误与警示状态、证据范围标记和焦点光晕。PostCSS 审计确认 token 文件以外没有重复颜色字面值。单次渐变停止色、半透明证据底色及一次性图形状态仍按局部语义保留；同一字面值如果表示不同状态，不强制共用。CSS token 不传入 Cytoscape/Monaco API。两处 `!important` 只保留在 reduced-motion 的 `transition: none` 与 `animation: none`，用于覆盖应用和嵌入控件动效。
+- 窗口断点在 `responsive.css` 依布局分组维护：1500、1250、1180、1100、900、800、740、620 CSS px；架构阶段容器 740px 与符号浏览器容器 650px 的局部排布使用容器查询。前者负责窗口级壳体/页面布局，后者负责局部图和面板；源码分栏用户偏好仍由现有工作会话管理，窄容器适配不会写回偏好。
+- 基线和最终截图使用相同临时 fixture、Electron 操作状态及 DPR 1.5，记录 1440×900 外壳/架构/训练/解释、1024×800 Git 报告与双侧源码、1920×1080 架构源码分栏。基线在 `docs/screenshots/css-maintenance-baseline/`，最终图在 `docs/screenshots/css-maintenance-final/`。关键配对已实际查看；页面几何与主要控件保持一致。不同像素主要来自临时快照/报告 ID 和 Cytoscape 自动布局坐标。首次检查发现 Git 内容区相对基线多出 8 CSS px 内边距，定位为旧 max-width 1180px 规则迁移后才生效；移除无效规则后复采，边缘与基线对齐。125% 缩放通过 DOM/交互审计，但 Windows Electron 截图裁切，因此不作为完整图片目视验收通过。
+- 本轮实际运行 `pnpm --filter @project-xray/ui test`（11 个文件、79 项通过）、`pnpm typecheck`（10/10 包通过）、`pnpm build`（10/10 包通过）、`pnpm --filter @project-xray/desktop test:design`（73 个场景、0 个失败/错误）、`node --check apps/desktop/scripts/ownership-training-e2e.cjs` 和无视口切换参数的 `pnpm --filter @project-xray/desktop test:e2e:workspace`（最后一次使用 Electron、真实源码和临时 Git 仓库通过）。此前完整 `test:e2e:workspace final` 截图采集已通过并生成对照图；随后仅把字面颜色替换为同值 token。最终 token 版复跑设计审计和普通 Electron 工作流均通过。复跑截图模式时，当前显示工作区为 1707×1067 CSS px（DPR 1.5）：1920px 视口能渲染，但回缩时 OS 曾将窗口保持在显示边界，精确 viewport 断言失败；加入 `unmaximize` 和原点复位后，下一次采集在 Git 左侧源码截图阶段触发 Playwright 30 秒截图超时。该截图模式的 token 版复跑未通过，不作为成功验证；没有降低尺寸或截图断言。截图目录中的对照图来自先前成功的完整采集，最后的变量替换保留了完全相同的 RGB 值；之后的 token 版真实截图/状态由 73 场景设计审计复采。
+- 目视复核记录了一个与基线相同的现存长内容布局：1440×900、训练引用列表较长时，E2E computed style 中 `.evidence-workspace` 约 1560 CSS px 高、源码面板约 1522 CSS px 高，内容需要纵向滚动；本维护重构未改变该视觉，也未做训练布局重设计。DPR 1.5 下 125% 页面缩放的 Electron 图片仍裁切，只能确认 DOM/交互审计；Cytoscape 自动布局的少量节点坐标变化和既有构建体积提示也属已记录限制。本轮没有改变业务逻辑、证据/置信语义或会话与任务生命周期，也没有引入依赖。
+
+## 同一快照重新激活与调用流恢复（2026-09-26）
+
+- 根因位于共享页面会话层：页面记录按 `repositoryId + snapshotId + page` 缓存；`markWorkspaceStale` 会使旧代次失效，但原 `activateWorkspaceSnapshot` 只归档其他快照，没有恢复同一快照下 stale/archived 的页面记录。因而源码恢复到快照 A 后，后端可能报告 A current，Flow 记录仍 stale，搜索和图查询门禁继续关闭。
+- 当前只在索引任务成功后读取 `getSnapshotState`，并校验任务/项目/后端响应的仓库与快照一致、状态为 `current` 且源码可用，才安装项目并激活页面会话。源码恢复后普通状态轮询即使先报告 current，也不会自行解锁旧会话；索引失败、取消、校验失败或身份不匹配都不会激活。
+- App 为每次后端确认的索引激活分配单调代次；即使 `repositoryId + snapshotId` 与之前相同，App 项目会话代次仍前进，旧快照状态检查不能覆盖新结果。会话控制器只接受比已处理代次更新的激活；重复和迟到通知幂等忽略。目标页面记录进入新的请求代次，旧请求的成功、失败及 `finally` 均失去回写资格。恢复保留同快照的输入、选择与身份匹配的完成结果，清除旧代次 pending、请求错误和临时 loading；身份不匹配的缓存结果会清除。工作区过期确认也会为尚未打开的架构、调用流与解释页建立 stale 记录，避免后续首次挂载默认解锁。
+- 索引完成时替换查询 Worker 的旧 Worker 会收到预期的非零退出码。旧 `exit` 监听器原先会清空共享 pending 表，误伤新 Worker 上刚发起的快照校验。现在故障回收仅作用于当前 Worker；这是完成可信激活检查所需的最小主进程修复，没有变更 IPC 契约。
+- 训练仍由独立所有权会话与后端评分/掌握度契约管理，普通架构、调用流和解释页激活不会恢复训练请求、重复评分或改变结果；Git 比较报告仍按 reportId 及实际左右比较基准独立判断。准确回到同一个不可变快照时，既有该快照掌握记录仍依照既有后端规则显示；切到 B 时旧 A 掌握记录显示“需要重新验证”。应用重启后的页面草稿和后台任务恢复仍未实现。
+- 本轮 Electron 验证使用脚本生成的临时 fixture 副本，没有修改用户项目。真实 snapshotId 为 A=`a35668e297c36d231e8d63b1`、B=`0f76d2e41d7d1cbd808e4851`；第一次还原并索引仍为 A，随后 A→B→A 最终再次得到 A。Electron 中实际完成了过期检测、还原、重索引、Flow 搜索和图查询；B 使用 `normalize` 查询，返回 A 后恢复 `login` 草稿/结果并再次查询成功。B 的旧训练掌握记录显示需要重新验证；回到内容完全相同的 A 后，该快照记录按原契约仍显示已通过。
+- 本轮验证：`pnpm --filter @project-xray/ui test`（11 个文件、79 项通过）；`pnpm typecheck`（10 个包通过）；`pnpm build`（10 个包通过，Vite 保留既有大 chunk 提示）；`node --check apps/desktop/scripts/ownership-training-e2e.cjs` 通过；`pnpm --filter @project-xray/desktop test:e2e:workspace` 使用 Electron、preload、IPC、Worker、SQLite、样例临时副本实际通过。首次 E2E 暴露旧 Worker 退出事件误清空新请求，已修复；随后一次脚本尝试在索引完成前仅凭文件状态 current 就返回，发现是 E2E 等待条件过早，已改为等待索引进度出现并结束后再检查完整快照 ID，最终端到端通过。Playwright 启动仍输出 Node `DEP0190` 提示。
+
+## Git 比较生命周期与工作区页面会话（第三批，2026-09-26）
+
+- 本批沿用第二批的 `OwnershipSessionController`，扩展为页面会话与 Git 任务控制器；没有增加平行 store。页面会话按 `repositoryId + snapshotId + page` 隔离，页面仍按需卸载。比较任务按仓库独立保存捕获的项目/模式/参数、启动请求身份、后端 `taskId`、进度、取消请求、终态、错误和报告。App 级事件订阅在页面卸载期间继续接收事件。
+- Git 比较每个仓库同一时刻只允许一个活动任务。页面卸载不取消；导航中的任务条显示所属项目和实际模式，可返回任务或明确取消。启动窗口内收到的事件会短暂缓冲，取消请求等到 `taskId` 返回后发送；“正在取消”只在后端取消或完成终态到达后收口。重试使用新请求身份，旧 `taskId`、重复终态及其他仓库事件不会改写当前任务。该生命周期只覆盖当前应用进程，不保证进程退出/应用重启后继续。
+- 比较控件草稿、活动任务捕获参数和已安装报告分开保存。报告标签以报告实际模式、左右快照/提交和父提交数据为准；模式为 working（Index → 工作区）、staged（HEAD → Index）或 last-commit（父提交 → HEAD）。报告状态通过后端 `getChangeReportState` 复核，不凭当前 `snapshotId` 推断。工作区比较失效后，旧报告及其两侧源码仍可查看并标记为历史基准；安全重算安装新报告。左右源码响应仍分别验证报告、比较侧快照和文件身份。
+- 架构页保存层级、搜索/分页、选中模块/文件/符号/关系、局部图查询、图视角及滚动；调用流保存草稿与实际提交查询、结果、选中项和图视角；功能解释保存草稿与实际提交问题、解释状态/结果、选中步骤/证据。三页以及训练页、Git 页分别保存源码位置和面板状态；源码正文仍按需读取，不放入会话。视角恢复不把 Cytoscape/DOM 实例持久化；容器变化可重新校正显示。
+- 快照变化会隔离证据页面状态并使旧请求失效；工作区过期保留已显示结果并标记限制，遵守既有查询/评分门禁。Git 报告按自身 reportId 和左右快照复核，不因普通索引快照变化机械删除。页面缓存每仓库、每页面至多保留最近 4 个快照记录；架构图视角最多 40 个、架构滚动位置最多 12 个、调用流图视角最多 8 个。训练草稿和非终态 Git 任务位于独立集合，不由页面缓存裁剪；训练草稿需用户显式丢弃。源码全文、图实例和 DOM 不缓存。
+- 本轮实际验证：`pnpm --filter @project-xray/ui test`（11 个文件、62 项通过）；`pnpm --filter @project-xray/ui typecheck` 通过；`pnpm --filter @project-xray/desktop typecheck` 通过；`pnpm build`（10/10 包）通过；`pnpm --filter @project-xray/desktop test:e2e:workspace` 使用实际 Electron、preload、IPC、worker、SQLite 与 Monaco 验证比较跨页完成/报告复核、架构与调用流的独立源码上下文、解释结果恢复、训练草稿与源码恢复、工作区变化后的报告重算和快照过期入口。`pnpm --filter @project-xray/desktop test` 成功退出，但当前 desktop Vitest 无测试文件；另增加了重算后报告状态读取不报错的 E2E 断言。最新截图：[比较跨页返回](screenshots/comparison-returned-after-navigation.png)、[架构上下文恢复](screenshots/architecture-context-restored.png)、[解释会话恢复](screenshots/feature-explanation-session.png)、[基准过期后重算](screenshots/comparison-recomputed-after-stale.png)。
+- `pnpm verify` 本轮退出码为 1：全仓类型检查阶段通过；并行 Vitest 中 `packages/git/src/index.test.ts` 的“工作区身份包含未跟踪受支持文件内容，并拒绝捕获期间的混合内容”超过默认 5 秒（该测试实测 5007 ms，Git 包该轮 11 项中 10 项通过）。这与此前已记录的同一并行负载超时一致；本批未修改 `packages/git`。不提高超时或删断言的情况下，单独运行该用例为 1/1 通过，单独运行 `pnpm --filter @project-xray/git test` 为 11/11 通过；随后独立运行 `pnpm build` 为 10/10 包通过。`pnpm verify` 因测试阶段中断，本身没有进入其串接的 build 阶段。
+- 已查看上述关键截图。重算截图显示工作区快照标为 stale、报告实际基准为 Index → 工作区，且报告状态读取成功，没有“后台查询工作线程异常退出”错误。测试使用临时确定性仓库；截图中只含 fixture 项目名和相对文件路径。截图保存在本机 `docs/screenshots/`，该目录由仓库 `.gitignore` 排除，不属于 Git 跟踪文件。
+- 未实现应用重启恢复或持久化比较任务队列；进程退出会释放页面会话与未结束的比较任务。本批没有运行安装包、视觉审计矩阵或六页全面的长时间/多仓库压力验证。生产构建仍有 UI 主 chunk 与 Monaco 的体积提示，本批未做无关拆包。此前第二批记录中的“Git 比较后台任务迁移尚未实现”描述是当时状态，已由本节第三批实现与验证更新。
+
+## 训练工作会话与跨页面恢复（第二批，2026-09-26）
+
+- 所有权训练状态由 UI 内存会话控制器持有，按 repositoryId + snapshotId 隔离。当前范围草稿、问题轮次和捕获范围、题目进度、结构答案、源码引用/角色、未评估笔记、评分反馈、错误与训练页源码上下文均独立于页面挂载状态。导航仍按需卸载页面，不通过隐藏挂载六页保留草稿。
+- 生成题目和提交评分的生命周期与页面可见性分离。请求通道、序号、捕获参数和 pending 状态由控制器管理；页面卸载只释放视图订阅。切页期间请求可完成并只写回发起它的会话，StrictMode 和重挂载不会重复执行写操作。工作区标记过期时控制器使正在进行的训练请求失效；晚到成功、失败及 finally 均不能恢复旧 loading、结果或错误。
+- 工作区过期会保留答案、引用、笔记和评分用于查看，生成与提交被禁用。新快照创建独立空会话，旧快照以只读预览列出，可由用户逐项丢弃；切换仓库时会话隔离。草稿、请求和历史只保存在本次应用运行中，应用退出会清空，不提供重启恢复。已评分掌握度仍遵循既有本地数据库及快照复核契约。
+- 训练源码位置独立于架构页共享源码状态，保存文件、证据范围、选择/光标、滚动、面板打开状态及必要布局。返回训练页时会重新读取源码并再次校验仓库、快照和文件；离开页面会使旧训练源码导航失效，不能在架构页突然打开。关闭面板后显示“重新打开上次训练源码”入口；恢复读取不自动新增引用。
+- 缓存边界：范围搜索最多保存当前 50 条节点；文件浏览器只在挂载期间保存并最多显示 200 条，源码全文不放入会话。归档草稿是用户可编辑训练内容，绝不自动淘汰；用户可在“旧快照训练草稿”中显式丢弃，进程退出时全部释放。
+- 本轮实际验证：pnpm --filter @project-xray/ui test（10 个文件、55 项通过）；pnpm typecheck（10/10 包通过）；pnpm build（10/10 包通过）；构建后的 pnpm --filter @project-xray/desktop test:e2e:ownership 真实启动 Electron 并通过。E2E 覆盖训练生成、回答和引用、切换架构页打开另一源码文件、返回恢复答案/引用/源码位置、继续核验、修改工作区、过期提示、重建快照、旧训练只读查看及掌握度重新验证。实际检查的截图：[结构反馈](screenshots/ownership-structured-feedback.png)、[新快照重新验证](screenshots/ownership-needs-revalidation.png)；截图不含源码全文或绝对项目路径。
+- 本轮没有执行应用重启后的训练草稿恢复、Git 比较后台任务迁移、pnpm --filter @project-xray/desktop test:e2e、test:e2e:ui 或 test:design；设计审计未作为本轮验收，截图做了人工查看。生产 UI 构建仍提示 Monaco 与主 UI chunk 超过 500 KB；本批没有为此调整拆包。
+
+## 训练范围一致性与源码导航请求身份（2026-09-26）
+
+- 所有权训练生成题目时捕获仓库、快照、范围类型、节点 ID 和显示名称；题目与该范围作为同一轮结果安装，题面范围标签读取已安装轮次。生成期间范围类型、搜索与选项控件锁定；失败保留所选范围并可重试，空结果显示当前范围缺少足够 verified 事实。仓库/快照切换、重复请求和组件卸载会使旧结果与收尾失效。显示名称仅用于 UI，不增加 verified 图事实；题目协议和评分不变。
+- 源码导航现在以仓库/快照身份、会话代次和递增请求序号共同确认有效性。项目切换（包括离开后返回相同快照）、新导航和卸载都会使旧请求失效；边证据查询后、读取源码前再次检查请求身份。只有仓库、快照、证据 ID 和文件路径均与请求相符的响应才会展示；失效错误不会修改当前项目错误或触发当前快照刷新。EvidenceWorkspace 原有仓库/快照过滤保留。
+- 现有 `getEvidence` 响应原本缺少仓库 ID，无法在 UI 独立验证跨仓库归属。本轮只给证据查询响应增加 `repositoryId`：application 从已校验的快照来源补入，desktop IPC 用扩展后的 Zod schema 校验；持久化 Evidence、IPC channel 和 ownership 题目/评分协议未变。
+- 本轮实际验证：UI 回归 10 个测试文件、50 项通过；application 11 项、contracts 4 项通过（含证据响应必须带仓库身份的契约回归）；`pnpm typecheck` 10/10 包通过；`pnpm build` 10/10 包通过。`pnpm test` 全工作区有 1 项既有 Git 比较测试在并行负载下触发 5 秒超时，其余已报告包通过；单独运行该测试通过，随后 Git 包完整测试 11/11 通过。desktop Vitest 当前没有测试文件。生产 UI 构建仍提示 Monaco 和主 UI chunk 超过 500 KB。
+- 本轮没有运行 Electron E2E、视觉审计、截图或安装包验收；因此不将它们计为本轮验证。跨页面工作会话保存与应用重启恢复仍未实现，训练状态只在当前页面/快照生命周期内有效。
 
 ## 可信语义分析与所有权训练闭环（2026-09-21）
 
@@ -191,3 +242,29 @@
 ### 查询交互与状态一致性（2026-09-22）
 
 FlowExplorer 拆为独立组件，修复新搜索残留旧选项与修改条件后沿用旧游标的行为。增加加载状态、输入校验、无结果恢复提示、结果起点、条件变更提示和中文输入法 Enter 保护。19 项组件测试、UI 类型检查/构建、41 场景视觉审计及 Electron 核心 E2E 通过。1600 个可见文字样本最低对比度 4.90:1。架构/所有权回归沿用上一轮结果，未重复运行。
+
+### V1 UI 交互可靠性深化（2026-09-25）
+
+完成三个可操作切片。功能解释增加请求身份/快照隔离、顺序化阅读、空结果/失败恢复和证据导航；所有权训练清晰化操作阶段，修复引用移除后的 variable-flow 角色索引，分开显示定位、结构与未评估自由文本；Git 比较绑定报告、文件、左右侧和快照，补齐即时防重、基准提示、旧报告保留、状态恢复与来源证据 ID。
+
+验证：UI 10 个文件、35/35 测试；UI TypeScript/生产构建、全部 10 个工作区包构建通过；视觉审计 73 项/13 个交互结果通过，2,880 个可见文字样本最低 4.903:1，47 组调色板目标达标；核心 Electron、ByteAtlas UI 工作区（截图开启）、所有权训练 E2E 均通过。首次核心 E2E 暴露 Git 影响证据导航遗漏 evidence ID，已修复并添加针对性组件回归，然后重建并通过核心 E2E。真实 Electron 截图与审计写入 `docs/screenshots/ui-deepening-2026-09-25/`，UI 工作区截图位于其 `ui-workspace/`；另有最新所有权流程截图在 `docs/screenshots/`。
+
+125% 页面缩放通过 DOM/交互审计，但 Windows Electron 分数缩放截图会裁切；没有把裁切截图报告为目视通过。静态分析限制、功能解释未接远程 LLM、自由文本不参与语义评分、未验证其他显示缩放和未制作安装包等范围保持不变。完整结果、历史对照和截图链接见 [FINAL-DESIGN-ACCEPTANCE.md](FINAL-DESIGN-ACCEPTANCE.md)。
+
+### 第四批：界面交互打磨与首屏信息优化（2026-09-26）
+
+先核对前三批已经存在的按仓库/快照页面会话、页面独立源码阅读上下文、训练生命周期控制器与 Git 比较任务控制器。本轮复用这些机制，没有再建立任务框架，也未改动分析器、评分或 Git 写操作。
+
+架构文件层改为符号列表优先，选中后才展示有界局部关系；小于 720 CSS px 时切换列表/关系标签。源码工作区按实际容器宽度适配，宽屏可调分栏，窄屏使用面板标签，隐藏区不留焦点；分栏宽度偏好与临时窄屏适配分离。Git 首屏突出捕获时的报告基准、任务状态和变更文件，详细哈希与配置仍可展开查看。训练将结构答案、引用和提交前置，学习笔记折叠并明确“不参与评分”。功能解释修复旧步骤按钮规则挤压证据操作的问题，并保留只定位本步骤证据、失败局部重试的行为。比较任务、页面会话、过期门禁和异步身份检查沿用前三批实现。
+
+本批实际验证：
+
+- `pnpm --filter @project-xray/ui test`：11 个文件、68 项通过。
+- 定向架构、源码工作区、Git、训练、解释和画布回归：6 个文件、34 项通过。
+- `pnpm typecheck`：10 个工作区包通过；`pnpm build`：10 个工作区包通过；最终 UI 样式调整后 `pnpm --filter @project-xray/ui build` 通过。
+- `pnpm --filter @project-xray/desktop test:e2e:workspace -- final`：Electron/Playwright 跨页流程通过，覆盖 Git 比较离页继续、训练答案与源码恢复、架构视角与分栏、解释步骤证据定位、工作区变化及重索引。截取 1024×800、1440×900 和 1920×1080 场景，DPR 1.5。
+- PowerShell 命令 `$env:XRAY_DESIGN_AUDIT_SET='ui-polish-2026-09-26'; pnpm --filter @project-xray/desktop test:design`：73 个状态/视口场景，13 个焦点与交互状态通过；3,124 个文字样本最低 4.903:1，47 组调色板检查通过；无对比度、页面横向溢出、未声明内容溢出、控件遮挡或控件边界错误。首两次审计尝试暴露脚本流程预期过时（未先切左侧源码标签；旧脚本预期过期页仍能生成），修正为选择实际侧并验证过期门禁禁用生成后通过，未删除产品断言或降低阈值。
+- 默认 `pnpm --filter @project-xray/desktop test:e2e:ui` 在项目路径检查阶段因缺少 `XRAY_UI_PROJECT` 退出，未启动 ByteAtlas 专用流程。PowerShell 命令 `$env:XRAY_UI_FIXTURE_ONLY='1'; $env:XRAY_UI_SCREENSHOT_SET='ui-polish-fixture-2026-09-26'; pnpm --filter @project-xray/desktop test:e2e:ui`：确定性架构浏览样例通过，加载 106 个符号并采集截图。
+- `node --check` 对视觉审计与两个 Electron UI E2E 脚本通过。
+
+工作区 Electron E2E 首次曾使用旧 UI `dist`，在重建工作区包后重跑通过；后续一轮在 Monaco 选择属性尚未更新时过早读取，脚本改为等待编辑器选择后最终通过。基线/结果截图与解释页核验截图链接见 [FINAL-DESIGN-ACCEPTANCE.md](FINAL-DESIGN-ACCEPTANCE.md)。125% 页缩放的 Electron 图像受 Windows 分数缩放裁切，未作为完整截图验收；该尺寸通过了 DOM/交互审计。生产构建仍提示 UI/Monaco chunk 大于 500 KB，本批不做无关拆包。没有生成安装包、关闭应用恢复或跨平台/其他显示缩放验证。

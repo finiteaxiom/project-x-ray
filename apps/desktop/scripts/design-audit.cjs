@@ -1,6 +1,6 @@
 const { _electron: electron } = require('playwright-core');
 const electronPath = require('electron');
-const { cp, mkdir, mkdtemp, rm, writeFile, readFile } = require('node:fs/promises');
+const { cp, mkdir, mkdtemp, rm, writeFile, readFile, rename } = require('node:fs/promises');
 const { join, resolve } = require('node:path');
 const { tmpdir } = require('node:os');
 const { execFileSync } = require('node:child_process');
@@ -31,7 +31,7 @@ function inspect() {
     if (e.matches('button,input,select,textarea') && rect.top >= 0 && rect.bottom <= innerHeight && rect.left >= 0 && rect.right <= innerWidth) {
       const x = rect.x + rect.width / 2, y = rect.y + rect.height / 2;
       let clipped = false; for (let p = e.parentElement; p; p = p.parentElement) { const s = getComputedStyle(p), r = p.getBoundingClientRect(); if (s.overflowY !== 'visible' && (y < r.top || y > r.bottom)) clipped = true; }
-      if (!clipped) { const hit = document.elementFromPoint(x,y); if (hit && !e.contains(hit) && !hit.contains(e)) occluded.push({ text: e.textContent.slice(0,40), hit: hit.className }); }
+      if (!clipped) { const hit = document.elementFromPoint(x,y); if (hit && !e.contains(hit) && !hit.contains(e)) occluded.push({ text: e.textContent.slice(0,40), rect: { x:rect.x, y:rect.y, width:rect.width, height:rect.height }, hit: { tag: hit.tagName, id: hit.id, className: typeof hit.className === 'string' ? hit.className : hit.getAttribute('class'), text: hit.textContent?.trim().slice(0,40) }, ancestors: [e.parentElement,e.parentElement?.parentElement,e.parentElement?.parentElement?.parentElement].filter(Boolean).map(p => { const s=getComputedStyle(p),r=p.getBoundingClientRect(); return {tag:p.tagName,className:p.className,overflowX:s.overflowX,overflowY:s.overflowY,rect:{x:r.x,y:r.y,width:r.width,height:r.height}}; }) }); }
     }
   }
   return { width: innerWidth, height: innerHeight, dpr: devicePixelRatio, checked, lowest, contrast, overflow, occluded, boundaries, pageOverflow: document.documentElement.scrollWidth > innerWidth + 1 };
@@ -56,18 +56,48 @@ async function paletteAudit() {
   return pairs;
 }
 
+async function keyboardFocusAudit(page) {
+  await page.keyboard.press('Tab');
+  const focus = await page.evaluate(() => {
+    const element = document.activeElement;
+    if (!element || element === document.body) return { tag: element?.tagName ?? 'none', visible: false, indicator: false };
+    const style = getComputedStyle(element); const rect = element.getBoundingClientRect();
+    const outline = parseFloat(style.outlineWidth) || 0;
+    const indicator = (style.outlineStyle !== 'none' && outline >= 1) || style.boxShadow !== 'none';
+    return { tag: element.tagName, label: element.getAttribute('aria-label') || element.textContent?.trim().slice(0, 50), visible: rect.width > 0 && rect.height > 0 && rect.top >= 0 && rect.bottom <= innerHeight, indicator, outline: style.outline, boxShadow: style.boxShadow };
+  });
+  assert.ok(focus.visible, `keyboard focus should reach a visible control: ${JSON.stringify(focus)}`);
+  assert.ok(focus.indicator, `keyboard focus indicator should be visible: ${JSON.stringify(focus)}`);
+  return focus;
+}
+
+async function auditState(app, page, results, pageName, stateName, output) {
+  for (const [width,height,zoom] of [[1440,900,1],[1280,800,1],[1024,768,1],[1280,800,1.25]]) {
+    await app.evaluate(({ BrowserWindow }, bounds) => { const w=BrowserWindow.getAllWindows()[0]; w.setBounds({x:0,y:0,width:bounds.width,height:bounds.height}); w.webContents.setZoomFactor(bounds.zoom); }, { width,height,zoom });
+    await page.evaluate(() => { for (const selector of ['.workspace-navigation','.change-explorer','.ownership-navigation > .panel','.explanation-panel']) document.querySelector(selector)?.scrollTo(0,0); });
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    const state = await page.evaluate(inspect);
+    results.push({ page: `${pageName}/${stateName}`, window: [width,height], zoom, ...state });
+    const suffix = `${width}${zoom === 1.25 ? '-125' : ''}`;
+    await page.screenshot({ path: join(output, `${pageName}-${stateName}-${suffix}.png`) });
+  }
+}
+
 async function main() {
   const palettes = await paletteAudit();
   const base = await mkdtemp(join(tmpdir(), 'xray-design-audit-'));
   const fixture = join(base, 'project'), userData = join(base, 'user-data');
-  const output = resolve(__dirname, '../../../docs/screenshots/final-design');
+  const screenshotsRoot = resolve(__dirname, '../../../docs/screenshots');
+  const output = resolve(screenshotsRoot, process.env.XRAY_DESIGN_AUDIT_SET || 'ui-deepening-2026-09-25');
+  if (!output.startsWith(screenshotsRoot + require('node:path').sep)) throw new Error('design-audit output must stay under docs/screenshots');
   await cp(resolve(__dirname, '../../../test-fixtures/e2e-project'), fixture, { recursive: true }); await mkdir(userData); await mkdir(output, { recursive: true });
   await writeFile(join(fixture, 'src', 'module-context-'.repeat(9) + 'long-file.ts'), 'export const longReadableSymbolNameForLayoutValidation = 42;\n');
   const git = (...args) => execFileSync('git', args, { cwd: fixture, stdio: 'pipe' });
   git('init'); git('config','user.email','design@example.test'); git('config','user.name','Design audit'); git('add','.'); git('commit','-m','fixture');
   await writeFile(join(fixture, 'src/validation.ts'), 'export function validate(token: string): boolean {\n  return token.length > 5;\n}\n');
+  await writeFile(join(fixture, 'src/xray-ui-added.ts'), 'export function uiAuditAddedMarker() { return "right-side-only"; }\n');
   const app = await electron.launch({ executablePath: electronPath, args: [resolve(__dirname, '..')], env: { ...process.env, XRAY_E2E: '1', XRAY_E2E_USER_DATA: userData } });
-  const results = []; const errors = [];
+  const results = []; const interactions = []; const errors = [];
   try {
     const page = await app.firstWindow(); page.on('pageerror', error => errors.push(error.message));
     await page.getByRole('textbox', { name: '测试项目路径' }).fill(fixture); await page.getByRole('button', { name: '导入测试项目' }).click(); await page.getByText('不可变证据快照').waitFor({ timeout: 30000 });
@@ -80,7 +110,24 @@ async function main() {
       if (name === '调用 / 数据流') { await page.getByLabel('搜索符号').fill('login'); await page.getByRole('button', { name: '搜索', exact: true }).click(); await page.getByLabel('选择符号').locator('option').filter({ hasText: 'login' }).first().waitFor({ state: 'attached' }); await page.getByRole('button', { name: '查询关系' }).click(); await page.locator('.relation-list button').first().waitFor(); }
       if (name === '功能解释') { await page.getByLabel('需要解释的功能').fill('login'); await page.getByRole('button', { name: '开始追踪' }).click(); await page.locator('.explanation').waitFor(); }
       if (name === 'Git 变更') { await page.getByRole('button', { name: '生成比较报告' }).click(); await page.getByTestId('comparison-identities').waitFor({ timeout: 30000 }); await page.locator('.change-file').first().click(); }
-      if (name === '所有权模式') { await page.getByRole('button', { name: '生成结构化题目' }).click(); await page.locator('.ownership-quiz').waitFor(); }
+      if (name === '所有权模式') {
+        await app.evaluate(({ BrowserWindow }) => { const w=BrowserWindow.getAllWindows()[0]; w.webContents.setZoomFactor(1); w.setBounds({x:0,y:0,width:1440,height:900}); });
+        await auditState(app, page, results, 'ownership', 'scope-empty', output);
+        const beforeStaleOwnership = await page.locator('.snapshot code').textContent();
+        await writeFile(join(fixture, 'src/validation.ts'), 'export function validate(token: string): boolean { return token.length > 2; }\n// ownership stale-state audit\n');
+        await page.getByTestId('stale-banner').waitFor({ timeout: 30000 });
+        await page.getByTestId('training-stale').waitFor({ timeout: 30000 });
+        assert.ok(await page.getByRole('button', { name: '生成结构化题目' }).isDisabled(), 'stale evidence must block new ownership questions');
+        await auditState(app, page, results, 'ownership', 'stale-readonly', output);
+        await page.getByRole('button', { name: '更新索引' }).click();
+        await page.waitForFunction((oldSnapshot) => document.querySelector('.snapshot code')?.textContent !== oldSnapshot, beforeStaleOwnership, { timeout: 30000 });
+        await page.getByRole('navigation', { name: '主导航' }).getByRole('button', { name, exact: true }).click();
+        await page.getByRole('button', { name: '生成结构化题目' }).click();
+        await page.locator('.ownership-quiz').waitFor();
+      }
+      const focus = await keyboardFocusAudit(page); interactions.push({ page: name, state: 'keyboard-focus', focus });
+      await app.evaluate(({ BrowserWindow }) => { const w=BrowserWindow.getAllWindows()[0]; w.webContents.setZoomFactor(1); w.setBounds({x:0,y:0,width:1440,height:900}); });
+      await page.screenshot({ path: join(output, `${pages.indexOf(name)+1}-focus-1440.png`) });
       for (const [width,height,zoom] of [[1920,1080,1],[1440,900,1],[1280,800,1],[1024,768,1],[1280,800,1.25]]) {
         await app.evaluate(({ BrowserWindow }, bounds) => { const w = BrowserWindow.getAllWindows()[0]; w.setBounds({ x: 0, y: 0, width: bounds.width, height: bounds.height }); w.webContents.setZoomFactor(bounds.zoom); }, { width,height,zoom });
         await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
@@ -91,6 +138,47 @@ async function main() {
         await page.locator('.coverage-details summary').click();
         results.push({ page:name+'/coverage', zoom:1.25, ...await page.evaluate(inspect) });
         await page.locator('.coverage-details summary').click();
+      }
+      if (name === '功能解释') {
+        await app.evaluate(({ BrowserWindow }) => { const w=BrowserWindow.getAllWindows()[0]; w.webContents.setZoomFactor(1); w.setBounds({x:0,y:0,width:1440,height:900}); });
+        await page.getByLabel('需要解释的功能').fill('qzqvxjkmpltfbwnr9012837465'); await page.getByRole('button', { name: '开始追踪' }).click();
+        await page.getByTestId('explanation-state').getByText('无结果').waitFor({ timeout: 30000 });
+        await page.getByText('没有找到可解释的源码步骤。').waitFor({ timeout: 30000 });
+        await auditState(app, page, results, 'explanation', 'no-results', output); interactions.push({ page: name, state: 'no-results' });
+        const snapshotBeforeFailure = await page.locator('.snapshot code').textContent();
+        await writeFile(join(fixture, 'src/validation.ts'), 'export function validate(token: string): boolean { return token.length > 4; }\n// explanation stale-state audit\n');
+        await page.getByLabel('需要解释的功能').fill('login'); await page.getByRole('button', { name: '开始追踪' }).click();
+        await page.locator('.explanation-error').waitFor({ timeout: 30000 });
+        await auditState(app, page, results, 'explanation', 'stale-error', output); interactions.push({ page: name, state: 'stale-error' });
+        await page.getByRole('button', { name: '更新索引' }).click();
+        await page.waitForFunction((oldSnapshot) => document.querySelector('.snapshot code')?.textContent !== oldSnapshot, snapshotBeforeFailure, { timeout: 30000 });
+        await page.getByRole('navigation', { name: '主导航' }).getByRole('button', { name: '功能解释', exact: true }).click();
+        await page.getByLabel('需要解释的功能').fill('login'); await page.getByRole('button', { name: '开始追踪' }).click(); await page.locator('.explanation').waitFor({ timeout: 30000 });
+      }
+      if (name === 'Git 变更') {
+        await app.evaluate(({ BrowserWindow }) => { const w=BrowserWindow.getAllWindows()[0]; w.webContents.setZoomFactor(1); w.setBounds({x:0,y:0,width:1440,height:900}); });
+        await page.getByLabel('搜索变化文件').fill('xray-no-such-file-2026-09-25'); await page.locator('.comparison-empty').waitFor();
+        await auditState(app, page, results, 'comparison', 'filter-empty', output); interactions.push({ page: name, state: 'filter-empty' });
+        await page.getByRole('button', { name: '清除筛选' }).click(); await page.getByLabel('搜索变化文件').fill('xray-ui-added.ts');
+        const fixtureFile = page.locator('.change-file').filter({ hasText: 'xray-ui-added.ts' }); await fixtureFile.first().waitFor(); await fixtureFile.first().click();
+        const leftSourceTab = page.getByRole('tab', { name: /左侧/ }); if (await leftSourceTab.count()) await leftSourceTab.click();
+        await page.locator('.source-read-state.missing').waitFor({ timeout: 30000 });
+        await auditState(app, page, results, 'comparison', 'missing-left-source', output); interactions.push({ page: name, state: 'missing-left-source' });
+        const reportIdBeforeStale = await page.getByTestId('comparison-identities').getAttribute('data-report-id');
+        await writeFile(join(fixture, 'src/validation.ts'), 'export function validate(token: string): boolean { return token.length > 9; }\n// comparison stale-state audit\n');
+        await page.getByTestId('change-report-stale').waitFor({ timeout: 15000 });
+        await auditState(app, page, results, 'comparison', 'stale-report', output); interactions.push({ page: name, state: 'stale-report' });
+        const hiddenGit = join(fixture, '.git-audit-hidden');
+        await rename(join(fixture, '.git'), hiddenGit);
+        try {
+          await page.locator('.comparison-controls .button.primary').click();
+          await page.locator('.comparison-failure').waitFor({ timeout: 30000 });
+          await auditState(app, page, results, 'comparison', 'retryable-error', output); interactions.push({ page: name, state: 'retryable-error' });
+        } finally { await rename(hiddenGit, join(fixture, '.git')); }
+        const currentReportId = await page.getByTestId('comparison-identities').getAttribute('data-report-id');
+        await page.locator('.comparison-failure button').click();
+        await page.waitForFunction((oldReport) => document.querySelector('[data-testid="comparison-identities"]')?.getAttribute('data-report-id') !== oldReport, currentReportId, { timeout: 30000 });
+        interactions.push({ page: name, state: 'failure-retried' });
       }
       if (name === '调用 / 数据流') {
         await page.getByLabel('关系视图').selectOption('data');
@@ -126,7 +214,7 @@ async function main() {
       if (name === '调用 / 数据流' || name === '功能解释' || name === '所有权模式') {
         await app.evaluate(({ BrowserWindow }) => { const w = BrowserWindow.getAllWindows()[0]; w.webContents.setZoomFactor(1); w.setBounds({ x:0,y:0,width:1440,height:900 }); });
         if (name === '调用 / 数据流') await page.locator('.relation-list button').first().click();
-        if (name === '功能解释') await page.locator('.steps button:not(:disabled)').first().click();
+        if (name === '功能解释') await page.locator('.explanation-evidence button:not(:disabled)').first().click();
         if (name === '所有权模式') await page.locator('.ownership-files > button').first().click();
         await page.getByTestId('source-viewer').waitFor(); await page.locator('.monaco-editor').waitFor();
         for (const width of [1440, 1024]) {
@@ -137,9 +225,9 @@ async function main() {
         }
       }
     }
-    await writeFile(join(output, 'audit.json'), JSON.stringify({ errors, palettes, results }, null, 2));
+    await writeFile(join(output, 'audit.json'), JSON.stringify({ errors, palettes, interactions, results }, null, 2));
     const failed = results.filter(r => r.contrast.length || r.overflow.length || r.occluded.length || r.boundaries.length || r.pageOverflow);
-    console.log(JSON.stringify({ cases: results.length, failed: failed.map(r => ({ page:r.page, width:r.width, zoom:r.zoom, contrast:r.contrast, overflow:r.overflow, occluded:r.occluded, boundaries:r.boundaries })), errors, output }));
+    console.log(JSON.stringify({ cases: results.length, failed: failed.map(r => ({ page:r.page, width:r.width, zoom:r.zoom, contrast:r.contrast, overflow:r.overflow, occluded:r.occluded, boundaries:r.boundaries })), interactions, errors, output }));
     assert.equal(failed.length, 0, 'visual audit failures'); assert.equal(errors.length, 0, 'renderer errors');
   } finally { await app.close(); if (!resolve(base).startsWith(resolve(tmpdir()) + require('node:path').sep)) throw new Error('unsafe temp path'); await rm(base, { recursive:true, force:true }); }
 }

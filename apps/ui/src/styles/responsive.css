@@ -1,0 +1,317 @@
+/* Responsive rules are centralized here. Window queries govern shell/page layout; container queries govern local panes. */
+
+/* Window breakpoint: (max-width: 1250px). */
+@media (max-width: 1250px) {
+  .app-shell {
+    grid-template-columns: 220px 1fr;
+  }
+  .sidebar {
+    padding-inline: 14px;
+  }
+  .split-view {
+    grid-template-columns: minmax(0,1fr) 390px;
+  }
+  .stats {
+    grid-template-columns: repeat(2,1fr);
+  }
+}
+
+/* Window breakpoint: (max-width:1100px). */
+@media (max-width:1100px) {
+  .change-layout,.comparison-sources,.comparison-identities {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Window breakpoint: (max-width: 1180px). */
+@media (max-width: 1180px) {
+  .sidebar {
+    padding-inline: 12px;
+  }
+}
+
+/* Window breakpoint: (max-width: 900px). */
+@media (max-width: 900px) {
+  .brand > div:last-child,.project-chip > div,.sidebar nav button:not(.active) {
+    font-size: 0;
+  }
+  .sidebar nav button span {
+    width: 30px;
+    font-size: 12px;
+  }
+  .sidebar-foot {
+    display: none;
+  }
+  .module-browser,.symbol-browser {
+    grid-template-columns: 1fr;
+  }
+  .dependency-view,.local-graph {
+    min-height: 440px;
+  }
+}
+
+/* Window breakpoint: (max-width: 1180px). */
+@media (max-width: 1180px) {
+}
+
+/* Window breakpoint: (max-width: 1500px). */
+@media (max-width: 1500px) {
+  .evidence-workspace.with-source .module-browser {
+    grid-template-columns: 1fr;
+  }
+  .evidence-workspace.with-source .dependency-view {
+    min-height: 430px;
+  }
+}
+
+/* Window breakpoint: (max-width: 1180px). */
+@media (max-width: 1180px) {
+  .overview-graph {
+    grid-template-columns: 1fr;
+    grid-template-rows: 510px auto;
+    height: auto;
+  }
+  .overview-inspector {
+    max-height: 220px;
+  }
+  .overview-toolbar {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Window breakpoint: (max-width:1180px). */
+@media (max-width:1180px) {
+  .hero,.import-card {
+    padding: 28px;
+  }
+}
+
+/* Window breakpoint: (max-width:900px). */
+@media (max-width:900px) {
+  .nav-caption {
+    display: none;
+  }
+  .sidebar nav button {
+    justify-content: center;
+  }
+  .brand {
+    padding-inline: 6px;
+  }
+}
+
+/* Reduced motion: retain !important to override transitions and animations from app and embedded editor controls. */
+@media (prefers-reduced-motion:reduce) {
+  *,*::before,*::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* Window breakpoint: (max-width:1180px). */
+@media (max-width:1180px) {
+  .architecture-workbench .overview-graph {
+    grid-template-columns: minmax(0,1fr);
+    grid-template-rows: minmax(380px,1fr) auto;
+  }
+  .architecture-workbench .overview-inspector {
+    max-height: 200px;
+  }
+  .architecture-stage.inspecting {
+    grid-template-columns: minmax(0,1fr) 280px;
+  }
+  .relation-inspector {
+    padding: 16px;
+  }
+}
+
+/* Window breakpoint: (max-width:800px). */
+@media (max-width:800px) {
+  .architecture-stage.inspecting {
+    grid-template-columns: minmax(0,1fr);
+    grid-template-rows: minmax(220px,1fr) minmax(200px,1fr);
+  }
+  .relation-inspector {
+    border-left: 0;
+    border-top: 1px solid var(--border-inspector-divider);
+  }
+  .architecture-heading {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+}
+
+/* Window breakpoint: (max-width:1100px). */
+@media (max-width:1100px) {
+  .architecture-stage.inspecting .module-browser {
+    grid-template-columns: minmax(0,1fr);
+  }
+}
+
+/* Container query: nearest inline-size container. */
+@container (max-width: 740px) {
+  .overview-toolbar {
+    grid-template-columns: minmax(0,1fr);
+  }
+  .architecture-heading {
+    flex-wrap: wrap;
+  }
+  .architecture-workbench .overview-graph {
+    grid-template-columns: minmax(0,1fr);
+    grid-template-rows: minmax(380px,1fr) auto;
+  }
+  .overview-inspector {
+    max-height: 220px;
+  }
+}
+
+/* Window breakpoint: (max-width:1180px). */
+@media (max-width:1180px) {
+  .app-shell {
+    grid-template-columns: 192px minmax(0,1fr);
+  }
+  .brand span {
+    display: none;
+  }
+  .brand strong {
+    font-size: 11px;
+    white-space: normal;
+  }
+  .project-chip b,.project-chip small {
+    max-width: 118px;
+  }
+  .ownership-navigation {
+    grid-template-columns: minmax(0,1fr);
+    grid-template-rows: minmax(0,1fr) minmax(100px,180px);
+  }
+  .ownership-files {
+    max-height: none;
+  }
+  .journey-grid {
+    grid-template-columns: minmax(0,1fr);
+  }
+  .journey-card {
+    padding: 18px;
+  }
+  .journey-card h3 {
+    margin-top: 8px;
+  }
+  .change-layout,.comparison-sources,.comparison-identities {
+    grid-template-columns: minmax(0,1fr);
+  }
+}
+
+/* Window breakpoint: (max-width:900px). */
+@media (max-width:900px) {
+  .app-shell {
+    grid-template-columns: 64px minmax(0,1fr);
+  }
+  .sidebar {
+    padding: 18px 6px;
+  }
+  .brand > div:last-child,.project-chip,.nav-caption,.sidebar-foot {
+    display: none;
+  }
+  .brand {
+    padding: 0 6px 22px;
+  }
+  .sidebar nav button {
+    font-size: 0;
+    padding: 12px;
+  }
+  .page-body {
+    padding: 12px;
+  }
+  .topbar {
+    padding-inline: 16px;
+  }
+  .panel {
+    padding: 16px;
+  }
+  .architecture-panel {
+    padding: 0;
+  }
+  .welcome-grid {
+    grid-template-columns: minmax(0,1fr);
+  }
+  .hero,.import-card {
+    padding: 26px;
+  }
+  .source-toolbar {
+    padding: 8px;
+  }
+  .legend {
+    white-space: normal;
+  }
+  .error-banner,.stale-banner,.task-status {
+    margin-inline: 12px;
+  }
+}
+
+/* Window breakpoint: (max-width: 620px). */
+@media (max-width: 620px) {
+  .step-evidence-picker li {
+    grid-template-columns: minmax(0,1fr);
+  }
+  .step-evidence-picker li > button {
+    justify-self: start;
+  }
+}
+
+/* Window breakpoint: (max-width:1180px). */
+@media (max-width:1180px) {
+  .comparison-controls {
+    grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+  }
+  .comparison-controls .button {
+    width: 100%;
+  }
+  .comparison-sources {
+    min-height: 720px;
+  }
+}
+
+/* Window breakpoint: (max-width:740px). */
+@media (max-width:740px) {
+  .citation-row {
+    grid-template-columns: minmax(0,1fr);
+  }
+  .citation-row > div {
+    justify-content: flex-start;
+  }
+  .explanation-summary,.explanation-section,.explanation-unknowns {
+    padding: 11px;
+  }
+  .comparison-controls {
+    grid-template-columns: minmax(0,1fr);
+  }
+  .comparison-source-side > .source-panel {
+    min-height: 320px;
+  }
+}
+
+/* Window breakpoint: (max-width:900px). */
+@media (max-width:900px) {
+  .comparison-task-tray {
+    margin-inline: 12px;
+    max-height: 112px;
+  }
+  .comparison-task-row {
+    flex-wrap: wrap;
+  }
+  .comparison-task-row > div {
+    flex-basis: 100%;
+  }
+}
+
+/* Container query: nearest inline-size container. */
+@container (max-width: 650px) {
+  .node-browser-search {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
+  .node-browser-search > label:first-child {
+    grid-column: 1/-1;
+  }
+  .node-browser-search > button {
+    grid-column: 1/-1;
+  }
+}

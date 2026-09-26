@@ -6,7 +6,7 @@ import {
   CHANGESET_VERSION, GRAPH_QUERY_VERSION, type ChangeFile, type ChangeReport, type ComparisonRequest, type ComparisonSide, type DirectChange, type Evidence, type EvidenceLocation, type FeatureExplanation, type FlowResult, type GraphEdge, type GraphNode, type GraphQueryRequest, type GraphQueryResponse, type ImpactPath,
   OWNERSHIP_SCORING_VERSION, type IndexProgress, type OwnershipAttempt, type OwnershipGrade, type OwnershipProgress, type OwnershipQuestion, type OwnershipQuestionRequest, type OwnershipSubmission, type ProjectSnapshot,
   type ProjectOverview, type ModuleExpansionRequest, type ModuleExpansionResponse, type ModuleListRequest, type ModuleListResponse, type ModuleOverviewRequest, type ModuleOverviewResponse, type ModuleRelationEdgesRequest, type ModuleRelationEdgesResponse, type SearchRequest, type SearchResponse, type EvidenceRangeResponse,
-  type SnapshotRef, type SnapshotState, type SourceCitation, type SourceFileResult,
+  type SnapshotRef, type SnapshotState, type SourceCitation, type SourceFileResult, type IdentifiedEvidence,
 } from "@project-xray/contracts";
 import {
   assertContainedPath, contentFingerprint, discoverProject, isAnalysisConfig, languageFromPath, moduleNameForPath, normalizeProjectPath,
@@ -195,7 +195,7 @@ export class XRayApplication {
   getModuleRelationEdges(input: ModuleRelationEdgesRequest): ModuleRelationEdgesResponse { return this.requireStore(input).listModuleRelationEdges(input); }
   search(input: SearchRequest): SearchResponse { return this.requireStore(input).search(input); }
   queryGraph(input: GraphQueryRequest): GraphQueryResponse { return this.requireStore(input).queryGraph(input); }
-  getEvidence(input: SnapshotRef & { evidenceId: string }): Evidence { const item = this.requireStore(input).getEvidence(input.snapshotId, input.evidenceId); if (!item) throw new Error("证据不存在于指定快照"); return item; }
+  getEvidence(input: SnapshotRef & { evidenceId: string }): IdentifiedEvidence { const { snapshot, store } = this.requireSnapshot(input); const item = store.getEvidence(input.snapshotId, input.evidenceId); if (!item) throw new Error("证据不存在于指定快照"); return { ...item, repositoryId: snapshot.repositoryId }; }
   findEvidence(input: SnapshotRef & { span: Evidence["span"]; limit: number; cursor?: string | undefined }): EvidenceRangeResponse { return this.requireStore(input).findEvidence(input.repositoryId, input.snapshotId, input.span, input.limit, input.cursor); }
 
   getFlow(ref: SnapshotRef, nodeId: string, depth = 3): FlowResult { return queryFlow(this.requireSnapshot(ref).snapshot, nodeId, depth); }
