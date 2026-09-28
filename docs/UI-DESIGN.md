@@ -23,7 +23,7 @@
 - 真实工作区 E2E 通过：只读索引 ByteAtlas、聚合关系、文件导航、准确源码范围、拖动分栏、关闭/恢复源码、最大化及 106 个符号分页。
 - 1920×1080、1280×800 窗口与 1.5 DPR 下无页面横向溢出；图节点在画布边界内。截图人工检查了关系总览、模块、导入和源码分栏。
 
-截图位于 `docs/screenshots/graphite-workbench/`。原截图保留；工作区测试支持 `XRAY_UI_SCREENSHOT_SET` 指定截图子目录。
+截图位于 `screenshots/graphite-workbench/`。原截图保留；工作区测试支持 `XRAY_UI_SCREENSHOT_SET` 指定截图子目录。
 
 ## 限制
 
@@ -52,7 +52,7 @@ Git 在工作开始前即将整个项目列为未跟踪，本轮未暂存或提�
 - 真实 Electron 核心 E2E 通过：导入、证据、Git 比较、过期检测和重新索引。
 - 最终工作区 E2E 通过：ByteAtlas 只读索引、模块关系检查、带证据 ID 的源码导航、分栏拖动、关闭/恢复、最大化、精确范围以及 106 个符号分页。
 - 返回总览的缩放和平移与离开前精确一致；1920×1080 与 1280×800 窗口均无页面横向溢出，DPR 为 1.5。
-- 截图目录：`docs/screenshots/exploration-v2/`，保留上一版供比较。同一项目与窗口的总览可直接对比；模块验收改为具有跨模块关系的 `src/main`。
+- 截图目录：`screenshots/exploration-v2/`，保留上一版供比较。同一项目与窗口的总览可直接对比；模块验收改为具有跨模块关系的 `src/main`。
 
 ### 本轮范围
 
@@ -78,7 +78,7 @@ Git 在工作开始前即将整个项目列为未跟踪，本轮未暂存或提�
 - **Git 比较**：点击生成即阻止重复请求，并校验父提交序号。报告保留生成时的比较模式和快照；当前选择器变动会说明实际报告基准，重算失败不会覆盖旧报告。左右源码与文件选择、报告、仓库和快照绑定，切换时同步清空旧内容；影响证据导航把证据 ID 一并用于不可变源码读取。无变化、筛选无匹配、缺侧源码、读取错误、过期、取消、重试与部分分析均有明确状态。详情的 hunk、直接变化和可能影响路径在窄视口内分别滚动，避免列表控件相互覆盖。
 - **六页收口**：补充真实页面的键盘焦点审计；保留置信度、过期、基准和静态关系限制在首屏可见或靠近当前对象的位置。长路径继续换行，重要列表保留滚动与键盘导航。
 
-真实 Electron 验收截图与 `audit.json` 保存在 `docs/screenshots/ui-deepening-2026-09-25/`；ByteAtlas 工作区截图位于子目录 `ui-workspace/`。视觉样例由临时可控仓库创建，界面数据来自实际应用与本地 Git/源码读取，不以模拟页面代替交付。125% 页面缩放通过 DOM 尺寸、边界与交互审计；此 Windows 环境的分数缩放 Electron 截图有裁切现象，不能将其当作无裁切截图验收。当前实际验证和具体限制见 [FINAL-DESIGN-ACCEPTANCE.md](FINAL-DESIGN-ACCEPTANCE.md)。
+真实 Electron 验收截图与 `audit.json` 保存在 `screenshots/ui-deepening-2026-09-25/`；ByteAtlas 工作区截图位于子目录 `ui-workspace/`。视觉样例由临时可控仓库创建，界面数据来自实际应用与本地 Git/源码读取，不以模拟页面代替交付。125% 页面缩放通过 DOM 尺寸、边界与交互审计；此 Windows 环境的分数缩放 Electron 截图有裁切现象，不能将其当作无裁切截图验收。当前实际验证和具体限制见 [FINAL-DESIGN-ACCEPTANCE.md](FINAL-DESIGN-ACCEPTANCE.md)。
 
 ## 界面交互打磨与首屏信息优化（2026-09-26）
 
@@ -111,16 +111,22 @@ Git 在工作开始前即将整个项目列为未跟踪，本轮未暂存或提�
 
 ### 规则归属与级联
 
-| 区域 | 规则所有者 | 例外与说明 |
+| 文件 | 应负责 | 不应负责 |
 | --- | --- | --- |
-| 按钮、输入框、选择框、键盘焦点和禁用态 | `controls.css` | 页面可设置局部尺寸/网格，不复制控件基础外观。 |
-| 错误、过期、任务、置信状态 | `components.css` 的共享提示；`pages.css` 的证据类型和局部反馈 | 状态保留文字与形状，不依赖颜色单独表达。 |
-| 应用外壳、导航、页面滚动框、源码分栏 | `layout.css` | 用户持久化的分栏偏好仍由现有组件状态维护；窄容器适配不写回偏好。 |
-| 架构、训练、Git、解释页面内容 | `pages.css` 对应分段 | 页面选择器不承担通用控件基线。 |
-| 窗口和局部宽度适配 | `responsive.css` | 窗口 `@media` 管应用外壳/页面布局；`@container` 管 `.architecture-stage`（≤740px）与 `.graph-node-browser` 内的局部排列（≤650px）。 |
-| Monaco、Cytoscape 的内部配色 | `SourceViewer.tsx`、`GraphCanvas.tsx` 的运行时主题 | 两者使用各自 API 支持的普通颜色值，不把 CSS `var()` 字符串传入第三方主题配置。 |
+| `tokens.css` | 具有明确复用语义的颜色、间距、边框、焦点等变量。 | 组件选择器、一次性布局实现或机械 token 化的所有数字。 |
+| `base.css` | 文档默认样式、重置、基础字体和元素默认行为。 | 按钮变体、共享面板外观或页面布局。 |
+| `controls.css` | 按钮、输入框、选择框及其变体、交互、焦点和禁用外观。 | 页面结构、图工具栏的排列与尺寸。 |
+| `layout.css` | 应用外壳、侧栏导航、主区域及共享工作区的空间结构。 | 通用禁用配色、控件状态或页面专属内容样式。 |
+| `components.css` | 共享面板、源码面板、工具栏、共享状态提示和图表表面的外观与内部布局。 | 重复定义通用禁用态或页面专属规则。 |
+| `pages.css` | 架构、调用流、解释、训练、Git 等页面专属内容与变体。 | 裸 `nav`、共享 `.panel` / `.source-panel` 基础外观和通用控件。 |
+| `responsive.css` | 窗口媒体查询、局部容器查询及 reduced-motion 覆盖。 | 无条件的基础控件定义。 |
+| `SourceViewer.tsx`、`GraphCanvas.tsx` | Monaco 与 Cytoscape 各自运行时主题的配色。 | 接收 CSS `var()` 字符串作为第三方主题颜色。 |
 
 页面正常状态由其基础区段定义，变体与状态紧邻基础规则；响应式规则集中于 `responsive.css`。媒体/容器条件不成立时相应覆盖不参与级联；排除两处明确的 reduced-motion `!important` 规则后，适用声明按选择器 specificity 决定优先级，同优先级再由唯一入口中的后续导入顺序决定。拆分后按真实导入顺序审计同选择器、同媒体/容器条件和同属性的级联；被后值取代的声明删除，窗口条件之间仍有意义的覆盖保留。当前全局样式不使用 `@layer`。
+
+`button:disabled` 保持原生禁用语义，禁用颜色在 `controls.css` 按普通按钮、图/工具栏按钮和导航项分别定义；各变体使用 `opacity: 1`，不再整体淡化文字与图标，也不响应 hover。项目将禁用文字在实际合成背景上的对比度不低于 4.5:1 作为可读性目标；这是本项目的验收目标，不是对所有禁用控件的通用 WCAG 强制要求。原因不明显且用户可采取后续操作的控件，在旁边显示简短说明；不让原因只存在于 disabled 控件的 hover 或焦点上。
+
+`responsive.css` 按窗口宽度从宽到窄排列，窗口查询负责应用外壳和页面整体布局；容器查询按局部实际可用宽度适配架构工作区和节点列表。1180px、900px 是外壳切换阈值；1500、1250、1100、800、740、620px 各负责对应页面收缩行为。740px 与 650px 的容器阈值不会与同数值窗口阈值混用。用户保存的源码分栏偏好仍由组件状态维护，临时容器适配不会写回该偏好。
 
 颜色只在用途语义相同时复用 token；例如 `--text-primary`、`--text-secondary`、`--control-border`、`--surface-selected-active`、`--surface-architecture-card`、`--surface-selectable-row`、`--border-panel`、`--border-list-subtle`、`--warning-border-muted`、`--warning-surface-muted`、`--evidence-range-highlight` 和 `--error-surface`。单次关系图状态、证据范围半透明填充及局部渐变停止色保留在页面规则中，因为它们只有局部用途或透明度语义不同；源码编辑器和 Cytoscape 配色独立于 CSS token。禁止为了统一字面值把置信、错误、证据高亮或图表配色混成同一语义变量。
 
@@ -133,4 +139,22 @@ Git 在工作开始前即将整个项目列为未跟踪，本轮未暂存或提�
 - 19 个窗口媒体块、2 个容器查询及响应式边界全部归入 `responsive.css`；5 处 `!important` 中 3 处不再需要，2 处 reduced-motion 保留。当前精确相同选择器/条件/属性的重复声明为 0。
 - Git 1024 截图初次对照发现 8 CSS px 的水平内边距差异。原因是旧 `styles.css` 中 max-width 1180 的 16px 页面内边距，原本被后加载的基础 `.page-body` 规则遮住；移到末尾后会意外生效。重构删除了这条无效旧规则，保留 `layout.css` 的 20px 24px 基础内边距和 max-width 900 下的 12px 紧凑内边距。复采后 Git 报告区与文件列表边缘对齐基线；前后像素差约 1.14%，主要来自临时快照与报告 ID。
 - 真实 Electron 基线和最终截图使用相同本地临时样例，DPR 1.5；视口包括 1440×900、1024×800 和 1920×1080。基线与最终 PNG 保存在本地忽略目录 `docs/screenshots/css-maintenance-baseline/`、`docs/screenshots/css-maintenance-final/`。基线/最终图片已实际并列查看；除报告 ID 和 Cytoscape 节点坐标的运行时布局差异外，控件颜色、源码面板、文本层级和页面几何保持一致。截图差分：应用外壳约 0.06%、架构约 0.23%、训练约 0.39%、Git 约 1.14%、解释约 0.17% 像素超过 RGB 差 3 的阈值。
-- 本轮实际执行 `pnpm --filter @project-xray/ui test`、`pnpm typecheck`、`pnpm build`、`pnpm --filter @project-xray/desktop test:design` 和 `pnpm --filter @project-xray/desktop test:e2e:workspace final`。设计审计 73 个场景失败数为 0；125% 页面缩放执行 DOM/交互审计，但 Windows Electron 截图仍裁切，因此不声明 125% 截图目视通过。完整日志、限制及测试细项见 `docs/DEVELOPMENT.md` 的 CSS 维护记录；历史视觉指标仍按原日期标记。
+- 本轮实际执行 `pnpm --filter @project-xray/ui test`、`pnpm typecheck`、`pnpm build`、`pnpm --filter @project-xray/desktop test:design` 和 `pnpm --filter @project-xray/desktop test:e2e:workspace final`。设计审计 73 个场景失败数为 0；125% 页面缩放执行 DOM/交互审计，但 Windows Electron 截图仍裁切，因此不声明 125% 截图目视通过。完整日志、限制及测试细项见 `DEVELOPMENT.md` 的 CSS 维护记录；历史视觉指标仍按原日期标记。
+
+### CSS 清理收尾（2026-09-27）
+
+修复 `.graph-toolbar button:disabled` 被组件规则以 `.35` 整体透明度压暗的问题；禁用按钮现保持不透明并使用 `--text-disabled` 与禁用表面变量，组件样式只负责工具栏尺寸和排列。原因提示在“聚焦选中”旁可见；保持原生 `disabled`，禁用时不应用 hover 高亮。禁用颜色与布局分别由 `controls.css`、`components.css` 单一负责。
+
+按“基础 → 变体 → 交互状态 → 禁用状态”重排控件规则。次级按钮及输入/选择控件只保留最终语义变量来源；删除 `layout.css` 的通用禁用样式、`pages.css` 的全局裸 `nav` 与共享面板样式，以及被覆盖的重复响应式块。`.sidebar nav` 收入外壳布局，`.panel` 和 `.source-panel` 的共享基础外观归入 `components.css`。保留 `responsive.css` reduced-motion 的两处 `!important`，用于关闭应用与嵌入控件动效。
+
+实际基线和结果截图使用相同的本地确定性样例内容，主要 CSS 视口为 1024×800、1440×900、1920×1080，缩放 100%；基线与结果的采集模式及 DPR 区别如下。完整窗口和容器宽度、计算样式及祖先合成背景记录在 `docs/screenshots/css-cleanup-followup-baseline/` 与 `docs/screenshots/css-cleanup-followup-final/`。最初发现无关的焦点环偏移/颜色变化后，已恢复到本轮基线的 2px 青绿色焦点环。最终禁用态文字保持 opacity 1，hover 不改变颜色/背景/边框/阴影；窗口断点在各已用阈值前后、本身及 740/650 容器条件均采集计算样式。
+
+视口采集方式在本轮有明确区别：基线九个场景均由 Electron 原生窗口采集、DPR 1.5；结果中的欢迎页和外壳控件为原生窗口、DPR 1.5，Git 1024、解释/训练/架构工作区及 1920 架构场景在自动化中使用 Playwright 渲染视口模拟，DPR 约 1.0，但 `innerWidth/innerHeight` 与 CSS 目标一致。结果样式 JSON 保留采集模式、窗口和容器尺寸；这些模拟视口截图用于检查布局，不能用于同 DPR 的逐像素结论。实际 Electron 页面尺寸、断点与交互另由 73 场景设计审计及跨页 E2E 覆盖。计算样式逐属性对照位于 `docs/screenshots/css-cleanup-followup-final/ui-polish-computed-style-diff.json`。
+
+逐项差异中，图工具栏禁用按钮的 opacity 从 0.35 改为 1（实际合成对比度从 1.87:1 提升至 5.93:1），禁用光标改为 `not-allowed`；禁用侧栏项的背景和边框变为透明，这是保留导航“非当前项”外观的有意变体。可同为原生窗口/DPR1.5 配对的外壳样式未见意外计算值差异；模拟视口场景的属性变化保留在差异 JSON，不能归因于样式或作为同 DPR 像素对比。焦点环保持本轮基线的青绿色 2px/2px 偏移。基线、结果图片和测试限制见 [DEVELOPMENT.md](DEVELOPMENT.md) 的同名记录。
+
+截图并列查看、禁用态有效对比度、全部命令、E2E 首次源码选择等待竞态及其修正记录见 `DEVELOPMENT.md` 的“CSS 清理收尾”小节。本小节只记录本轮结果，不覆盖 2026-09-26 的历史样式重构指标。
+
+### 功能解释证据按钮禁用态（2026-09-27）
+
+`.steps button` 页面规则只负责解释步骤按钮的布局与可用态 hover；不得在此声明基础光标或 disabled 外观。可用 hover 选择器排除 `:disabled` 和 `[aria-disabled="true"]`，原生禁用光标、语义颜色及 opacity 由 `controls.css` 唯一负责。读取证据期间从悬停转为 disabled 后，边框、文字、背景、阴影和位移不能保留可用态反馈。该规则在确定性解释样例、Electron 1440×900 CSS px / DPR 1.5 / 缩放 100% 下实测，逐状态截图与计算样式见 `DEVELOPMENT.md` 的“功能解释证据读取禁用反馈”记录。项目禁用文字合成对比度目标仍为至少 4.5:1；该项目目标不代表对所有禁用控件适用的通用 WCAG 强制阈值。

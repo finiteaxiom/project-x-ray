@@ -21,9 +21,13 @@
   --surface-inset: #14151b;
   --surface-raised-muted: #1b1c24;
   --text-emphasis: #e7e8f0;
-  --focus-ring: #ded7ff;
+  --focus-ring: #8af0e4;
   --text-disabled: #969caf;
   --surface-disabled: #1d202b;
+  --control-focus-halo: #54d6c712;
+  --button-primary-border: #aa9eff;
+  --button-primary-hover: #7060d1;
+  --toolbar-hover-text: #e5f5f2;
   --warning-strong: #f1a35b;
   --danger-strong: #d76d78;
   --success-strong: #6ecab0;

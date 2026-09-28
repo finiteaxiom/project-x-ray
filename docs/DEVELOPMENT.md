@@ -268,3 +268,55 @@ FlowExplorer 拆为独立组件，修复新搜索残留旧选项与修改条件�
 - `node --check` 对视觉审计与两个 Electron UI E2E 脚本通过。
 
 工作区 Electron E2E 首次曾使用旧 UI `dist`，在重建工作区包后重跑通过；后续一轮在 Monaco 选择属性尚未更新时过早读取，脚本改为等待编辑器选择后最终通过。基线/结果截图与解释页核验截图链接见 [FINAL-DESIGN-ACCEPTANCE.md](FINAL-DESIGN-ACCEPTANCE.md)。125% 页缩放的 Electron 图像受 Windows 分数缩放裁切，未作为完整截图验收；该尺寸通过了 DOM/交互审计。生产构建仍提示 UI/Monaco chunk 大于 500 KB，本批不做无关拆包。没有生成安装包、关闭应用恢复或跨平台/其他显示缩放验证。
+
+## CSS 清理收尾（2026-09-27）
+
+本轮从干净状态 `5bb791a` 开始；改动只涉及 CSS 归属、图工具栏禁用说明、其回归测试/Electron 验收脚本及本开发记录。没有改变会话、任务、分析或证据行为。
+
+### 样式规则与差异
+
+- 唯一入口是 `apps/ui/src/styles.css`：tokens → base → controls → layout → components → pages → responsive。通用表单和控件交互/禁用态归 `controls.css`；窗口外壳与导航结构归 `layout.css`；共享面板、源码面板及工具栏尺寸归 `components.css`；页面专属内容留在 `pages.css`；条件覆盖集中于 `responsive.css`。
+- 禁用控件颜色集中定义在 `controls.css`，普通控件、图/工具栏和导航保留不同变体。删掉工具栏的 `.35` opacity、layout 中的通用禁用声明和组件样式里的竞争规则。次级按钮与表单只保留最终语义变量；`.sidebar nav` 取代裸 `nav`；共享 `.panel`/`.source-panel` 外观移出页面样式。没有把第三方 Cytoscape / Monaco 主题改成 CSS 变量接口。
+- `--focus-ring` 设为原界面已生效的青绿色值，避免迁移后误用未生效的旧 token；输入焦点光晕、主按钮边框/hover 和工具栏 hover 色使用语义变量。局部证据范围半透明色、单次关系图状态与渐变停止色继续保留在页面规则，因为透明度和用途不同。全局仅保留 reduced-motion 的两项 `!important`（禁用 transition/animation）；无空媒体块。
+- 响应式清单：窗口阈值 1500/1250/1180/1100/900/800/740/620 CSS px 控制外壳或页面布局；740/650 CSS px 容器阈值控制架构局部区域/节点搜索；另有 reduced-motion 查询。E2E 对八个窗口阈值分别测量前、当点、后，并对容器内容宽度 740/741、650/651 测量。窗口与容器查询各自负责不同层级，未合并相近数值的条件。
+- 基线实际合成后的图工具栏禁用文字对比度为 1.87:1；结果 opacity 为 1、文字/禁用表面为语义色，对比度 5.93:1。禁用时 hover 不改变颜色、背景、边框、阴影或透明度；控件保持原生 `disabled`。“聚焦选中”旁有“选择节点后可聚焦/切回画布后可聚焦”说明。禁用侧栏项的背景/边框改为透明是有意变体，避免禁用导航项被误读为当前页面。
+
+### 验收与产物
+
+- `pnpm --filter @project-xray/ui test`：11 个文件、80 项通过；包括“聚焦选中”使用原生 disabled、就近说明原因且不触发聚焦的回归。
+- `pnpm typecheck`：10 个工作区包通过；`pnpm build`：10 个工作区包通过。构建仍提示 UI 主包约 922 KB、Monaco 约 2.64 MB 超过 500 KB 建议值；这是已知体积提示，本样式收尾不做拆包。
+- `pnpm --filter @project-xray/desktop test:design`，环境变量 `XRAY_DESIGN_AUDIT_SET=css-cleanup-followup-design`：73 个场景、13 个键盘/状态交互，失败与错误均为 0。覆盖项目概览、架构、调用流、解释、Git、训练及 1024/1440 CSS 视口；包括空结果、过期、失败重试、缺少左侧源码、键盘焦点和训练控件焦点。
+- `pnpm --filter @project-xray/desktop test:e2e:workspace final`：Electron/Playwright 跨页路径通过。测试执行 Git 报告跨页继续、左右源码身份、解释步骤证据定位、训练答案/引用/笔记和源码位置恢复、架构选符号与源码阅读、拖动分栏/最大化/恢复、窄宽切换，以及工作区变化后过期与重算；A→B→A 样例也覆盖恢复流程。测试为确定性临时副本，不运行样例代码。最终输出 `cross-page-workspace-e2e: passed`。
+- `node --check apps/desktop/scripts/ownership-training-e2e.cjs`、`git diff --check` 通过。E2E 的针对性计算样式审计逐一验证禁用文字合成颜色与 4.5:1 项目目标，不依赖通用审计跳过 disabled 的行为。
+- 窗口边界采样用 CSS `innerWidth/innerHeight`，设计审计直接通过 BrowserWindow 设置原生窗口尺寸（验收脚本将最小尺寸临时设为 800×600，以容纳 1024×800）。为最终同流程截图，E2E 基线九张均是 Electron 原生窗口/DPR 1.5；结果欢迎页/外壳两张为原生窗口/DPR 1.5，其余 Git 1024、解释/训练/架构和 1920 场景由 Playwright 渲染视口模拟，DPR 约 1.0。计算 JSON 明确标记 `captureMode`、DPR、CSS 窗口与容器尺寸；这些模拟结果用于布局检查，不作为同 DPR 像素差结论。原生 Electron 窗口的 1024/1440/断点布局另由设计审计覆盖；本轮没有在所有页面/三个目标尺寸取得同一 DPR 的原生截图。
+- 人工并列查看了 shell、Git 1024、架构分栏、训练引用和解释证据场景。匹配的原生 shell 样式没有意外几何差异；界面可见的设计变化是禁用态恢复清晰度、禁用导航透明，以及图工具栏原因提示。解释页基线图还显示临时 Git 任务条，结果截图采集时该状态已消失；这两个场景不能按完整页面像素一一比较，任务条差别不是 CSS 修改。架构关系图的节点位置会随 Cytoscape 重新布局，报告/证据/快照 ID 也随临时导入变化，不把这些变化归为 CSS 回归。
+
+E2E/审计调试记录：早期截图阶段发现 Monaco 选择范围尚未更新，脚本改为等到目标文件和完整范围匹配才保存；断点视口审计移至场景截图之后，避免污染截图；Windows Playwright 字体等待导致 `page.screenshot()` 超时后，改用 Electron `webContents.capturePage()`。最后一次断点失败是审计探针把含 32px padding 的节点列表外框当作内容宽度，导致 651px 内容阈值读到 619px；现探针按内容宽度设置，740/741 与 650/651 断点通过。路径文本变更后增加两帧等待，保证捕获的是已脱敏帧。上述调整只修正测试时序、采集或测量，不删除产品断言、不下调阈值；最终完整跨页 E2E 与设计审计均通过。
+
+基线截图和计算样式位于 `docs/screenshots/css-cleanup-followup-baseline/`；结果截图、原始 Electron E2E/设计审计日志、完整计算样式及逐项差异位于忽略产物目录 `docs/screenshots/css-cleanup-followup-final/` 与 `docs/screenshots/css-cleanup-followup-design/`。最终差异文件为 `ui-polish-computed-style-diff.json`。截图使用确定性本地副本并已将项目路径改写为 `C:\xray-fixture\workspace`，不包含用户项目源码或凭据。125% Electron 图片裁切限制、应用重启恢复和跨平台显示缩放未在本批重新验证。
+
+### 功能解释证据读取禁用反馈（2026-09-27）
+
+#### 修复
+
+`.steps button` 在 `pages.css` 中无条件设为 `cursor: pointer`，与后加载的禁用规则同优先级；`.steps button:hover` 未排除原生禁用状态，读取挂起时仍把按钮边框改成可用态的青绿色。删除页面上的无条件光标声明，并将 hover 限定为 `.steps button:not(:disabled):not([aria-disabled="true"]):hover`。禁用光标、文字、表面和边框继续只由 `controls.css` 的原生 disabled 规则负责。该区域没有独立 `:active`、阴影或位移声明；本次未增加禁用变体、`!important`、`pointer-events` 或键盘拦截。
+
+#### 同条件 Electron 验收
+
+- 修复前后使用同一个确定性 `ownership-training` 样例内容和“登录”解释结果；均为 Electron 44.4.3，内容区 1440×900 CSS px，DPR 1.5，应用缩放 1，使用 `BrowserWindow.webContents.capturePage()`。两轮分别从隔离的临时导入开始，因此可见的 snapshot/evidence ID 不同；样例文件内容、查询、页面状态、视口、缩放、DPR 和鼠标坐标一致。原始截图都是 2160×1350，没有缩放或裁剪。完整采集条件与值见 `docs/screenshots/explanation-disabled-final/computed-style-diff.json`。
+- 修复前可用态默认/悬停样式分别是 `cursor:pointer`、文字 `rgb(240,242,250)`、背景 `rgb(36,40,52)`，边框从 `rgb(133,139,163)` 变为 `rgb(63,122,120)`。读取挂起时虽然颜色、背景和 opacity 已符合 `controls.css` 的禁用语义变量，光标仍是 `pointer`，悬停边框仍变为 `rgb(63,122,120)`；移出时回到 `rgb(69,75,96)`，再移入又被覆盖。
+- 修复后可用态的默认和 hover 值不变。挂起态为原生 `disabled`、`cursor:not-allowed`、文字 `rgb(150,156,175)`、背景 `rgb(29,32,43)`、边框 `rgb(69,75,96)`、opacity `1`、box-shadow `none`、transform `none`。指针离开与重新悬停期间这些禁用值保持不变；背景为不透明控件色且所有祖先 opacity 为 1，实际颜色合成对比度为 5.93:1，满足项目 4.5:1 可读性目标。证据读取成功后以 `pkg/api.py` 的对应快照和 evidence ID 打开源码；按钮恢复可用且重新悬停生效。
+- 挂起期间使用 Electron 原始鼠标坐标再次点击，释放请求前后 `evidence:get` 读取次数始终为 1。E2E 仅在测试进程里包裹现有 Electron IPC handler 并在释放时转发到原 handler；未修改生产 IPC 或读取逻辑。组件测试验证挂起期间重复点击无额外请求，既有组件用例验证失败提示、结果保留、解锁和重试。
+
+截图对照：[可用默认态（修复前）](screenshots/explanation-disabled-baseline/explanation-evidence-baseline-available-default.png)、[可用 hover（修复前）](screenshots/explanation-disabled-baseline/explanation-evidence-baseline-available-hover.png)、[读取挂起 hover（修复前）](screenshots/explanation-disabled-baseline/explanation-evidence-baseline-pending-hover.png)；[可用默认态（修复后）](screenshots/explanation-disabled-final/explanation-evidence-final-available-default.png)、[可用 hover（修复后）](screenshots/explanation-disabled-final/explanation-evidence-final-available-hover.png)、[读取挂起 hover（修复后）](screenshots/explanation-disabled-final/explanation-evidence-final-pending-hover.png)。原图已实际并列查看：预期差异是禁用按钮边框不再呈现 hover 色；其他控件与布局未见意外变化。逐属性差异和计算对比度见 [computed-style-diff.json](screenshots/explanation-disabled-final/computed-style-diff.json)。
+
+#### 本轮验证
+
+- `pnpm --filter @project-xray/ui exec vitest run src/components/FeatureExplanationWorkspace.test.tsx`：7 项通过；新增用例使用受控 Promise 和真实组件按钮，第二次 `user-event` 点击在请求仍挂起时返回，请求数断言在释放 Promise 前执行。错误与重试仍由现有同组件回归覆盖。
+- `pnpm --filter @project-xray/ui test`：11 个测试文件、81 项通过；`pnpm typecheck`：10 个工作区包通过；`pnpm build`：10 个工作区包通过。UI 构建仍报告主 UI 与 Monaco chunk 超过 500 KB 的既有提示。
+- `pnpm --filter @project-xray/desktop test:e2e:workspace final --explanation-disabled-only`（分别设置 `XRAY_UI_SCREENSHOT_SET=explanation-disabled-baseline` 与 `explanation-disabled-final`）：受控 pending、hover 移出/移入、挂起期原始鼠标重复点击、成功导航及恢复均通过。完整 `pnpm --filter @project-xray/desktop test:e2e:workspace` 也通过，覆盖架构源码、Git 报告、训练引用/答案和跨页返回。
+- 采集迭代中，第一次尝试发现 Electron `contextBridge` 暴露的 `window.xray` 是不可写代理；测试钩子改为仅包裹测试进程的 IPC handler。随后一次可视状态采集尝试在额外的第二轮失败请求上等待错误按钮进入 pending 超时；该重复的失败状态由组件集成测试负责，Electron 路径保留本次需求的 hover/pending/重复点击/成功视觉验收并通过。没有通过降低断言或加入生产延迟来处理这些采集尝试。
+
+#### 历史视觉补证边界
+
+上述前后截图只证明本次功能解释按钮修复。此前整轮 CSS 清理的截图仍有原生窗口和模拟视口/DPR 混用，不能据此声称全量像素等价；本次没有恢复历史 CSS 与采集环境重拍其余页面。历史重构的视觉等价性仍以既有记录中的限制为准，不由本次局部验收替代。

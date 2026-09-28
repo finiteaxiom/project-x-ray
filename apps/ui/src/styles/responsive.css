@@ -1,6 +1,20 @@
-/* Responsive rules are centralized here. Window queries govern shell/page layout; container queries govern local panes. */
+/*
+ * Window queries control the application shell and page-level grids.
+ * Container queries only adapt controls within their nearest inline-size container.
+ * Window thresholds are ordered broad-to-narrow so the narrow shell wins below 900px.
+ */
 
-/* Window breakpoint: (max-width: 1250px). */
+/* Window <= 1500px: source-open architecture pages stack their module browser. */
+@media (max-width: 1500px) {
+  .evidence-workspace.with-source .module-browser {
+    grid-template-columns: 1fr;
+  }
+  .evidence-workspace.with-source .dependency-view {
+    min-height: 430px;
+  }
+}
+
+/* Window <= 1250px: reclaim sidebar and dashboard width. */
 @media (max-width: 1250px) {
   .app-shell {
     grid-template-columns: 220px 1fr;
@@ -16,56 +30,28 @@
   }
 }
 
-/* Window breakpoint: (max-width:1100px). */
-@media (max-width:1100px) {
-  .change-layout,.comparison-sources,.comparison-identities {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Window breakpoint: (max-width: 1180px). */
+/* Window <= 1180px: stack page work areas while keeping the navigation readable. */
 @media (max-width: 1180px) {
+  /* Application shell */
   .sidebar {
     padding-inline: 12px;
   }
-}
-
-/* Window breakpoint: (max-width: 900px). */
-@media (max-width: 900px) {
-  .brand > div:last-child,.project-chip > div,.sidebar nav button:not(.active) {
-    font-size: 0;
+  .app-shell {
+    grid-template-columns: 192px minmax(0,1fr);
   }
-  .sidebar nav button span {
-    width: 30px;
-    font-size: 12px;
-  }
-  .sidebar-foot {
+  .brand span {
     display: none;
   }
-  .module-browser,.symbol-browser {
-    grid-template-columns: 1fr;
+  .brand strong {
+    font-size: 11px;
+    white-space: normal;
   }
-  .dependency-view,.local-graph {
-    min-height: 440px;
+  .project-chip b,
+  .project-chip small {
+    max-width: 118px;
   }
-}
 
-/* Window breakpoint: (max-width: 1180px). */
-@media (max-width: 1180px) {
-}
-
-/* Window breakpoint: (max-width: 1500px). */
-@media (max-width: 1500px) {
-  .evidence-workspace.with-source .module-browser {
-    grid-template-columns: 1fr;
-  }
-  .evidence-workspace.with-source .dependency-view {
-    min-height: 430px;
-  }
-}
-
-/* Window breakpoint: (max-width: 1180px). */
-@media (max-width: 1180px) {
+  /* Overview and architecture work areas */
   .overview-graph {
     grid-template-columns: 1fr;
     grid-template-rows: 510px auto;
@@ -77,38 +63,6 @@
   .overview-toolbar {
     grid-template-columns: 1fr;
   }
-}
-
-/* Window breakpoint: (max-width:1180px). */
-@media (max-width:1180px) {
-  .hero,.import-card {
-    padding: 28px;
-  }
-}
-
-/* Window breakpoint: (max-width:900px). */
-@media (max-width:900px) {
-  .nav-caption {
-    display: none;
-  }
-  .sidebar nav button {
-    justify-content: center;
-  }
-  .brand {
-    padding-inline: 6px;
-  }
-}
-
-/* Reduced motion: retain !important to override transitions and animations from app and embedded editor controls. */
-@media (prefers-reduced-motion:reduce) {
-  *,*::before,*::after {
-    transition: none !important;
-    animation: none !important;
-  }
-}
-
-/* Window breakpoint: (max-width:1180px). */
-@media (max-width:1180px) {
   .architecture-workbench .overview-graph {
     grid-template-columns: minmax(0,1fr);
     grid-template-rows: minmax(380px,1fr) auto;
@@ -122,62 +76,11 @@
   .relation-inspector {
     padding: 16px;
   }
-}
 
-/* Window breakpoint: (max-width:800px). */
-@media (max-width:800px) {
-  .architecture-stage.inspecting {
-    grid-template-columns: minmax(0,1fr);
-    grid-template-rows: minmax(220px,1fr) minmax(200px,1fr);
-  }
-  .relation-inspector {
-    border-left: 0;
-    border-top: 1px solid var(--border-inspector-divider);
-  }
-  .architecture-heading {
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-}
-
-/* Window breakpoint: (max-width:1100px). */
-@media (max-width:1100px) {
-  .architecture-stage.inspecting .module-browser {
-    grid-template-columns: minmax(0,1fr);
-  }
-}
-
-/* Container query: nearest inline-size container. */
-@container (max-width: 740px) {
-  .overview-toolbar {
-    grid-template-columns: minmax(0,1fr);
-  }
-  .architecture-heading {
-    flex-wrap: wrap;
-  }
-  .architecture-workbench .overview-graph {
-    grid-template-columns: minmax(0,1fr);
-    grid-template-rows: minmax(380px,1fr) auto;
-  }
-  .overview-inspector {
-    max-height: 220px;
-  }
-}
-
-/* Window breakpoint: (max-width:1180px). */
-@media (max-width:1180px) {
-  .app-shell {
-    grid-template-columns: 192px minmax(0,1fr);
-  }
-  .brand span {
-    display: none;
-  }
-  .brand strong {
-    font-size: 11px;
-    white-space: normal;
-  }
-  .project-chip b,.project-chip small {
-    max-width: 118px;
+  /* Welcome and training page grids */
+  .hero,
+  .import-card {
+    padding: 28px;
   }
   .ownership-navigation {
     grid-template-columns: minmax(0,1fr);
@@ -195,70 +98,13 @@
   .journey-card h3 {
     margin-top: 8px;
   }
-  .change-layout,.comparison-sources,.comparison-identities {
+
+  /* Git comparison controls and source panes */
+  .change-layout,
+  .comparison-sources,
+  .comparison-identities {
     grid-template-columns: minmax(0,1fr);
   }
-}
-
-/* Window breakpoint: (max-width:900px). */
-@media (max-width:900px) {
-  .app-shell {
-    grid-template-columns: 64px minmax(0,1fr);
-  }
-  .sidebar {
-    padding: 18px 6px;
-  }
-  .brand > div:last-child,.project-chip,.nav-caption,.sidebar-foot {
-    display: none;
-  }
-  .brand {
-    padding: 0 6px 22px;
-  }
-  .sidebar nav button {
-    font-size: 0;
-    padding: 12px;
-  }
-  .page-body {
-    padding: 12px;
-  }
-  .topbar {
-    padding-inline: 16px;
-  }
-  .panel {
-    padding: 16px;
-  }
-  .architecture-panel {
-    padding: 0;
-  }
-  .welcome-grid {
-    grid-template-columns: minmax(0,1fr);
-  }
-  .hero,.import-card {
-    padding: 26px;
-  }
-  .source-toolbar {
-    padding: 8px;
-  }
-  .legend {
-    white-space: normal;
-  }
-  .error-banner,.stale-banner,.task-status {
-    margin-inline: 12px;
-  }
-}
-
-/* Window breakpoint: (max-width: 620px). */
-@media (max-width: 620px) {
-  .step-evidence-picker li {
-    grid-template-columns: minmax(0,1fr);
-  }
-  .step-evidence-picker li > button {
-    justify-self: start;
-  }
-}
-
-/* Window breakpoint: (max-width:1180px). */
-@media (max-width:1180px) {
   .comparison-controls {
     grid-template-columns: minmax(0,1fr) minmax(0,1fr);
   }
@@ -270,27 +116,90 @@
   }
 }
 
-/* Window breakpoint: (max-width:740px). */
-@media (max-width:740px) {
-  .citation-row {
+/* Window <= 1100px: the nested architecture browser becomes a single column. */
+@media (max-width: 1100px) {
+  .architecture-stage.inspecting .module-browser {
     grid-template-columns: minmax(0,1fr);
-  }
-  .citation-row > div {
-    justify-content: flex-start;
-  }
-  .explanation-summary,.explanation-section,.explanation-unknowns {
-    padding: 11px;
-  }
-  .comparison-controls {
-    grid-template-columns: minmax(0,1fr);
-  }
-  .comparison-source-side > .source-panel {
-    min-height: 320px;
   }
 }
 
-/* Window breakpoint: (max-width:900px). */
-@media (max-width:900px) {
+/* Window <= 900px: switch the shell to icon navigation and stack page content. */
+@media (max-width: 900px) {
+  /* Application shell and navigation */
+  .app-shell {
+    grid-template-columns: 64px minmax(0,1fr);
+  }
+  .sidebar {
+    padding: 18px 6px;
+  }
+  .brand > div:last-child,
+  .project-chip > div,
+  .sidebar nav button:not(.active) {
+    font-size: 0;
+  }
+  .sidebar nav button span {
+    width: 30px;
+    font-size: 12px;
+  }
+  .sidebar-foot,
+  .nav-caption {
+    display: none;
+  }
+  .brand {
+    padding: 0 6px 22px;
+  }
+  .project-chip {
+    display: none;
+  }
+  .sidebar nav button {
+    justify-content: center;
+    padding: 12px;
+    font-size: 0;
+  }
+  .page-body {
+    padding: 12px;
+  }
+  .topbar {
+    padding-inline: 16px;
+  }
+
+  /* Shared work areas */
+  .panel {
+    padding: 16px;
+  }
+  .architecture-panel {
+    padding: 0;
+  }
+  .source-toolbar {
+    padding: 8px;
+  }
+  .error-banner,
+  .stale-banner,
+  .task-status {
+    margin-inline: 12px;
+  }
+
+  /* Architecture and overview */
+  .module-browser,
+  .symbol-browser {
+    grid-template-columns: 1fr;
+  }
+  .dependency-view,
+  .local-graph {
+    min-height: 440px;
+  }
+  .welcome-grid {
+    grid-template-columns: minmax(0,1fr);
+  }
+  .hero,
+  .import-card {
+    padding: 26px;
+  }
+  .legend {
+    white-space: normal;
+  }
+
+  /* Comparison task strip */
   .comparison-task-tray {
     margin-inline: 12px;
     max-height: 112px;
@@ -303,15 +212,87 @@
   }
 }
 
-/* Container query: nearest inline-size container. */
+/* Window <= 800px: stack the architecture graph and its inspector. */
+@media (max-width: 800px) {
+  .architecture-stage.inspecting {
+    grid-template-columns: minmax(0,1fr);
+    grid-template-rows: minmax(220px,1fr) minmax(200px,1fr);
+  }
+  .relation-inspector {
+    border-top: 1px solid var(--border-inspector-divider);
+    border-left: 0;
+  }
+  .architecture-heading {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+}
+
+/* Window <= 740px: stack file evidence and comparison controls. */
+@media (max-width: 740px) {
+  .citation-row {
+    grid-template-columns: minmax(0,1fr);
+  }
+  .citation-row > div {
+    justify-content: flex-start;
+  }
+  .explanation-summary,
+  .explanation-section,
+  .explanation-unknowns {
+    padding: 11px;
+  }
+  .comparison-controls {
+    grid-template-columns: minmax(0,1fr);
+  }
+  .comparison-source-side > .source-panel {
+    min-height: 320px;
+  }
+}
+
+/* Window <= 620px: evidence-choice actions move below their labels. */
+@media (max-width: 620px) {
+  .step-evidence-picker li {
+    grid-template-columns: minmax(0,1fr);
+  }
+  .step-evidence-picker li > button {
+    justify-self: start;
+  }
+}
+
+/* Container <= 740px: local architecture panes adapt even in a wide window. */
+@container (max-width: 740px) {
+  .overview-toolbar {
+    grid-template-columns: minmax(0,1fr);
+  }
+  .architecture-heading {
+    flex-wrap: wrap;
+  }
+  .architecture-workbench .overview-graph {
+    grid-template-columns: minmax(0,1fr);
+    grid-template-rows: minmax(380px,1fr) auto;
+  }
+  .overview-inspector {
+    max-height: 220px;
+  }
+}
+
+/* Container <= 650px: search controls wrap inside the graph node browser. */
 @container (max-width: 650px) {
   .node-browser-search {
     grid-template-columns: repeat(2,minmax(0,1fr));
   }
-  .node-browser-search > label:first-child {
-    grid-column: 1/-1;
-  }
+  .node-browser-search > label:first-child,
   .node-browser-search > button {
     grid-column: 1/-1;
+  }
+}
+
+/* Reduced motion: override transitions and animations from app and embedded controls. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
   }
 }

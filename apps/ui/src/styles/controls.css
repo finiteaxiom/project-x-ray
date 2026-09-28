@@ -1,91 +1,16 @@
-/* Shared controls: native form elements, button variants, focus and disabled states. */
+/* Native controls and their shared variants and interaction states. */
 
-button, input, select, textarea {
-  font: inherit;
-}
-
-button {
-  color: inherit;
-}
-
-.button {
-  border: 1px solid transparent;
-  border-radius: 4px;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.button:disabled {
-  opacity: .45;
-  cursor: not-allowed;
-}
-
-.button.secondary {
-  border-color: #414357;
-  background: #23242f;
-  color: #b8d2d0;
-}
-
-.button:focus-visible,button:focus-visible,[role="separator"]:focus-visible {
-  outline: 2px solid #8af0e4;
-  outline-offset: 2px;
-}
-
-input, select, textarea {
-  width: 100%;
-  color: #e4efee;
-  background: var(--surface-inset);
-  border: 1px solid var(--border-quiet);
-  border-radius: 3px;
-  outline: none;
-}
-
-input:focus, select:focus, textarea:focus {
-  border-color: var(--accent-strong);
-  box-shadow: 0 0 0 3px #54d6c712;
-}
-
-input, select {
-  height: 42px;
-  padding: 0 12px;
-}
-
+button,
+input,
+select,
 textarea {
-  padding: 13px;
-  resize: vertical;
-  min-height: 150px;
-}
-
-.toolbar-button.active {
-  color: var(--text-secondary);
-  border-color: var(--accent-strong);
-  background: var(--accent-strong);
-}
-
-.button,input,select,textarea {
-  border-radius: 7px;
-}
-
-.button {
-  font-weight: 500;
-}
-
-.button.secondary:hover:not(:disabled) {
-  border-color: #8079c6;
-  background: #2b2b3c;
-}
-
-input:focus-visible,select:focus-visible,textarea:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-button,input,select,textarea {
+  font: inherit;
   font-size: 13px;
   line-height: 1.5;
 }
 
 button {
+  color: inherit;
   cursor: pointer;
 }
 
@@ -93,15 +18,91 @@ button:not(.monaco-editor button) {
   overflow-wrap: anywhere;
 }
 
-input,select,textarea {
-  min-width: 0;
-  max-width: 100%;
-  background: var(--canvas);
-  border-color: var(--control-border);
+.button {
+  min-height: 32px;
+  padding: 9px 15px;
+  border: 1px solid var(--control-border);
+  border-radius: 7px;
   color: var(--text-primary);
+  background: var(--raised);
+  font-size: 12px;
+  font-weight: 500;
 }
 
-input::placeholder,textarea::placeholder {
+.button.primary {
+  border-color: var(--button-primary-border);
+  color: var(--text-on-accent);
+  background: var(--primary);
+}
+
+.button.primary:hover:not(:disabled) {
+  color: var(--text-on-accent);
+  background: var(--button-primary-hover);
+}
+
+.button.secondary {
+  color: var(--text-primary);
+  background: var(--raised);
+  border-color: var(--control-border);
+}
+
+button:disabled {
+  opacity: 1;
+  color: var(--text-disabled);
+  cursor: not-allowed;
+}
+
+.button:disabled,
+.graph-toolbar button:disabled,
+.toolbar-button:disabled,
+.workspace-control:disabled,
+.compact-pane-switch button:disabled {
+  color: var(--text-disabled);
+  background: var(--surface-disabled);
+  border-color: var(--border);
+}
+
+.sidebar nav button:disabled {
+  color: var(--text-disabled);
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid var(--control-border);
+  border-radius: 7px;
+  color: var(--text-primary);
+  background: var(--canvas);
+  outline: none;
+}
+
+input,
+select {
+  height: 42px;
+  padding: 0 12px;
+}
+
+textarea {
+  min-height: 150px;
+  padding: 13px;
+  resize: vertical;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--accent-strong);
+  box-shadow: 0 0 0 3px var(--control-focus-halo);
+}
+
+input::placeholder,
+textarea::placeholder {
   color: var(--text-secondary);
   opacity: 1;
 }
@@ -110,35 +111,11 @@ input[type="checkbox"] {
   accent-color: var(--primary);
 }
 
-button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[role="separator"]:focus-visible {
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="separator"]:focus-visible {
   outline: 2px solid var(--focus-ring);
-  outline-offset: 3px;
+  outline-offset: 2px;
 }
-
-.button {
-  padding: 9px 15px;
-}
-
-.button.primary {
-  color: var(--text-on-accent);
-  background: var(--primary);
-  border-color: #aa9eff;
-}
-
-.button.primary:hover:not(:disabled) {
-  color: var(--text-on-accent);
-  background: #7060d1;
-}
-
-.button.secondary,.button.secondary:hover:not(:disabled) {
-  color: var(--text-primary);
-  background: var(--raised);
-  border-color: var(--control-border);
-}
-
-.button:disabled {
-  color: var(--text-disabled);
-  background: var(--surface-disabled);
-  border-color: var(--border);
-}
-

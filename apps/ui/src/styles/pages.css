@@ -2,43 +2,6 @@
 
 /* Overview and import */
 
-nav {
-  display: grid;
-  gap: 6px;
-}
-
-nav button {
-  text-align: left;
-  border: 0;
-  background: transparent;
-  padding: 12px 13px;
-  border-radius: 4px;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: .18s ease;
-}
-
-nav button span {
-  display: inline-block;
-  width: 34px;
-  color: var(--text-secondary);
-  font: 12px "Cascadia Code", Consolas, monospace;
-}
-
-nav button:hover:not(:disabled), nav button.active {
-  color: #eaf8f5;
-  background: var(--surface-selected-active);
-}
-
-nav button.active {
-  box-shadow: inset 2px 0 var(--accent-strong);
-}
-
-nav button:disabled {
-  opacity: .35;
-  cursor: not-allowed;
-}
-
 .busy-bar {
   height: 2px;
   overflow: hidden;
@@ -128,10 +91,9 @@ nav button:disabled {
   text-align: left;
   padding: 14px;
   border: 1px solid var(--border-selectable);
-  cursor: pointer;
 }
 
-.steps button:hover {
+.steps button:not(:disabled):not([aria-disabled="true"]):hover {
   border-color: #3f7a78;
 }
 
@@ -2413,11 +2375,11 @@ nav button:disabled {
   border-bottom: 1px solid var(--border-list-subtle);
 }
 
-.panel,.source-panel,.overview-inspector,.module-card,.graph-surface,.ownership-files {
+.module-card {
   border-radius: 10px;
 }
 
-.panel,.source-panel,.overview-inspector,.ownership-files {
+.overview-inspector,.ownership-files {
   background: var(--surface);
   border-color: var(--border);
   border-radius: 10px;
@@ -3088,11 +3050,6 @@ nav button:disabled {
 .comparison-initial {
   height: auto;
   min-height: 120px;
-}
-
-.change-explorer button:focus-visible,.change-explorer input:focus-visible,.change-explorer select:focus-visible,.explanation-panel button:focus-visible,.explanation-panel input:focus-visible,.ownership-quiz button:focus-visible,.ownership-quiz select:focus-visible,.ownership-quiz textarea:focus-visible,.ownership-start button:focus-visible,.ownership-start input:focus-visible,.ownership-start select:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
 }
 
 .comparison-task-tray {

@@ -77,4 +77,15 @@ describe("GraphCanvas 生命周期", () => {
     view.unmount();
   });
 
+  it("原生禁用的聚焦操作会就近说明需要先选择节点", () => {
+    vi.clearAllMocks();
+    const view = render(<GraphCanvas nodes={[node]} edges={[]} onNode={() => undefined} onEdge={() => undefined} />);
+    const focusButton = view.getByRole("button", { name: "聚焦选中" });
+    expect((focusButton as HTMLButtonElement).disabled).toBe(true);
+    expect(view.getByRole("note").textContent).toBe("选择节点后可聚焦");
+    fireEvent.click(focusButton);
+    expect(graphMock.core.animate).not.toHaveBeenCalled();
+    view.unmount();
+  });
+
 });

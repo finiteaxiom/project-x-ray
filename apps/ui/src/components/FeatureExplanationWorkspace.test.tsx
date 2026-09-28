@@ -79,6 +79,33 @@ describe("功能解释交互", () => {
     expect(getEvidence).toHaveBeenCalledWith({ repositoryId: "repo", snapshotId: "snap-a", evidenceId: "ev-login" }); view.unmount();
   });
 
+  it("证据读取挂起时保持原生禁用且不会因重复点击增加请求，成功后恢复", async () => {
+    const pending = deferred<Awaited<ReturnType<XRayApi["getEvidence"]>>>();
+    const getEvidence = vi.fn(() => pending.promise);
+    const { view, getEvidence: readEvidence, openLocation } = setup(vi.fn(async () => explanation()), getEvidence);
+    const user = userEvent.setup();
+    await user.type(screen.getByRole("textbox", { name: "需要解释的功能" }), "login");
+    await user.click(screen.getByRole("button", { name: "开始追踪" }));
+    const evidenceButton = await screen.findByRole("button", { name: "定位源码范围" });
+    await user.hover(evidenceButton);
+    await user.click(evidenceButton);
+    expect(evidenceButton).toHaveProperty("disabled", true);
+    expect(evidenceButton.textContent).toContain("读取证据");
+    expect(readEvidence).toHaveBeenCalledTimes(1);
+
+    // user-event models a real click on a native disabled button and returns without
+    // waiting for it to become enabled; assert before resolving the held IPC promise.
+    await user.click(evidenceButton);
+    expect(evidenceButton).toHaveProperty("disabled", true);
+    expect(readEvidence).toHaveBeenCalledTimes(1);
+
+    await act(async () => pending.resolve({ ...evidence, repositoryId: "repo" }));
+    await waitFor(() => expect(openLocation).toHaveBeenCalledWith({ ...evidence.span, evidenceId: evidence.id }));
+    expect(evidenceButton).toHaveProperty("disabled", false);
+    expect(readEvidence).toHaveBeenCalledTimes(1);
+    view.unmount();
+  });
+
   it("每步就近选择自己的证据；失败只影响该步并可重试", async () => {
     const user = userEvent.setup();
     const steps = [{ order: 1, title: "login", description: "处理登录请求", nodeIds: ["login"], evidenceIds: ["ev-login", "ev-login-two"], confidence: "verified" as const }];
@@ -89,7 +116,7 @@ describe("功能解释交互", () => {
     const verify = screen.getByRole("button", { name: "核验第 1 步证据 2" }); await user.click(verify);
     const localError = await screen.findByText(/这一步的源码读取失败：读取证据暂不可用/); expect(localError.closest("li")?.getAttribute("aria-current")).toBe("step");
     expect(screen.getByRole("article", { name: "功能解释结果" })).toBeTruthy();
-    await user.click(screen.getByRole("button", { name: "重试核验" }));
+    const retry = screen.getByRole("button", { name: "重试核验" }); expect(retry).toHaveProperty("disabled", false); await user.click(retry);
     await waitFor(() => expect(openLocation).toHaveBeenCalledWith({ ...evidence.span, startLine: 8, endLine: 8, evidenceId: "ev-login-two" }));
     expect(getEvidence).toHaveBeenCalledTimes(2); expect(screen.getByRole("button", { name: "返回第 1 步说明" })).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "返回第 1 步说明" }));
