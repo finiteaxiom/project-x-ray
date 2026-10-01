@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createHash } from "node:crypto";
-import { canonicalJson } from "@project-xray/contracts";
+import { canonicalJson, remoteNarrativeJsonSchema, remoteUtf8Bytes, RemoteExplanationError } from "@project-xray/contracts";
 import { buildEvidencePackage } from "./evidence-package.js";
-import { OpenAIResponsesProvider, type ProviderInput, type ProviderRuntime } from "./openai-responses.js";
+import { OpenAIResponsesProvider, prepareOpenAIResponsesRequest, type ProviderInput, type ProviderRuntime } from "./openai-responses.js";
 
 function fixture(): ProviderInput {
   const content = "run()"; const contentHash = createHash("sha256").update(content).digest("hex"); const span = { filePath: "a.ts", startLine: 1, startColumn: 0, endLine: 1, endColumn: 5 };
@@ -13,6 +13,35 @@ function envelope(input: ProviderInput) { const pack = input.prepared.evidencePa
 const jsonResponse = (body: unknown, status = 200): Response => new Response(JSON.stringify(body), { status });
 afterEach(() => vi.useRealTimers());
 describe("single request Responses protocol (transport fixtures only)", () => {
+  it("prepares a credential-free complete body with a digest of the exact synchronous transport bytes", async () => {
+    const input = fixture(); const requestInput = { prepared: input.prepared, model: input.model, maxOutputTokens: 100 };
+    const request = prepareOpenAIResponsesRequest(requestInput); const order: string[] = [];
+    expect(request.body).not.toContain(input.credential); expect(request.bodyDigest).toBe(createHash("sha256").update(request.body, "utf8").digest("hex")); expect(remoteUtf8Bytes(request.body)).toBeLessThanOrEqual(65536);
+    const transport = vi.fn(async (_url: string, init: RequestInit) => { order.push("transport"); expect(init.body).toBe(request.body); return jsonResponse(envelope(input)); });
+    expect(transport).not.toHaveBeenCalled(); const provider = new OpenAIResponsesProvider({ transport }); order.push("permit");
+    const completion = provider.generate({ ...input, maxOutputTokens: 100, expectedBodyDigest: request.bodyDigest }); order.push("return");
+    expect(order).toEqual(["permit", "transport", "return"]); await completion; expect(transport).toHaveBeenCalledTimes(1);
+  });
+  it("includes explicit model, token cap and the shared response schema in the digest", () => {
+    const input = fixture(); const base = { prepared: input.prepared, model: input.model, maxOutputTokens: 100 };
+    const original = prepareOpenAIResponsesRequest(base).bodyDigest;
+    expect(prepareOpenAIResponsesRequest({ ...base, model: "different-model" }).bodyDigest).not.toBe(original);
+    expect(prepareOpenAIResponsesRequest({ ...base, maxOutputTokens: 101 }).bodyDigest).not.toBe(original);
+    const claims = remoteNarrativeJsonSchema.properties.claims as { maxItems: number }; const maxItems = claims.maxItems;
+    try { claims.maxItems = 11; expect(prepareOpenAIResponsesRequest(base).bodyDigest).not.toBe(original); }
+    finally { claims.maxItems = maxItems; }
+    expect(prepareOpenAIResponsesRequest(base).bodyDigest).toBe(original);
+  });
+  it.each(["digest", "unknown-input", "unknown-prepared", "extra-generate", "closure"])("rejects %s before any transport call", async kind => {
+    const input = fixture(); const transport = vi.fn(async () => jsonResponse(envelope(input))); const provider = new OpenAIResponsesProvider({ transport });
+    if (kind === "digest") input.expectedBodyDigest = "0".repeat(64);
+    if (kind === "unknown-prepared") Object.assign(input.prepared, { credential: "must-not-be-accepted" });
+    if (kind === "extra-generate") Object.assign(input, { endpoint: "https://invalid.test" });
+    if (kind === "closure") { input.prepared.evidencePackage.nodes[0]!.evidenceIds = ["absent"]; const { packageId: _id, ...payload } = input.prepared.evidencePackage; input.prepared.evidencePackage.packageId = createHash("sha256").update(canonicalJson(payload)).digest("hex"); }
+    if (kind === "unknown-input") expect(() => prepareOpenAIResponsesRequest(Object.assign({ prepared: input.prepared, model: input.model }, { instructions: "override" }))).toThrow();
+    else await expect(provider.generate(input)).rejects.toMatchObject({ name: "RemoteExplanationError", message: "远程解释未完成" });
+    expect(transport).not.toHaveBeenCalled();
+  });
   it("sends fixed host, store false and strict schema without tools/history, returns source-cited inference", async () => {
     const input = fixture(); const transport = vi.fn<NonNullable<ProviderRuntime["transport"]>>(async (url, init) => {
       expect(url).toBe("https://api.openai.com/v1/responses"); expect(init.redirect).toBe("error"); expect(init.method).toBe("POST");
@@ -72,6 +101,14 @@ describe("single request Responses protocol (transport fixtures only)", () => {
   it("redacts thrown transport errors with no automatic retry", async () => {
     const transport = vi.fn(async () => { throw new Error("key + private source + file path"); });
     await expect(new OpenAIResponsesProvider({ transport }).generate(fixture())).rejects.toMatchObject({ code: "PROVIDER_FAILED", message: "远程解释未完成" }); expect(transport).toHaveBeenCalledTimes(1);
+  });
+  it.each(["message", "code", "getter"])("reconstructs a safe %s from a mutated typed transport exception", async kind => {
+    const error = new RemoteExplanationError("RATE_LIMITED"); error.message = "private source and credential";
+    if (kind === "code") Object.assign(error, { code: "private invalid code" });
+    if (kind === "getter") Object.defineProperty(error, "code", { get() { throw new Error("private getter error"); } });
+    const transport = vi.fn(async () => { throw error; });
+    await expect(new OpenAIResponsesProvider({ transport }).generate(fixture())).rejects.toMatchObject({ code: kind === "message" ? "RATE_LIMITED" : "PROVIDER_FAILED", message: "远程解释未完成" });
+    expect(transport).toHaveBeenCalledTimes(1);
   });
   it("makes zero requests for unconfigured/pre-cancelled/invalid package or output limit", async () => {
     const transport = vi.fn(async () => jsonResponse({})); const provider = new OpenAIResponsesProvider({ transport });
