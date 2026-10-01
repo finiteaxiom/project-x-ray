@@ -132,4 +132,8 @@ Git可用时实际Index→工作区报告只有Python修改与TS新增两个允�
 
 协调方将已验收的Sol分析结果身份批次提交为`1be77c54630185396c1aa9ccc842b1af49176529`，主checkout通过`git merge --ff-only codex/project-ignore-config`集成成功。集成后再次核对后端实现与回归文件哈希，均与本轮独立测试及真实portable验收时一致，Sol工作区干净。已有配置批次为`c7c271a1e279a91506599566f6f96d953588c3ed`。
 
-剩余已验收的Overview诊断、Windows包装检查及对应文档由协调方形成配套提交；只纳入本轮明确文件，便携包及临时样例不进入Git。推送目标已核对为`deeplearner-ui/project-x-ray`的main，使用普通推送，并以远端实际引用确认；配套提交及推送结果在最终交付消息报告，不将计划动作写成已完成。
+已验收的Overview诊断、Windows包装检查及对应文档已形成配套提交`6b4e2a244e0310b00a501b0bcd0cc34be221cedb`；只纳入本轮明确文件，便携包及临时样例未进入Git。普通推送到`deeplearner-ui/project-x-ray`的main成功，随后`git ls-remote origin refs/heads/main`确认远端为该提交。
+
+用户要求继续收尾后再次只读核对：主checkout与Sol worktree均干净，远端main仍为`6b4e2a244e0310b00a501b0bcd0cc34be221cedb`，两个开发聊天均已确认冻结且无待交付任务，`project-x-ray`定时任务保持PAUSED。本地便携包再次计算SHA256，与本轮实际交互验收及结构清单的`f3c7967fc3d36360292890acce4a994c51b65e32d9b50d121bd84b2872aeb591`一致。
+
+本次仅补齐实际Git结果与闭环状态，不改变产品源码，不把此前测试或交互称为本次重跑；无需重建已验收且哈希未变的产物。本批队列已关闭，未自动开启安装器、签名、干净机器或新功能工作。本次无新增AGENTS规则：收尾核对已由现有验收与Git规则覆盖。此记录补充作为独立文档提交，实际版本在交付消息报告。
