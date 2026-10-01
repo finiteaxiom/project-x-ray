@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactElement } from "react";
-import { OWNERSHIP_QUESTION_VERSION, type GraphNode, type OwnershipProgress, type OwnershipPrompt, type ProjectOverview, type SnapshotRef, type SourceCitation, type SourceFileResult } from "@project-xray/contracts";
+import { OWNERSHIP_QUESTION_VERSION, safeDiagnosticMessage, type GraphNode, type OwnershipProgress, type OwnershipPrompt, type ProjectOverview, type SnapshotRef, type SourceCitation, type SourceFileResult } from "@project-xray/contracts";
 import { EvidenceWorkspace, type EvidenceWorkspacePresentation } from "./EvidenceWorkspace";
 import { structuredAnswerFor, type OwnershipSessionController, type OwnershipTrainingSession, type TrainingLocation, type TrainingScope } from "../state/ownership-sessions";
 
@@ -30,6 +30,9 @@ function OwnershipSessionPage({ project, sessionId, sessions, source, openLocati
   const ref: SnapshotRef = session.ref;
   const current = session.finished ? undefined : session.round.questions[session.index];
   const blocked = session.lifecycle !== "active";
+  const staleMessage = session.snapshotValidationReason === "unavailable" ? `${safeDiagnosticMessage("SNAPSHOT_VALIDATION_UNAVAILABLE")}；草稿保留供查看，校验恢复或重新索引后可以继续。`
+    : session.snapshotValidationReason === "missing" ? "旧版快照缺少可校验源码；草稿保留供查看，重新索引后可以继续。"
+      : "工作区已变化：草稿保留供查看，不能基于旧快照生成题目或提交评分。重新索引后会建立独立训练草稿。";
   const [files, setFiles] = useState<GraphNode[]>([]);
   const [fileCursor, setFileCursor] = useState<string>();
   const [fileResultsLimited, setFileResultsLimited] = useState(false);
@@ -110,7 +113,7 @@ function OwnershipSessionPage({ project, sessionId, sessions, source, openLocati
   };
 
   const structured = useMemo(() => structuredAnswerFor(session), [session]);
-  const submitReason = session.lifecycle === "stale" ? "当前题目依赖的快照证据已过期，草稿仅可查看；重新索引后请生成新题。"
+  const submitReason = session.lifecycle === "stale" ? staleMessage
     : session.lifecycle === "archived" ? "此旧快照训练草稿为只读，不能继续提交。"
       : !session.citations.length ? "至少添加一条源码引用后才能提交；变量流题还需为每条引用标记角色。"
         : !structured ? "先完成上方的结构化答案。" : null;
@@ -156,7 +159,7 @@ function OwnershipSessionPage({ project, sessionId, sessions, source, openLocati
     <h2>{session.finished ? "本轮已经完成" : "选择学习范围"}</h2>
     <ol className="training-steps" aria-label="训练步骤"><li aria-current="step">1. 选择范围</li><li>2. 回答并引用源码</li><li>3. 提交后核验与复习</li></ol>
     <p>题目只来自当前快照中已验证的源码事实。证据和补救反馈会在提交后显示；自由文本仅作本地学习记录，不参与语义评分。</p>
-    {session.lifecycle === "stale" && <div className="ownership-message error" role="alert" data-testid="training-stale">工作区已变化：草稿保留供查看，不能基于旧快照生成题目或提交评分。重新索引后会建立独立训练草稿。</div>}
+    {session.lifecycle === "stale" && <div className="ownership-message error" role="alert" data-testid="training-stale">{staleMessage}</div>}
     <div className="scope-picker">
       <label>学习范围<select aria-label="训练范围" disabled={session.pending.questions || blocked} value={session.scopeKind} onChange={(event) => { const kind = event.target.value as typeof session.scopeKind; sessions.invalidateChannel(sessionId, "scope"); update((prior) => ({ ...prior, scopeKind: kind, scopeNode: null, scopeOptions: [] })); }}><option value="project">当前项目</option><option value="module">指定目录模块</option><option value="symbol">指定符号附近</option></select></label>
       {session.scopeKind !== "project" && <><label>搜索范围<input aria-label="搜索训练范围" disabled={session.pending.questions || blocked} value={session.scopeQuery} onChange={(event) => { sessions.invalidateChannel(sessionId, "scope"); update((prior) => ({ ...prior, scopeQuery: event.target.value, scopeNode: null, scopeOptions: [] })); }} onKeyDown={(event) => { if (event.key === "Enter" && !event.nativeEvent.isComposing) { event.preventDefault(); searchScopes(); } }} /></label><button className="button secondary" disabled={blocked || session.pending.questions || !session.scopeQuery.trim() || session.pending.scope} onClick={() => searchScopes()}>{session.pending.scope ? "搜索中…" : session.failureChannel === "scope" ? "重试搜索" : "搜索"}</button><div className="scope-results" aria-label="可选范围">{session.scopeOptions.map((node) => <button disabled={session.pending.questions || blocked} className={session.scopeNode?.id === node.id ? "active" : ""} key={node.id} aria-pressed={session.scopeNode?.id === node.id} onClick={() => update((prior) => ({ ...prior, scopeNode: { id: node.id, name: node.name, ...(node.qualifiedName ? { qualifiedName: node.qualifiedName } : {}) } }))}>{node.name}<small>{node.qualifiedName}</small></button>)}{!session.pending.scope && session.scopeOptions.length === 0 && session.scopeQuery && <p className="empty-inline">没有匹配范围。</p>}</div></>}
@@ -169,7 +172,7 @@ function OwnershipSessionPage({ project, sessionId, sessions, source, openLocati
   </div> : <div className="quiz ownership-quiz" aria-busy={session.pending.grade}>
     <div className="quiz-progress"><span>问题 {session.index + 1}/{session.round.questions.length}</span><b>{questionType[current.kind]}</b></div>
     <ol className="training-steps quiz-steps" aria-label="训练步骤"><li>1. 范围：{session.round.scope?.displayName ?? "范围身份未确认"}</li><li aria-current="step">2. 结构答案与源码引用</li><li>3. 提交后核验</li></ol>
-    {session.lifecycle === "stale" && <div className="ownership-message error" role="alert" data-testid="training-stale">工作区已变化：草稿保留供查看，不能基于旧快照生成题目或提交评分。重新索引后会建立独立训练草稿。</div>}
+    {session.lifecycle === "stale" && <div className="ownership-message error" role="alert" data-testid="training-stale">{staleMessage}</div>}
     <span className="difficulty">{current.difficulty} · {current.concept.label}</span><h2>{current.prompt}</h2><p>{current.learningObjective}</p>
     {current.retryOfQuestionId && <div className="retry-note">当前没有新变式，这是同一证据实例的明确重试。</div>}
     <StructuredControls current={current} session={session} setCaller={(value) => update((prior) => ({ ...prior, caller: value }))} setCallee={(value) => update((prior) => ({ ...prior, callee: value }))} setPath={(value) => update((prior) => ({ ...prior, path: value }))} setEntry={(value) => update((prior) => ({ ...prior, entry: value }))} setRoles={setRoles} disabled={session.pending.grade || Boolean(session.grade) || session.lifecycle === "archived"} />

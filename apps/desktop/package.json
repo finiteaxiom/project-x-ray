@@ -5,10 +5,11 @@
   "type": "commonjs",
   "main": "dist/main.js",
   "scripts": {
-    "dev": "tsup --watch --onSuccess \"electron .\"",
-    "build": "tsup && node scripts/copy-python-worker.cjs",
+    "dev": "tsup --watch --onSuccess \"node scripts/copy-python-worker.cjs && node scripts/copy-secure-reader.cjs && electron .\"",
+    "build": "tsup && node scripts/copy-python-worker.cjs && node scripts/copy-secure-reader.cjs",
     "smoke:worker": "node scripts/worker-smoke.cjs",
     "test:e2e": "node scripts/electron-e2e.cjs",
+    "test:e2e:file-source": "node scripts/file-source-e2e.cjs",
     "test:e2e:ui": "node scripts/ui-workspace-e2e.cjs",
     "test:e2e:ownership": "node scripts/ownership-training-e2e.cjs",
     "test:e2e:workspace": "node scripts/ownership-training-e2e.cjs",

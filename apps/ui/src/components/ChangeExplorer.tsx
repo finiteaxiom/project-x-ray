@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
-import { CHANGESET_VERSION, type ChangeFile, type ChangeReport, type ComparisonMode, type ProjectOverview, type SnapshotRef, type SourceFileResult, type SourceSpan } from "@project-xray/contracts";
+import { CHANGESET_VERSION, safeDiagnosticMessage, type ChangeFile, type ChangeReport, type ComparisonMode, type ProjectOverview, type SnapshotRef, type SourceFileResult, type SourceSpan } from "@project-xray/contracts";
 import { SourceViewer } from "./SourceViewer";
 import { useWorkspacePageState, type OwnershipSessionController } from "../state/ownership-sessions";
 import type { SourceEditorViewState } from "./SourceViewer";
@@ -263,7 +263,7 @@ export function ChangeExplorer({ project, sessions }: { project: ProjectOverview
       {event?.type === "progress" && <div className="task-status" data-testid="comparison-progress" role="status"><b>{event.progress.phase}</b><progress value={event.progress.completed} max={Math.max(1, event.progress.total)} /><span>{event.progress.currentFile ?? "准备中"}</span></div>}
       {job?.status === "cancelling" && <p className="task-status" role="status">已请求取消，等待比较后端确认终态。</p>}
       {job?.cancelError && <div className="error-banner" role="alert">取消请求失败：{job.cancelError}。任务仍由后台跟踪。</div>}
-      {event?.type === "failed" && <div className="callout comparison-failure" role="alert"><span>{event.message}</span><button className="button secondary" onClick={() => void start()}>重试比较</button></div>}
+      {event?.type === "failed" && <div className="callout comparison-failure" role="alert"><span>{safeDiagnosticMessage(event.code)}</span><button className="button secondary" onClick={() => void start()}>重试比较</button></div>}
       {event?.type === "cancelled" && <div className="callout comparison-cancelled" role="status"><span>{event.message}</span><button className="button secondary" onClick={() => void start()}>重新比较</button></div>}
       {startError && <div className="error-banner" role="alert">比较失败：{startError}<button className="button secondary" onClick={() => void start()}>重试</button></div>}
       {report && <>
@@ -275,7 +275,7 @@ export function ChangeExplorer({ project, sessions }: { project: ProjectOverview
           <ComparisonIdentityDetails report={report} />
         </details>
         {reportStateError && <div className="error-banner report-state-error" role="alert">无法刷新报告状态：{reportStateError}。仍显示报告生成时记录的状态“{report.status}”。</div>}
-        {report.completeness.status === "partial" && <div className="callout" data-testid="comparison-partial">分析不完整：{[...report.left.completeness.failures, ...report.right.completeness.failures].map((item) => `${item.filePath}：${item.reason}`).join("；") || report.completeness.impact.reasons.join("；") || "存在排除或无法映射的内容"}</div>}
+        {report.completeness.status === "partial" && <div className="callout" data-testid="comparison-partial">分析不完整：{[...report.left.completeness.failures, ...report.right.completeness.failures].map((item) => `${item.filePath}：${item.reason}${item.detailCode ? ` (${item.detailCode})` : ""}`).join("；") || report.completeness.impact.reasons.join("；") || "存在排除或无法映射的内容"}</div>}
         {report.files.length === 0 && <div className="callout" data-testid="comparison-no-changes">左右捕获内容没有变化。</div>}
         {report.truncated && <div className="callout" data-testid="comparison-truncated">查询已截断：{report.truncationReasons.join("、")}</div>}
         {reportState && reportState !== "current" && <div className="stale-banner" data-testid="change-report-stale">报告对应的历史源码仍可读，但当前 Git 状态为“{rightStateText[reportState]}”。请安全重算；已生成报告不会被覆盖。</div>}

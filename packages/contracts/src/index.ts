@@ -1,12 +1,133 @@
 import { z } from "zod";
 
-export const GRAPH_IR_VERSION = "1.2.0";
-export const TASK_PROTOCOL_VERSION = "1.0.0";
+export const GRAPH_IR_VERSION = "1.3.0";
+export const TASK_PROTOCOL_VERSION = "1.1.0";
 export const GRAPH_QUERY_VERSION = "1.0.0";
 export const MODULE_OVERVIEW_VERSION = "1.0.0";
 export const CHANGESET_VERSION = "1.1.0";
 export const OWNERSHIP_QUESTION_VERSION = "2.0.0";
-export const OWNERSHIP_SCORING_VERSION = "2.0.0";
+export const OWNERSHIP_SCORING_VERSION = "2.1.0";
+
+export const safeDiagnosticCodeSchema = z.enum([
+  "FILE_DISCOVERY_FAILED", "FILE_READ_FAILED", "FILE_ACCESS_FAILED", "ANALYSIS_FAILED",
+  "TYPESCRIPT_SYNTAX_ERROR", "PYTHON_SYNTAX_ERROR", "PYTHON_ENVIRONMENT_UNAVAILABLE", "PYTHON_ANALYSIS_FAILED", "ANALYSIS_TIMEOUT",
+  "SECURE_READER_UNAVAILABLE", "PROJECT_PATH_REJECTED", "SECURE_READ_FAILED", "NATIVE_MODULE_UNAVAILABLE",
+  "GIT_COMPARISON_FAILED", "GIT_REPOSITORY_INVALID", "GIT_NO_COMMIT", "GIT_CONFLICT", "GIT_MISSING_BASE", "GIT_PATH_REJECTED", "GIT_WORKTREE_UNSTABLE",
+  "WORKER_FAILED", "TASK_FAILED", "SNAPSHOT_NOT_CURRENT", "INDEX_SOURCE_CHANGED", "SNAPSHOT_VALIDATION_UNAVAILABLE", "LEGACY_DIAGNOSTIC_REDACTED",
+]);
+export type SafeDiagnosticCode = z.infer<typeof safeDiagnosticCodeSchema>;
+export const safeDiagnosticDetailCodeSchema = z.union([
+  z.string().regex(/^TS[0-9]{1,6}$/),
+  z.enum(["SyntaxError", "IndentationError", "TabError", "ENOENT", "EACCES", "EPERM", "EISDIR", "ERR_DLOPEN_FAILED", "ERR_SECURE_READ", "ERR_PROJECT_PATH_SECURITY"]),
+]);
+export type SafeDiagnosticDetailCode = z.infer<typeof safeDiagnosticDetailCodeSchema>;
+
+const SAFE_DIAGNOSTIC_MESSAGES: Record<SafeDiagnosticCode, string> = {
+  FILE_DISCOVERY_FAILED: "无法读取项目文件清单（详情已隐藏）",
+  FILE_READ_FAILED: "无法读取项目文件（详情已隐藏）",
+  FILE_ACCESS_FAILED: "无法访问项目文件（详情已隐藏）",
+  ANALYSIS_FAILED: "源文件分析失败（详情已隐藏）",
+  TYPESCRIPT_SYNTAX_ERROR: "TypeScript 语法错误（详情已隐藏）",
+  PYTHON_SYNTAX_ERROR: "Python 语法错误（详情已隐藏）",
+  PYTHON_ENVIRONMENT_UNAVAILABLE: "Python 分析环境不可用",
+  PYTHON_ANALYSIS_FAILED: "Python 分析失败（详情已隐藏）",
+  ANALYSIS_TIMEOUT: "代码分析超时",
+  SECURE_READER_UNAVAILABLE: "安全文件读取模块不可用；已拒绝读取源码",
+  PROJECT_PATH_REJECTED: "项目路径安全校验失败；已拒绝读取",
+  SECURE_READ_FAILED: "安全文件读取失败（详情已隐藏）",
+  NATIVE_MODULE_UNAVAILABLE: "所需原生模块不可用",
+  GIT_COMPARISON_FAILED: "Git 比较失败（详情已隐藏）",
+  GIT_REPOSITORY_INVALID: "Git 仓库状态无效，无法安全比较",
+  GIT_NO_COMMIT: "Git 仓库尚无任何提交；请先创建初始提交",
+  GIT_CONFLICT: "Git index 存在未合并条目；请先解决冲突",
+  GIT_MISSING_BASE: "Git 比较基准不可用；检查浅克隆或所选父提交",
+  GIT_PATH_REJECTED: "Git 对象包含越界或无效路径，已拒绝比较",
+  GIT_WORKTREE_UNSTABLE: "工作区在比较期间发生变化；未发布报告",
+  WORKER_FAILED: "后台分析工作线程异常退出",
+  TASK_FAILED: "后台任务失败（详情已隐藏）",
+  SNAPSHOT_NOT_CURRENT: "此快照未通过当前工作区校验；依赖它的解释和答题已失效，请重新索引后再试",
+  INDEX_SOURCE_CHANGED: "索引期间项目文件发生变化；未发布快照",
+  SNAPSHOT_VALIDATION_UNAVAILABLE: "无法校验当前工作区；快照内容未被判定为已变化",
+  LEGACY_DIAGNOSTIC_REDACTED: "历史诊断详情已隐藏",
+};
+
+export interface SafeDiagnostic { code: SafeDiagnosticCode; reason: string; detailCode?: SafeDiagnosticDetailCode }
+export function safeDiagnostic(code: SafeDiagnosticCode, detailCode?: unknown): SafeDiagnostic {
+  const parsedDetail = safeDiagnosticDetailCodeSchema.safeParse(detailCode);
+  return { code, reason: SAFE_DIAGNOSTIC_MESSAGES[code], ...(parsedDetail.success ? { detailCode: parsedDetail.data } : {}) };
+}
+export function safeDiagnosticMessage(code: SafeDiagnosticCode): string { return SAFE_DIAGNOSTIC_MESSAGES[code]; }
+
+export class SafeDiagnosticError extends Error {
+  readonly diagnosticCode: SafeDiagnosticCode;
+  readonly detailCode?: SafeDiagnosticDetailCode;
+  constructor(code: SafeDiagnosticCode, detailCode?: unknown) {
+    const diagnostic = safeDiagnostic(code, detailCode);
+    super(diagnostic.reason);
+    this.name = "SafeDiagnosticError";
+    this.diagnosticCode = diagnostic.code;
+    if (diagnostic.detailCode) this.detailCode = diagnostic.detailCode;
+  }
+}
+
+export function diagnosticForError(error: unknown, fallback: SafeDiagnosticCode): SafeDiagnostic {
+  if (error instanceof SafeDiagnosticError) return safeDiagnostic(error.diagnosticCode, error.detailCode);
+  if (!(error instanceof Error)) return safeDiagnostic(fallback);
+  try {
+    const code = (error as Error & { code?: unknown }).code;
+    const knownDetails = new Set(["ENOENT", "EACCES", "EPERM", "EISDIR", "ERR_DLOPEN_FAILED", "ERR_SECURE_READ", "ERR_PROJECT_PATH_SECURITY"]);
+    if (code === "ERR_PROJECT_PATH_SECURITY") return safeDiagnostic("PROJECT_PATH_REJECTED", code);
+    if (code === "ERR_SECURE_READ") return safeDiagnostic("SECURE_READ_FAILED", code);
+    if (code === "ERR_SECURE_READER_UNAVAILABLE") return safeDiagnostic("SECURE_READER_UNAVAILABLE");
+    if (code === "ERR_DLOPEN_FAILED") return safeDiagnostic("NATIVE_MODULE_UNAVAILABLE", code);
+    if (code === "ENOENT" || code === "EACCES" || code === "EPERM" || code === "EISDIR") return safeDiagnostic(fallback === "FILE_READ_FAILED" || fallback === "FILE_DISCOVERY_FAILED" ? "FILE_ACCESS_FAILED" : fallback, code);
+    if (error.name === "AbortError") return safeDiagnostic("TASK_FAILED");
+    if (error.name === "PythonAnalysisError") {
+      const kind = (error as Error & { kind?: unknown }).kind;
+      if (kind === "syntax") return safeDiagnostic("PYTHON_SYNTAX_ERROR");
+      if (kind === "environment") return safeDiagnostic("PYTHON_ENVIRONMENT_UNAVAILABLE");
+      if (kind === "timeout") return safeDiagnostic("ANALYSIS_TIMEOUT");
+      if (kind === "protocol" || kind === "process") return safeDiagnostic("PYTHON_ANALYSIS_FAILED");
+    }
+    if (typeof code === "string" && knownDetails.has(code)) return safeDiagnostic(fallback, code);
+  } catch { /* An unusual thrown object falls back to a fixed caller-supplied category. */ }
+  return safeDiagnostic(fallback);
+}
+
+function safeDiagnosticProjectPath(filePath: string): string {
+  const normalized = filePath.replaceAll("\\", "/");
+  if (["<项目>", "<分析器>", "<TypeScript Program>", "<Python Project>"].includes(normalized)) return normalized;
+  if (!normalized || normalized.startsWith("/") || /^[A-Za-z]:/.test(normalized) || normalized.includes("\0") || normalized.split("/").some((part) => part === ".." || part === "")) return "<项目>";
+  return normalized;
+}
+
+function legacyDiagnostic(reason: string | undefined): SafeDiagnostic {
+  if (!reason) return safeDiagnostic("LEGACY_DIAGNOSTIC_REDACTED");
+  if (/^TypeScript 语法错误 TS([0-9]{1,6})，位置 [0-9]+:[0-9]+$/.test(reason)) return safeDiagnostic("TYPESCRIPT_SYNTAX_ERROR", reason.match(/^TypeScript 语法错误 (TS[0-9]{1,6})/)?.[1]);
+  if (/^Python 语法错误（(?:SyntaxError|IndentationError|TabError)）$/.test(reason)) return safeDiagnostic("PYTHON_SYNTAX_ERROR", reason.match(/（(SyntaxError|IndentationError|TabError)）/)?.[1]);
+  if (reason === "安全文件句柄查询模块不可用；为保护项目根目录边界，已拒绝读取源码") return safeDiagnostic("SECURE_READER_UNAVAILABLE");
+  if (reason.includes("文件句柄超出项目根目录") || reason.includes("根目录包含性或对象身份校验失败")) return safeDiagnostic("PROJECT_PATH_REJECTED");
+  if (reason === "文件读取失败" || reason === "读取失败") return safeDiagnostic("FILE_READ_FAILED");
+  return safeDiagnostic("LEGACY_DIAGNOSTIC_REDACTED");
+}
+
+export const diagnosticFailureSchema = z.object({
+  filePath: z.string(), code: z.unknown().optional(), detailCode: z.unknown().optional(), reason: z.string().optional(),
+}).transform((item) => {
+  const parsedCode = safeDiagnosticCodeSchema.safeParse(item.code);
+  const diagnostic = parsedCode.success ? safeDiagnostic(parsedCode.data, item.detailCode) : legacyDiagnostic(item.reason);
+  return { filePath: safeDiagnosticProjectPath(item.filePath), ...diagnostic };
+});
+
+export const diagnosticScopeFailureSchema = z.object({
+  scope: z.string(), code: z.unknown().optional(), detailCode: z.unknown().optional(), reason: z.string().optional(),
+}).transform((item) => {
+  const match = item.scope.match(/^(left|right):(.+)$/);
+  const scope = match ? `${match[1]}:${safeDiagnosticProjectPath(match[2]!)}` : "comparison";
+  const parsedCode = safeDiagnosticCodeSchema.safeParse(item.code);
+  const diagnostic = parsedCode.success ? safeDiagnostic(parsedCode.data, item.detailCode) : legacyDiagnostic(item.reason);
+  return { scope, ...diagnostic };
+});
 
 export const confidenceSchema = z.enum(["verified", "inferred", "unknown"]);
 export type Confidence = z.infer<typeof confidenceSchema>;
@@ -41,7 +162,7 @@ export const nodeKindSchema = z.enum(["repository", "module", "file", "function"
 export type NodeKind = z.infer<typeof nodeKindSchema>;
 export const graphNodeSchema = z.object({
   id: z.string(), snapshotId: z.string(), kind: nodeKindSchema, name: z.string(), qualifiedName: z.string(),
-  language: z.string().optional(), filePath: z.string().optional(), span: sourceSpanSchema.optional(), summary: z.string().optional(),
+  language: z.string().optional(), filePath: z.string().optional(), span: sourceSpanSchema.optional(), evidenceId: z.string().min(1).optional(), summary: z.string().optional(),
   metadata: z.record(z.string(), z.unknown()).default({}),
 });
 export type GraphNode = z.infer<typeof graphNodeSchema>;
@@ -57,7 +178,7 @@ export type GraphEdge = z.infer<typeof graphEdgeSchema>;
 export const indexHealthSchema = z.object({
   status: z.enum(["idle", "indexing", "ready", "partial", "failed"]), totalFiles: z.number().int().nonnegative(),
   indexedFiles: z.number().int().nonnegative(), skippedFiles: z.number().int().nonnegative(), unsupportedFiles: z.number().int().nonnegative().default(0),
-  ignoredByRule: z.array(z.string()).default([]), failedFiles: z.array(z.object({ filePath: z.string(), reason: z.string() })),
+  ignoredByRule: z.array(z.string()).default([]), failedFiles: z.array(diagnosticFailureSchema),
   languageCounts: z.record(z.string(), z.number().int().nonnegative()), limitations: z.array(z.string()).default([]),
 });
 export type IndexHealth = z.infer<typeof indexHealthSchema>;
@@ -77,7 +198,7 @@ export const projectSnapshotSchema = z.object({
 export type ProjectSnapshot = z.infer<typeof projectSnapshotSchema>;
 
 export const snapshotStateSchema = z.object({
-  repositoryId: z.string(), snapshotId: z.string(), status: z.enum(["current", "stale", "missing"]),
+  repositoryId: z.string(), snapshotId: z.string(), status: z.enum(["current", "stale", "missing", "unavailable"]),
   snapshotAvailability: z.enum(["available", "legacy-missing-source"]),
   changedFiles: z.array(z.string()), addedFiles: z.array(z.string()), removedFiles: z.array(z.string()), missingFiles: z.array(z.string()),
   configurationChanged: z.boolean(), validationLimitations: z.array(z.string()), checkedAt: z.string(),
@@ -184,7 +305,7 @@ export const comparisonSourceKindSchema = z.enum(["empty-tree", "commit", "index
 const exclusionBucketSchema = z.object({ count: z.number().int().nonnegative(), paths: z.array(z.string()) });
 export const sideCompletenessSchema = z.object({
   status: z.enum(["complete", "partial"]), indexedFiles: z.number().int().nonnegative(),
-  failures: z.array(z.object({ filePath: z.string(), reason: z.string() })),
+  failures: z.array(diagnosticFailureSchema),
   exclusions: z.object({ ignored: exclusionBucketSchema, secrets: exclusionBucketSchema, unsupported: exclusionBucketSchema, binary: exclusionBucketSchema, oversized: exclusionBucketSchema, submodules: exclusionBucketSchema }),
   limitations: z.array(z.string()),
 });
@@ -217,7 +338,7 @@ export const changeReportSchema = z.object({
     unmappedChanges: z.array(z.object({ changeId: z.string(), side: z.enum(["left", "right"]).optional(), reason: z.string() })),
     impact: z.object({ status: z.enum(["complete", "partial"]), reasons: z.array(z.string()), unknownEdgeCount: z.number().int().nonnegative() }),
   }),
-  truncated: z.boolean(), truncationReasons: z.array(z.string()), failures: z.array(z.object({ scope: z.string(), reason: z.string() })), limitations: z.array(z.string()),
+  truncated: z.boolean(), truncationReasons: z.array(z.string()), failures: z.array(diagnosticScopeFailureSchema), limitations: z.array(z.string()),
 });
 export type ChangeReport = z.infer<typeof changeReportSchema>;
 
@@ -225,7 +346,7 @@ const legacyComparisonSideSchema = comparisonSideSchema.omit({ completeness: tru
 const legacyChangeReportSchema = z.object({
   version: z.literal("1.0.0"), id: z.string(), repositoryId: z.string(), mode: comparisonModeSchema, createdAt: z.string(), left: legacyComparisonSideSchema, right: legacyComparisonSideSchema,
   captureFingerprint: z.string(), status: z.enum(["current", "stale", "missing"]), files: z.array(changeFileSchema), impactPaths: z.array(impactPathSchema),
-  truncated: z.boolean(), truncationReasons: z.array(z.string()), failures: z.array(z.object({ scope: z.string(), reason: z.string() })), limitations: z.array(z.string()),
+  truncated: z.boolean(), truncationReasons: z.array(z.string()), failures: z.array(diagnosticScopeFailureSchema), limitations: z.array(z.string()),
 });
 const unknownLegacyCompleteness: SideCompleteness = { status: "partial", indexedFiles: 0, failures: [], exclusions: { ignored: { count: 0, paths: [] }, secrets: { count: 0, paths: [] }, unsupported: { count: 0, paths: [] }, binary: { count: 0, paths: [] }, oversized: { count: 0, paths: [] }, submodules: { count: 0, paths: [] } }, limitations: ["旧版 1.0.0 报告未保存分析完整性，不能认定为完整"] };
 export function parseChangeReport(raw: unknown): ChangeReport {
@@ -246,7 +367,7 @@ export const comparisonTaskEventSchema = z.discriminatedUnion("type", [
   z.object({ protocolVersion: z.literal(TASK_PROTOCOL_VERSION), type: z.literal("progress"), taskId: z.string(), repositoryId: z.string(), progress: comparisonProgressSchema }),
   z.object({ protocolVersion: z.literal(TASK_PROTOCOL_VERSION), type: z.literal("completed"), taskId: z.string(), repositoryId: z.string(), report: changeReportSchema }),
   z.object({ protocolVersion: z.literal(TASK_PROTOCOL_VERSION), type: z.literal("cancelled"), taskId: z.string(), repositoryId: z.string(), message: z.string() }),
-  z.object({ protocolVersion: z.literal(TASK_PROTOCOL_VERSION), type: z.literal("failed"), taskId: z.string(), repositoryId: z.string(), message: z.string(), retryable: z.boolean() }),
+  z.object({ protocolVersion: z.literal(TASK_PROTOCOL_VERSION), type: z.literal("failed"), taskId: z.string(), repositoryId: z.string(), code: safeDiagnosticCodeSchema, retryable: z.boolean() }),
 ]);
 export type ComparisonTaskEvent = z.infer<typeof comparisonTaskEventSchema>;
 
@@ -296,7 +417,7 @@ export type OwnershipProgress = z.infer<typeof ownershipProgressSchema>;
 
 export const importGitInputSchema = z.object({ url: z.string().min(1), branch: z.string().optional() });
 export const sourceFileResultSchema = snapshotRefSchema.extend({
-  filePath: z.string(), language: z.string(), content: z.string(), contentHash: z.string(), workspaceStatus: z.enum(["current", "stale", "missing"]), currentHash: z.string().optional(),
+  filePath: z.string(), language: z.string(), content: z.string(), contentHash: z.string(), workspaceStatus: z.enum(["current", "stale", "missing", "unavailable"]), currentHash: z.string().optional(),
   targetSpan: sourceSpanSchema.optional(), evidence: evidenceSchema.optional(),
 });
 export type SourceFileResult = z.infer<typeof sourceFileResultSchema>;
@@ -311,7 +432,7 @@ export const indexTaskEventSchema = z.discriminatedUnion("type", [
   z.object({ protocolVersion: z.literal(TASK_PROTOCOL_VERSION), type: z.literal("progress"), taskId: z.string(), rootPath: z.string(), repositoryId: z.string().optional(), progress: indexProgressSchema }),
   z.object({ protocolVersion: z.literal(TASK_PROTOCOL_VERSION), type: z.literal("completed"), taskId: z.string(), rootPath: z.string(), repositoryId: z.string(), overview: projectOverviewSchema }),
   z.object({ protocolVersion: z.literal(TASK_PROTOCOL_VERSION), type: z.literal("cancelled"), taskId: z.string(), rootPath: z.string(), repositoryId: z.string().optional(), message: z.string() }),
-  z.object({ protocolVersion: z.literal(TASK_PROTOCOL_VERSION), type: z.literal("failed"), taskId: z.string(), rootPath: z.string(), repositoryId: z.string().optional(), message: z.string(), retryable: z.boolean() }),
+  z.object({ protocolVersion: z.literal(TASK_PROTOCOL_VERSION), type: z.literal("failed"), taskId: z.string(), rootPath: z.string(), repositoryId: z.string().optional(), code: safeDiagnosticCodeSchema, retryable: z.boolean() }),
 ]);
 export type IndexTaskEvent = z.infer<typeof indexTaskEventSchema>;
 
@@ -343,7 +464,7 @@ export const workerRequestSchema = z.discriminatedUnion("operation", [
 export type WorkerRequest = z.infer<typeof workerRequestSchema>;
 export const workerResponseSchema = z.union([
   z.object({ type: z.literal("response"), requestId: z.string(), ok: z.literal(true), payload: z.unknown() }),
-  z.object({ type: z.literal("response"), requestId: z.string(), ok: z.literal(false), error: z.string() }),
+  z.object({ type: z.literal("response"), requestId: z.string(), ok: z.literal(false), code: safeDiagnosticCodeSchema }),
   z.object({ type: z.literal("event"), event: indexTaskEventSchema }),
   z.object({ type: z.literal("comparison-event"), event: comparisonTaskEventSchema }),
 ]);

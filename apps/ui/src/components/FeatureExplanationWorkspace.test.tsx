@@ -58,6 +58,22 @@ describe("功能解释交互", () => {
     expect(explainFeature).toHaveBeenCalledTimes(2); view.unmount();
   });
 
+  it("分别显示相同未知目标在不同源码位置的调用", async () => {
+    const result = explanation(); result.unknowns = [
+      "无法确认：missing_handler（feature.ts:5:3）",
+      "无法确认：missing_handler（feature.ts:6:3）",
+    ];
+    const { view } = setup(vi.fn(async () => result)); const user = userEvent.setup();
+    await user.type(screen.getByRole("textbox", { name: "需要解释的功能" }), "branchFeature");
+    await user.click(screen.getByRole("button", { name: "开始追踪" }));
+    const entries = await screen.findAllByText(/无法确认：missing_handler/);
+    expect(entries).toHaveLength(2);
+    expect(entries.map((item) => item.textContent)).toEqual(expect.arrayContaining([
+      expect.stringContaining("feature.ts:5:3"), expect.stringContaining("feature.ts:6:3"),
+    ]));
+    view.unmount();
+  });
+
   it("忽略快照切换后返回的旧解释", async () => {
     const old = deferred<FeatureExplanation>(); const explainFeature = vi.fn().mockReturnValueOnce(old.promise).mockResolvedValueOnce(explanation("snap-b", "新快照结果"));
     window.xray = { explainFeature } as unknown as XRayApi; const openLocation = vi.fn(); const sessions = createOwnershipSessionController();

@@ -1,16 +1,16 @@
 import { basename, dirname, extname, join, resolve } from "node:path";
 import { existsSync, mkdirSync, readdirSync } from "node:fs";
-import { mkdir, readFile, realpath } from "node:fs/promises";
+import { mkdir, realpath } from "node:fs/promises";
 import {
-  GRAPH_IR_VERSION,
+  GRAPH_IR_VERSION, SafeDiagnosticError, diagnosticForError, safeDiagnostic, safeDiagnosticCodeSchema,
   CHANGESET_VERSION, GRAPH_QUERY_VERSION, type ChangeFile, type ChangeReport, type ComparisonRequest, type ComparisonSide, type DirectChange, type Evidence, type EvidenceLocation, type FeatureExplanation, type FlowResult, type GraphEdge, type GraphNode, type GraphQueryRequest, type GraphQueryResponse, type ImpactPath,
-  OWNERSHIP_SCORING_VERSION, type IndexProgress, type OwnershipAttempt, type OwnershipGrade, type OwnershipProgress, type OwnershipQuestion, type OwnershipQuestionRequest, type OwnershipSubmission, type ProjectSnapshot,
+  OWNERSHIP_SCORING_VERSION, type IndexProgress, type OwnershipAttempt, type OwnershipGrade, type OwnershipProgress, type OwnershipQuestion, type OwnershipQuestionRequest, type OwnershipSubmission, type ProjectSnapshot, type SafeDiagnosticCode, type SafeDiagnosticDetailCode,
   type ProjectOverview, type ModuleExpansionRequest, type ModuleExpansionResponse, type ModuleListRequest, type ModuleListResponse, type ModuleOverviewRequest, type ModuleOverviewResponse, type ModuleRelationEdgesRequest, type ModuleRelationEdgesResponse, type SearchRequest, type SearchResponse, type EvidenceRangeResponse,
   type SnapshotRef, type SnapshotState, type SourceCitation, type SourceFileResult, type IdentifiedEvidence,
 } from "@project-xray/contracts";
 import {
-  assertContainedPath, contentFingerprint, discoverProject, isAnalysisConfig, languageFromPath, moduleNameForPath, normalizeProjectPath,
-  readProjectFile, sourceFingerprint, stableId, throwIfAborted, type LanguageAnalyzer,
+  assertContainedPath, contentFingerprint, createSecureReadScope, discoverProject, isAnalysisConfig, isProjectPathSecurityError, languageFromPath, moduleNameForPath, normalizeProjectPath,
+  readProjectFile, readSecureProjectFile, sourceFingerprint, stableId, throwIfAborted, type LanguageAnalyzer, type SecureReadScope, type SecureReadTestHooks,
 } from "@project-xray/analyzer-core";
 import { TypeScriptAnalyzer } from "@project-xray/analyzer-typescript";
 import { PythonAnalyzer } from "@project-xray/analyzer-python";
@@ -24,8 +24,8 @@ export interface XRayApplicationOptions {
   cacheRoot: string;
   onProgress?: (progress: IndexProgress) => void;
 }
-export interface IndexOptions { signal?: AbortSignal; onProgress?: (progress: IndexProgress) => void }
-export interface ComparisonOptions { signal?: AbortSignal; onProgress?: (progress: { phase: "capturing" | "analyzing-left" | "analyzing-right" | "diffing" | "propagating" | "persisting"; completed: number; total: number; currentFile?: string }) => void }
+export interface IndexOptions { signal?: AbortSignal; onProgress?: (progress: IndexProgress) => void; testOnlySecureReadHooks?: SecureReadTestHooks }
+export interface ComparisonOptions { signal?: AbortSignal; onProgress?: (progress: { phase: "capturing" | "analyzing-left" | "analyzing-right" | "diffing" | "propagating" | "persisting"; completed: number; total: number; currentFile?: string }) => void; testOnlySecureReadHooks?: SecureReadTestHooks }
 
 interface IndexedSource { absolutePath: string; projectPath: string; content: string; contentHash: string; language: string }
 
@@ -74,19 +74,26 @@ export class XRayApplication {
 
   async indexProject(rootPath: string, sourceType: "local" | "git" = "local", options: IndexOptions = {}): Promise<ProjectSnapshot> {
     const progress = options.onProgress ?? this.onProgress;
-    const safeRoot = await realpath(rootPath); throwIfAborted(options.signal);
+    throwIfAborted(options.signal);
+    let secureScope: SecureReadScope;
+    try { secureScope = await createSecureReadScope(rootPath); }
+    catch (error) { if (isAbort(error)) throw error; throw new SafeDiagnosticError(diagnosticForError(error, "FILE_ACCESS_FAILED").code); }
+    const safeRoot = secureScope.rootPath;
+    try {
     progress?.({ phase: "discovering", completed: 0, total: 0 });
-    const discovery = await discoverProject(safeRoot, options.signal);
+    let discovery: Awaited<ReturnType<typeof discoverProject>>;
+    try { discovery = await discoverProject(safeRoot, options.signal); }
+    catch (error) { if (isAbort(error)) throw error; throw new SafeDiagnosticError(diagnosticForError(error, "FILE_DISCOVERY_FAILED").code); }
     const sources: IndexedSource[] = [];
-    const failures = [...discovery.failures];
+    const failures: ProjectSnapshot["health"]["failedFiles"] = discovery.failures.map((failure) => failureWithCode(safeRoot, failure.filePath, failure.code, failure.detailCode, "FILE_DISCOVERY_FAILED"));
     for (const [index, absolutePath] of discovery.files.entries()) {
       throwIfAborted(options.signal);
       const projectPath = normalizeProjectPath(safeRoot, absolutePath);
       progress?.({ phase: "reading", completed: index, total: discovery.files.length, currentFile: projectPath });
       try {
-        const content = await readFile(absolutePath, "utf8");
+        const content = await readSecureProjectFile(secureScope, absolutePath, { ...(options.signal ? { signal: options.signal } : {}), ...(options.testOnlySecureReadHooks ? { testHooks: options.testOnlySecureReadHooks } : {}) });
         sources.push({ absolutePath, projectPath, content, contentHash: contentFingerprint(content), language: languageFromPath(projectPath) });
-      } catch (error) { failures.push({ filePath: projectPath, reason: safeError(error, "读取失败") }); }
+      } catch (error) { if (isProjectPathSecurityError(error)) throw error; failures.push(failureFromError(safeRoot, projectPath, error, "FILE_READ_FAILED")); }
     }
 
     const sourceIdentity = sourceFingerprint(sources.map((item) => ({ path: item.projectPath, content: item.content })));
@@ -103,9 +110,9 @@ export class XRayApplication {
     for (const [index, item] of sources.entries()) {
       throwIfAborted(options.signal);
       progress?.({ phase: "analyzing", completed: index, total: sources.length, currentFile: item.projectPath });
-      const fileNodeId = stableId(repositoryId, "file", item.projectPath); const fileEvidenceId = stableId(snapshotId, item.projectPath, "file"); const lineCount = item.content.split(/\r?\n/).length;
-      nodes.push({ id: fileNodeId, snapshotId, kind: "file", name: basename(item.projectPath), qualifiedName: item.projectPath, language: item.language, filePath: item.projectPath, span: { filePath: item.projectPath, startLine: 1, startColumn: 0, endLine: lineCount, endColumn: 0 }, metadata: { bytes: Buffer.byteLength(item.content), contentHash: item.contentHash } });
-      evidence.push({ id: fileEvidenceId, snapshotId, analyzer: "project-indexer", analyzerVersion: GRAPH_IR_VERSION, kind: "file", confidence: "verified", reason: "文件内容已进入不可变索引快照", span: { filePath: item.projectPath, startLine: 1, startColumn: 0, endLine: lineCount, endColumn: 0 } });
+      const fileNodeId = stableId(repositoryId, "file", item.projectPath); const fileEvidenceId = stableId(snapshotId, item.projectPath, "file"); const fileSpan = wholeFileSpan(item.projectPath, item.content);
+      nodes.push({ id: fileNodeId, snapshotId, kind: "file", name: basename(item.projectPath), qualifiedName: item.projectPath, language: item.language, filePath: item.projectPath, span: fileSpan, evidenceId: fileEvidenceId, metadata: { bytes: Buffer.byteLength(item.content), contentHash: item.contentHash } });
+      evidence.push({ id: fileEvidenceId, snapshotId, analyzer: "project-indexer", analyzerVersion: GRAPH_IR_VERSION, kind: "file", confidence: "verified", reason: "文件内容已进入不可变索引快照", span: fileSpan });
       const moduleName = moduleNameForPath(item.projectPath); let moduleId = moduleIds.get(moduleName);
       if (!moduleId) { moduleId = stableId(repositoryId, "module", moduleName); moduleIds.set(moduleName, moduleId); nodes.push({ id: moduleId, snapshotId, kind: "module", name: moduleName, qualifiedName: moduleName, metadata: {} }); edges.push({ id: stableId(snapshotId, rootNodeId, moduleId, "CONTAINS"), snapshotId, source: rootNodeId, target: moduleId, kind: "CONTAINS", confidence: "verified", evidenceId: fileEvidenceId, reason: "目录结构定义模块分组" }); }
       edges.push({ id: stableId(snapshotId, moduleId, fileNodeId, "CONTAINS"), snapshotId, source: moduleId, target: fileNodeId, kind: "CONTAINS", confidence: "verified", evidenceId: fileEvidenceId, reason: "文件位于该目录模块中" });
@@ -116,13 +123,13 @@ export class XRayApplication {
 
     const context = { rootPath: safeRoot, repositoryId, snapshotId, ...(options.signal ? { abortSignal: options.signal } : {}) };
     if (typeScriptSources.length > 0) {
-      try { const result = await (this.analyzers.find((item): item is TypeScriptAnalyzer => item instanceof TypeScriptAnalyzer)!).analyzeProject(typeScriptSources, context, sources.filter((item) => isAnalysisConfig(item.projectPath)).map((item) => ({ absolutePath: item.absolutePath, content: item.content }))); nodes.push(...result.nodes); edges.push(...result.edges); evidence.push(...result.evidence); failures.push(...(result.failures ?? [])); }
-      catch (error) { if (isAbort(error)) throw error; failures.push({ filePath: "<TypeScript Program>", reason: safeError(error, "TypeScript 项目分析失败") }); }
+      try { const result = await (this.analyzers.find((item): item is TypeScriptAnalyzer => item instanceof TypeScriptAnalyzer)!).analyzeProject(typeScriptSources, context, sources.filter((item) => isAnalysisConfig(item.projectPath)).map((item) => ({ absolutePath: item.absolutePath, content: item.content }))); nodes.push(...result.nodes); edges.push(...result.edges); evidence.push(...result.evidence); failures.push(...(result.failures ?? []).map((failure) => failureFromAnalyzerResult(safeRoot, failure, "ANALYSIS_FAILED"))); }
+      catch (error) { if (isAbort(error)) throw error; failures.push(failureFromError(safeRoot, "<TypeScript Program>", error, "ANALYSIS_FAILED")); }
     }
     throwIfAborted(options.signal);
     if (pythonSources.length > 0) {
-      try { const result = await (this.analyzers.find((item): item is PythonAnalyzer => item instanceof PythonAnalyzer)!).analyzeProject(pythonSources, context); nodes.push(...result.nodes); edges.push(...result.edges); evidence.push(...result.evidence); failures.push(...(result.failures ?? [])); }
-      catch (error) { if (isAbort(error)) throw error; failures.push({ filePath: "<Python Project>", reason: safeError(error, "Python 项目分析失败") }); }
+      try { const result = await (this.analyzers.find((item): item is PythonAnalyzer => item instanceof PythonAnalyzer)!).analyzeProject(pythonSources, context); nodes.push(...result.nodes); edges.push(...result.edges); evidence.push(...result.evidence); failures.push(...(result.failures ?? []).map((failure) => failureFromAnalyzerResult(safeRoot, failure, "PYTHON_ANALYSIS_FAILED"))); }
+      catch (error) { if (isAbort(error)) throw error; failures.push(failureFromError(safeRoot, "<Python Project>", error, "PYTHON_ANALYSIS_FAILED")); }
     }
 
     const knownNodeIds = new Set(nodes.map((node) => node.id));
@@ -142,10 +149,10 @@ export class XRayApplication {
     };
 
     progress?.({ phase: "verifying", completed: 0, total: sources.length });
-    const verified = await discoverAndRead(safeRoot, options.signal, (completed, total, currentFile) => progress?.({ phase: "verifying", completed, total, currentFile }));
+    const verified = await discoverAndRead(safeRoot, options.signal, (completed, total, currentFile) => progress?.({ phase: "verifying", completed, total, currentFile }), secureScope, options.testOnlySecureReadHooks);
     const initialMap = new Map(sources.map((item) => [item.projectPath, item.contentHash])); const verifiedMap = new Map(verified.sources.map((item) => [item.projectPath, item.contentHash]));
     const drift = compareSourceMaps(initialMap, verifiedMap);
-    if (drift.added.length || drift.removed.length || drift.changed.length || verified.discovery.failures.length) throw new Error(`索引期间项目发生变化，未发布快照：${[...drift.added, ...drift.removed, ...drift.changed, ...verified.discovery.failures.map((item) => item.filePath)].slice(0, 8).join("、")}`);
+    if (drift.added.length || drift.removed.length || drift.changed.length || verified.discovery.failures.length) throw new SafeDiagnosticError("INDEX_SOURCE_CHANGED");
     throwIfAborted(options.signal);
     progress?.({ phase: "persisting", completed: sources.length, total: sources.length });
     const store = this.storeForRepository(repositoryId);
@@ -153,6 +160,7 @@ export class XRayApplication {
     throwIfAborted(options.signal);
     this.snapshotStores.set(snapshotId, store); this.current = overviewFromSnapshot(snapshot); this.questions.clear();
     return snapshot;
+    } finally { secureScope.close(); }
   }
 
   private storeForRepository(repositoryId: string): GraphStore {
@@ -181,12 +189,13 @@ export class XRayApplication {
     if (snapshot.analysisIdentity.graphIrVersion.startsWith("legacy-")) return { ...ref, status: "missing", snapshotAvailability: "legacy-missing-source", changedFiles: [], addedFiles: [], removedFiles: [], missingFiles: ["<旧版快照未保存源码>"], configurationChanged: true, validationLimitations, checkedAt };
     let current: Awaited<ReturnType<typeof discoverAndRead>>;
     try { current = await discoverAndRead(snapshot.rootPath); }
-    catch { return { ...ref, status: "missing", snapshotAvailability: "available", changedFiles: [], addedFiles: [], removedFiles: [], missingFiles: ["<项目根目录不可访问>"], configurationChanged: true, validationLimitations, checkedAt }; }
+    catch { return { ...ref, status: "unavailable", snapshotAvailability: "available", changedFiles: [], addedFiles: [], removedFiles: [], missingFiles: [], configurationChanged: false, validationLimitations, checkedAt }; }
     const expected = new Map(snapshot.sourceFiles.map((item) => [item.filePath, item.contentHash])); const actual = new Map(current.sources.map((item) => [item.projectPath, item.contentHash]));
     const drift = compareSourceMaps(expected, actual); const configPaths = new Set([...drift.added, ...drift.removed, ...drift.changed].filter(isAnalysisConfig));
     const missingFiles = [...new Set([...drift.removed, ...current.discovery.failures.map((item) => item.filePath)])].sort();
-    const stale = drift.added.length > 0 || drift.removed.length > 0 || drift.changed.length > 0 || current.discovery.failures.length > 0;
-    return { ...ref, status: current.discovery.failures.length > 0 ? "missing" : stale ? "stale" : "current", snapshotAvailability: "available", changedFiles: drift.changed, addedFiles: drift.added, removedFiles: drift.removed, missingFiles, configurationChanged: configPaths.size > 0, validationLimitations, checkedAt };
+    if (current.discovery.failures.length > 0) return { ...ref, status: "unavailable", snapshotAvailability: "available", changedFiles: [], addedFiles: [], removedFiles: [], missingFiles: [], configurationChanged: false, validationLimitations, checkedAt };
+    const stale = drift.added.length > 0 || drift.removed.length > 0 || drift.changed.length > 0;
+    return { ...ref, status: stale ? "stale" : "current", snapshotAvailability: "available", changedFiles: drift.changed, addedFiles: drift.added, removedFiles: drift.removed, missingFiles, configurationChanged: configPaths.size > 0, validationLimitations, checkedAt };
   }
 
   listModules(input: ModuleListRequest): ModuleListResponse { return this.requireStore(input).listModules(input); }
@@ -211,8 +220,24 @@ export class XRayApplication {
       nodeIds: [node.id], evidenceIds: edge ? [edge.evidenceId] : evidenceForNode(snapshot, node.id).slice(0, 2), confidence: edge?.confidence ?? "inferred" as const,
     }));
     const ordered = path.length > 1;
+    const edgesById = new Map(bounded.edges.map((edge) => [edge.id, edge]));
+    const evidenceById = new Map(bounded.evidence.map((item) => [item.id, item]));
+    const unresolvedByEdgeId = new Map<string, { edge?: GraphEdge; target?: string; reason: string }>();
+    for (const { edge } of path) if (edge?.confidence === "unknown") unresolvedByEdgeId.set(edge.id, { edge, ...(edge.unresolvedTarget ? { target: edge.unresolvedTarget } : {}), reason: edge.reason });
+    for (const item of bounded.unresolved) if (!unresolvedByEdgeId.has(item.edgeId)) {
+      const edge = edgesById.get(item.edgeId); const target = edge?.unresolvedTarget ?? item.target;
+      unresolvedByEdgeId.set(item.edgeId, { ...(edge ? { edge } : {}), ...(target ? { target } : {}), reason: edge?.reason ?? item.reason });
+    }
     return { ...ref, title: `解释：${query}`, summary: ordered ? `展示从候选 ${root.name} 出发的一条有界静态调用路径；检索相关性不证明它是业务入口，也不是运行时轨迹。` : `只找到与查询相关的候选证据，未证明后续执行顺序。`, structure: ordered ? "ordered-path" : "related-evidence", steps, unknowns: [
-      ...path.flatMap((item) => item.edge?.confidence === "unknown" ? [`无法确认：${item.edge.unresolvedTarget ?? item.edge.reason}`] : []),
+      ...[...unresolvedByEdgeId.values()].map(({ edge, target, reason }) => {
+        const span = edge ? evidenceById.get(edge.evidenceId)?.span : undefined;
+        const label = target ?? edge?.reason ?? reason;
+        const details = [
+          ...(span ? [`${span.filePath}:${span.startLine}:${span.startColumn + 1}`] : []),
+          ...(reason && reason !== label ? [reason] : []),
+        ];
+        return `无法确认：${label}${details.length ? `（${details.join("；")}）` : ""}`;
+      }),
       ...(bounded.truncated ? [`查询已按 ${bounded.truncationReasons.join("、")} 截断；范围外可能仍有路径。`] : []),
       "分支、动态调用、依赖注入和运行时配置可能形成其他路径。",
     ] };
@@ -221,7 +246,7 @@ export class XRayApplication {
   async createChangeReport(input: ComparisonRequest, options: ComparisonOptions = {}): Promise<ChangeReport> {
     const base = this.requireSnapshot(input).snapshot; const progress = options.onProgress; throwIfAborted(options.signal);
     progress?.({ phase: "capturing", completed: 0, total: 1 });
-    const captured = await captureComparison(base.rootPath, input.mode, input.parentNumber ?? 1, options.signal); throwIfAborted(options.signal);
+    const captured = await captureComparison(base.rootPath, input.mode, input.parentNumber ?? 1, options.signal, options.testOnlySecureReadHooks ? { secureReadHooks: options.testOnlySecureReadHooks } : {}); throwIfAborted(options.signal);
     progress?.({ phase: "analyzing-left", completed: 0, total: captured.left.sources.length });
     const leftSnapshot = await this.analyzeComparisonSide(base, captured.left, options.signal, (completed, total, currentFile) => progress?.({ phase: "analyzing-left", completed, total, currentFile }));
     progress?.({ phase: "analyzing-right", completed: 0, total: captured.right.sources.length });
@@ -231,7 +256,7 @@ export class XRayApplication {
     progress?.({ phase: "propagating", completed: 0, total: files.length });
     const impactPaths: ImpactPath[] = []; let usedWork = 0; let truncated = false; const truncationReasons = new Set<string>(); const store = this.storeForRepository(base.repositoryId);
     for (const [index, file] of files.entries()) { throwIfAborted(options.signal); const currentFile = file.newPath ?? file.oldPath; progress?.({ phase: "propagating", completed: index, total: files.length, ...(currentFile ? { currentFile } : {}) }); for (const direct of file.directChanges) { if (!direct.nodeId || impactPaths.length >= input.maxPaths || usedWork >= input.maxWork) { if (direct.nodeId) { truncated = true; truncationReasons.add(impactPaths.length >= input.maxPaths ? "路径数量预算" : "工作量预算"); } continue; } const snapshot = direct.side === "left" ? leftSnapshot : rightSnapshot; const remainingWork = Math.max(1, input.maxWork - usedWork); const paths = impactPathsForDirect(file.id, direct, snapshot, store, input.maxDepth, input.maxPaths - impactPaths.length, remainingWork); for (const path of paths.items) impactPaths.push(path); usedWork += paths.usedWork; if (paths.truncated) { truncated = true; truncationReasons.add(paths.reason); } } }
-    const left = comparisonSide(captured.left, leftSnapshot); const right = comparisonSide(captured.right, rightSnapshot); const createdAt = new Date().toISOString(); const queryBudget = { maxDepth: input.maxDepth, maxPaths: input.maxPaths, maxWork: input.maxWork }; const unmappedChanges = files.flatMap((file) => file.directChanges.filter((item) => !item.nodeId).map((item) => ({ changeId: file.id, side: item.side, reason: item.reason }))); const failures = [...left.completeness.failures.map((item) => ({ scope: `left:${item.filePath}`, reason: item.reason })), ...right.completeness.failures.map((item) => ({ scope: `right:${item.filePath}`, reason: item.reason }))]; const unknownEdgeCount = impactPaths.flatMap((path) => path.edges).filter((edge) => edge.confidence === "unknown" || Boolean(edge.unresolvedTarget)).length; const impactReasons = [...truncationReasons, ...(unknownEdgeCount ? [`${unknownEdgeCount} 条影响边目标未知`] : []), ...(failures.length ? ["一侧或两侧分析不完整"] : [])]; const completenessStatus = left.completeness.status === "partial" || right.completeness.status === "partial" || unmappedChanges.length > 0 || impactReasons.length > 0 ? "partial" : "complete"; let publicationStatus: ChangeReport["status"] = "current"; try { if (await comparisonStateFingerprint(base.rootPath, input.mode, options.signal) !== captured.captureFingerprint) publicationStatus = "stale"; } catch { publicationStatus = "missing"; }
+    const left = comparisonSide(captured.left, leftSnapshot); const right = comparisonSide(captured.right, rightSnapshot); const createdAt = new Date().toISOString(); const queryBudget = { maxDepth: input.maxDepth, maxPaths: input.maxPaths, maxWork: input.maxWork }; const unmappedChanges = files.flatMap((file) => file.directChanges.filter((item) => !item.nodeId).map((item) => ({ changeId: file.id, side: item.side, reason: item.reason }))); const failures = [...left.completeness.failures.map((item) => ({ scope: `left:${item.filePath}`, code: item.code, ...(item.detailCode ? { detailCode: item.detailCode } : {}), reason: item.reason })), ...right.completeness.failures.map((item) => ({ scope: `right:${item.filePath}`, code: item.code, ...(item.detailCode ? { detailCode: item.detailCode } : {}), reason: item.reason }))]; const unknownEdgeCount = impactPaths.flatMap((path) => path.edges).filter((edge) => edge.confidence === "unknown" || Boolean(edge.unresolvedTarget)).length; const impactReasons = [...truncationReasons, ...(unknownEdgeCount ? [`${unknownEdgeCount} 条影响边目标未知`] : []), ...(failures.length ? ["一侧或两侧分析不完整"] : [])]; const completenessStatus = left.completeness.status === "partial" || right.completeness.status === "partial" || unmappedChanges.length > 0 || impactReasons.length > 0 ? "partial" : "complete"; let publicationStatus: ChangeReport["status"] = "current"; try { if (await comparisonStateFingerprint(base.rootPath, input.mode, options.signal) !== captured.captureFingerprint) publicationStatus = "stale"; } catch { publicationStatus = "missing"; }
     const report: ChangeReport = { version: CHANGESET_VERSION, id: stableId(base.repositoryId, captured.captureFingerprint, input.mode, leftSnapshot.snapshotId, rightSnapshot.snapshotId, JSON.stringify(queryBudget)), repositoryId: base.repositoryId, mode: input.mode, createdAt, left, right, captureFingerprint: captured.captureFingerprint, status: publicationStatus, files, impactPaths, queryBudget, completeness: { status: completenessStatus, unmappedChanges, impact: { status: impactReasons.length ? "partial" : "complete", reasons: impactReasons, unknownEdgeCount } }, truncated, truncationReasons: [...truncationReasons], failures, limitations: [...captured.limitations, "报告发布前再次核验当前 Git 身份；之后的变化由状态轮询识别，历史快照仍可读", "影响路径按稳定的广度优先顺序选择有限代表路径；不是全部可能路径", "影响路径来自对应侧静态 CALLS/HANDLES 或文件级 IMPORTS 反向可达，只表示可能影响，不证明运行时执行或必然损坏", "配置或分析器身份不同造成的图事实差异不会自动归因于某一行代码"] };
     throwIfAborted(options.signal); progress?.({ phase: "persisting", completed: 0, total: 1 }); store.saveChangeReport(report); return report;
   }
@@ -246,7 +271,7 @@ export class XRayApplication {
 
   async gradeOwnershipAnswer(submission: OwnershipSubmission): Promise<OwnershipGrade> {
     const { snapshot, store } = this.requireSnapshot(submission); const state = await this.getSnapshotState(submission);
-    if (state.status !== "current") throw new Error("源码已变化，旧题已经失效；请更新索引后重新答题");
+    if (state.status !== "current") throw new SafeDiagnosticError("SNAPSHOT_NOT_CURRENT");
     const question = this.questions.get(questionKey(submission)); if (!question) throw new Error("题目不存在、已经完成或属于其他快照");
     const citations = validateCitations(snapshot, submission.citations, (filePath) => store.readSnapshotSource(snapshot.snapshotId, filePath)?.content);
     const grade = gradeAnswer(question, submission, snapshot, citations);
@@ -267,12 +292,13 @@ export class XRayApplication {
     const { snapshot, store } = this.requireSnapshot(location); const stored = store.readSnapshotSource(snapshot.snapshotId, location.filePath);
     if (!stored) throw new Error("该快照没有保存此源码文件");
     const targetSpan = { filePath: location.filePath, startLine: location.startLine, startColumn: location.startColumn, endLine: location.endLine, endColumn: location.endColumn };
-    assertSpanWithinContent(targetSpan, stored.content);
     const item = location.evidenceId ? snapshot.evidence.find((candidate) => candidate.id === location.evidenceId) : undefined;
     if (location.evidenceId && (!item || item.span.filePath !== location.filePath)) throw new Error("证据不属于指定快照或文件");
-    let workspaceStatus: "current" | "stale" | "missing" = "current"; let currentHash: string | undefined;
+    const opensEmptyFile = stored.content.length === 0 && item?.kind === "file" && sameSpan(targetSpan, item.span) && targetSpan.startLine === 1 && targetSpan.startColumn === 0 && targetSpan.endLine === 1 && targetSpan.endColumn === 0;
+    if (!opensEmptyFile) assertSpanWithinContent(targetSpan, stored.content);
+    let workspaceStatus: "current" | "stale" | "missing" | "unavailable" = "current"; let currentHash: string | undefined;
     try { currentHash = contentFingerprint(await readProjectFile(snapshot.rootPath, location.filePath)); if (currentHash !== stored.contentHash) workspaceStatus = "stale"; }
-    catch { workspaceStatus = "missing"; }
+    catch (error) { workspaceStatus = error instanceof Error && (error as NodeJS.ErrnoException).code === "ENOENT" ? "missing" : "unavailable"; }
     return { repositoryId: snapshot.repositoryId, snapshotId: snapshot.snapshotId, filePath: location.filePath, language: stored.language, content: stored.content, contentHash: stored.contentHash, workspaceStatus, ...(currentHash ? { currentHash } : {}), targetSpan, ...(item ? { evidence: item } : {}) };
   }
 
@@ -281,17 +307,17 @@ export class XRayApplication {
   private async analyzeComparisonSide(base: ProjectSnapshot, side: CapturedSide, signal?: AbortSignal, progress?: (completed: number, total: number, currentFile: string) => void): Promise<ProjectSnapshot> {
     const sources: IndexedSource[] = side.sources.map((item) => ({ absolutePath: resolve(base.rootPath, item.projectPath), projectPath: item.projectPath, content: item.content, contentHash: item.contentHash, language: item.language }));
     const analyzerVersions = Object.fromEntries(this.analyzers.map((item) => [item.id, item.version])); const analysisIdentity = { graphIrVersion: GRAPH_IR_VERSION, analyzerVersions, configurationHash: side.manifestFingerprint, sourceFingerprint: side.contentFingerprint }; const snapshotId = stableId(base.repositoryId, side.contentFingerprint, GRAPH_IR_VERSION, JSON.stringify(analyzerVersions), side.manifestFingerprint); const existing = this.storeForRepository(base.repositoryId).loadSnapshot(snapshotId); if (existing) { this.snapshotStores.set(snapshotId, this.storeForRepository(base.repositoryId)); return existing; }
-    const rootNodeId = stableId(base.repositoryId, "repository-root"); const nodes: GraphNode[] = [{ id: rootNodeId, snapshotId, kind: "repository", name: base.name, qualifiedName: base.rootPath, metadata: { sourceType: "git-comparison", comparisonSide: side.kind } }]; const edges: GraphEdge[] = []; const evidence: Evidence[] = []; const failures: Array<{ filePath: string; reason: string }> = []; const moduleIds = new Map<string, string>(); const typeScriptSources: Array<{ absolutePath: string; content: string }> = []; const pythonSources: Array<{ absolutePath: string; content: string }> = [];
-    for (const [index, item] of sources.entries()) { throwIfAborted(signal); progress?.(index, sources.length, item.projectPath); const fileNodeId = stableId(base.repositoryId, "file", item.projectPath); const fileEvidenceId = stableId(snapshotId, item.projectPath, "file"); const lines = item.content.split(/\r?\n/); const endColumn = lines.at(-1)?.length ?? 0; const span = { filePath: item.projectPath, startLine: 1, startColumn: 0, endLine: lines.length, endColumn }; nodes.push({ id: fileNodeId, snapshotId, kind: "file", name: basename(item.projectPath), qualifiedName: item.projectPath, language: item.language, filePath: item.projectPath, span, metadata: { bytes: Buffer.byteLength(item.content), contentHash: item.contentHash, comparisonSide: side.kind } }); evidence.push({ id: fileEvidenceId, snapshotId, analyzer: "git-side-capture", analyzerVersion: CHANGESET_VERSION, kind: "file", confidence: "verified", reason: `源码来自不可变 ${side.kind} 捕获`, span }); const moduleName = moduleNameForPath(item.projectPath); let moduleId = moduleIds.get(moduleName); if (!moduleId) { moduleId = stableId(base.repositoryId, "module", moduleName); moduleIds.set(moduleName, moduleId); nodes.push({ id: moduleId, snapshotId, kind: "module", name: moduleName, qualifiedName: moduleName, metadata: {} }); edges.push({ id: stableId(snapshotId, rootNodeId, moduleId, "CONTAINS"), snapshotId, source: rootNodeId, target: moduleId, kind: "CONTAINS", confidence: "verified", evidenceId: fileEvidenceId, reason: "目录结构定义模块分组" }); } edges.push({ id: stableId(snapshotId, moduleId, fileNodeId, "CONTAINS"), snapshotId, source: moduleId, target: fileNodeId, kind: "CONTAINS", confidence: "verified", evidenceId: fileEvidenceId, reason: "文件位于该目录模块中" }); const analyzer = this.analyzers.find((candidate) => candidate.supports(item.absolutePath)); if (analyzer instanceof TypeScriptAnalyzer) typeScriptSources.push({ absolutePath: item.absolutePath, content: item.content }); else if (analyzer instanceof PythonAnalyzer) pythonSources.push({ absolutePath: item.absolutePath, content: item.content }); }
-    const context = { rootPath: base.rootPath, repositoryId: base.repositoryId, snapshotId, ...(signal ? { abortSignal: signal } : {}) }; if (typeScriptSources.length) try { const analyzer = this.analyzers.find((item): item is TypeScriptAnalyzer => item instanceof TypeScriptAnalyzer)!; const result = await analyzer.analyzeProject(typeScriptSources, context, sources.filter((item) => isAnalysisConfig(item.projectPath)).map((item) => ({ absolutePath: item.absolutePath, content: item.content }))); nodes.push(...result.nodes); edges.push(...result.edges); evidence.push(...result.evidence); failures.push(...(result.failures ?? [])); } catch (error) { if (isAbort(error)) throw error; failures.push({ filePath: "<TypeScript Program>", reason: safeError(error, "TypeScript 侧分析失败") }); }
-    if (pythonSources.length) try { const analyzer = this.analyzers.find((item): item is PythonAnalyzer => item instanceof PythonAnalyzer)!; const result = await analyzer.analyzeProject(pythonSources, context); nodes.push(...result.nodes); edges.push(...result.edges); evidence.push(...result.evidence); failures.push(...(result.failures ?? [])); } catch (error) { if (isAbort(error)) throw error; failures.push({ filePath: "<Python Project>", reason: safeError(error, "Python 侧分析失败") }); }
+    const rootNodeId = stableId(base.repositoryId, "repository-root"); const nodes: GraphNode[] = [{ id: rootNodeId, snapshotId, kind: "repository", name: base.name, qualifiedName: base.rootPath, metadata: { sourceType: "git-comparison", comparisonSide: side.kind } }]; const edges: GraphEdge[] = []; const evidence: Evidence[] = []; const failures: ProjectSnapshot["health"]["failedFiles"] = []; const moduleIds = new Map<string, string>(); const typeScriptSources: Array<{ absolutePath: string; content: string }> = []; const pythonSources: Array<{ absolutePath: string; content: string }> = [];
+    for (const [index, item] of sources.entries()) { throwIfAborted(signal); progress?.(index, sources.length, item.projectPath); const fileNodeId = stableId(base.repositoryId, "file", item.projectPath); const fileEvidenceId = stableId(snapshotId, item.projectPath, "file"); const span = wholeFileSpan(item.projectPath, item.content); nodes.push({ id: fileNodeId, snapshotId, kind: "file", name: basename(item.projectPath), qualifiedName: item.projectPath, language: item.language, filePath: item.projectPath, span, evidenceId: fileEvidenceId, metadata: { bytes: Buffer.byteLength(item.content), contentHash: item.contentHash, comparisonSide: side.kind } }); evidence.push({ id: fileEvidenceId, snapshotId, analyzer: "git-side-capture", analyzerVersion: CHANGESET_VERSION, kind: "file", confidence: "verified", reason: `源码来自不可变 ${side.kind} 捕获`, span }); const moduleName = moduleNameForPath(item.projectPath); let moduleId = moduleIds.get(moduleName); if (!moduleId) { moduleId = stableId(base.repositoryId, "module", moduleName); moduleIds.set(moduleName, moduleId); nodes.push({ id: moduleId, snapshotId, kind: "module", name: moduleName, qualifiedName: moduleName, metadata: {} }); edges.push({ id: stableId(snapshotId, rootNodeId, moduleId, "CONTAINS"), snapshotId, source: rootNodeId, target: moduleId, kind: "CONTAINS", confidence: "verified", evidenceId: fileEvidenceId, reason: "目录结构定义模块分组" }); } edges.push({ id: stableId(snapshotId, moduleId, fileNodeId, "CONTAINS"), snapshotId, source: moduleId, target: fileNodeId, kind: "CONTAINS", confidence: "verified", evidenceId: fileEvidenceId, reason: "文件位于该目录模块中" }); const analyzer = this.analyzers.find((candidate) => candidate.supports(item.absolutePath)); if (analyzer instanceof TypeScriptAnalyzer) typeScriptSources.push({ absolutePath: item.absolutePath, content: item.content }); else if (analyzer instanceof PythonAnalyzer) pythonSources.push({ absolutePath: item.absolutePath, content: item.content }); }
+    const context = { rootPath: base.rootPath, repositoryId: base.repositoryId, snapshotId, ...(signal ? { abortSignal: signal } : {}) }; if (typeScriptSources.length) try { const analyzer = this.analyzers.find((item): item is TypeScriptAnalyzer => item instanceof TypeScriptAnalyzer)!; const result = await analyzer.analyzeProject(typeScriptSources, context, sources.filter((item) => isAnalysisConfig(item.projectPath)).map((item) => ({ absolutePath: item.absolutePath, content: item.content }))); nodes.push(...result.nodes); edges.push(...result.edges); evidence.push(...result.evidence); failures.push(...(result.failures ?? []).map((failure) => failureFromAnalyzerResult(base.rootPath, failure, "ANALYSIS_FAILED"))); } catch (error) { if (isAbort(error)) throw error; failures.push(failureFromError(base.rootPath, "<TypeScript Program>", error, "ANALYSIS_FAILED")); }
+    if (pythonSources.length) try { const analyzer = this.analyzers.find((item): item is PythonAnalyzer => item instanceof PythonAnalyzer)!; const result = await analyzer.analyzeProject(pythonSources, context); nodes.push(...result.nodes); edges.push(...result.edges); evidence.push(...result.evidence); failures.push(...(result.failures ?? []).map((failure) => failureFromAnalyzerResult(base.rootPath, failure, "PYTHON_ANALYSIS_FAILED"))); } catch (error) { if (isAbort(error)) throw error; failures.push(failureFromError(base.rootPath, "<Python Project>", error, "PYTHON_ANALYSIS_FAILED")); }
     const known = new Set(nodes.map((node) => node.id)); for (const edge of edges) if (!known.has(edge.target) && edge.unresolvedTarget) { const kind = edge.kind === "CALLS" ? "unresolved-call" as const : edge.kind === "IMPORTS" && edge.unresolvedTarget.startsWith(".") ? "module" as const : "external-dependency" as const; nodes.push({ id: edge.target, snapshotId, kind, name: edge.unresolvedTarget, qualifiedName: edge.unresolvedTarget, metadata: { unresolved: true, referenceKind: kind === "module" ? "unresolved-module" : kind } }); known.add(edge.target); }
     const languageCounts = sources.reduce<Record<string, number>>((counts, item) => ({ ...counts, [item.language]: (counts[item.language] ?? 0) + 1 }), {}); const excludedCount = side.unsupported.length + side.ignored.length + side.secrets.length + side.binary.length + side.oversized.length + side.submodules.length; const snapshot: ProjectSnapshot = { repositoryId: base.repositoryId, snapshotId, name: base.name, rootPath: base.rootPath, sourceType: "git", ...(side.revision ? { gitHead: side.revision } : {}), createdAt: new Date().toISOString(), analysisIdentity, sourceFiles: sources.map((item) => ({ filePath: item.projectPath, contentHash: item.contentHash, bytes: Buffer.byteLength(item.content), language: item.language })), nodes: [...new Map(nodes.map((node) => [node.id, node])).values()], edges: [...new Map(edges.map((edge) => [edge.id, edge])).values()], evidence: [...new Map(evidence.map((item) => [item.id, item])).values()], health: { status: failures.length || excludedCount ? "partial" : "ready", totalFiles: sources.length + excludedCount, indexedFiles: sources.length, skippedFiles: side.ignored.length + side.secrets.length + side.oversized.length, unsupportedFiles: side.unsupported.length + side.binary.length + side.submodules.length, ignoredByRule: [], failedFiles: failures, languageCounts, limitations: ["比较侧完整分析全部允许的受支持源码，不执行仓库代码", ...side.submodules.map((path) => `子模块只保留元数据：${path}`)] } }; const store = this.storeForRepository(base.repositoryId); store.saveSnapshot(snapshot, sources.map((item) => ({ filePath: item.projectPath, contentHash: item.contentHash, language: item.language, content: item.content })), false); this.snapshotStores.set(snapshotId, store); return snapshot;
   }
 
   private async requireCurrentSnapshot(ref: SnapshotRef): Promise<ProjectSnapshot> {
     const snapshot = this.requireSnapshot(ref).snapshot; const state = await this.getSnapshotState(ref);
-    if (state.status !== "current") throw new Error("源码已变化，此结果已过期；请更新索引"); return snapshot;
+    if (state.status !== "current") throw new SafeDiagnosticError("SNAPSHOT_NOT_CURRENT"); return snapshot;
   }
 
   private requireStore(ref: SnapshotRef): GraphStore {
@@ -302,7 +328,7 @@ export class XRayApplication {
   }
 }
 
-function comparisonSide(side: CapturedSide, snapshot: ProjectSnapshot): ComparisonSide { const exclusions = { ignored: exclusion(side.ignored), secrets: exclusion(side.secrets), unsupported: exclusion(side.unsupported), binary: exclusion(side.binary), oversized: exclusion(side.oversized), submodules: exclusion(side.submodules) }; const exclusionCount = Object.values(exclusions).reduce((sum, item) => sum + item.count, 0); const failures = snapshot.health.failedFiles.map((item) => ({ filePath: item.filePath, reason: safeError(new Error(item.reason), "分析失败") })); return { label: side.label, kind: side.kind, ...(side.revision ? { revision: side.revision } : {}), ...(side.parentNumber ? { parentNumber: side.parentNumber } : {}), contentFingerprint: side.contentFingerprint, manifestFingerprint: side.manifestFingerprint, capturedAt: side.capturedAt, snapshot: { repositoryId: snapshot.repositoryId, snapshotId: snapshot.snapshotId }, analysisIdentity: snapshot.analysisIdentity, completeness: { status: failures.length || exclusionCount ? "partial" : "complete", indexedFiles: snapshot.health.indexedFiles, failures, exclusions, limitations: [...snapshot.health.limitations, ...(exclusionCount ? ["排除项不参与语义分析；其内容变化不会被描述为已分析"] : [])] } }; }
+function comparisonSide(side: CapturedSide, snapshot: ProjectSnapshot): ComparisonSide { const exclusions = { ignored: exclusion(side.ignored), secrets: exclusion(side.secrets), unsupported: exclusion(side.unsupported), binary: exclusion(side.binary), oversized: exclusion(side.oversized), submodules: exclusion(side.submodules) }; const exclusionCount = Object.values(exclusions).reduce((sum, item) => sum + item.count, 0); const failures = snapshot.health.failedFiles.map((item) => ({ filePath: safeProjectRelativeFile(snapshot.rootPath, item.filePath), ...safeDiagnostic(item.code, item.detailCode) })); return { label: side.label, kind: side.kind, ...(side.revision ? { revision: side.revision } : {}), ...(side.parentNumber ? { parentNumber: side.parentNumber } : {}), contentFingerprint: side.contentFingerprint, manifestFingerprint: side.manifestFingerprint, capturedAt: side.capturedAt, snapshot: { repositoryId: snapshot.repositoryId, snapshotId: snapshot.snapshotId }, analysisIdentity: snapshot.analysisIdentity, completeness: { status: failures.length || exclusionCount ? "partial" : "complete", indexedFiles: snapshot.health.indexedFiles, failures, exclusions, limitations: [...snapshot.health.limitations, ...(exclusionCount ? ["排除项不参与语义分析；其内容变化不会被描述为已分析"] : [])] } }; }
 function exclusion(paths: string[]): { count: number; paths: string[] } { return { count: paths.length, paths: [...paths].sort() }; }
 export function classifyChangePath(path: string, binary: boolean): Pick<ChangeFile, "classification" | "classificationReason" | "classificationConfidence"> {
   const lower = path.toLocaleLowerCase(); if (binary) return { classification: "binary", classificationReason: "内容含 NUL 或 Git 报告二进制补丁", classificationConfidence: "verified" };
@@ -334,9 +360,29 @@ function impactPathsForDirect(changeId: string, direct: DirectChange, snapshot: 
 }
 
 function questionKey(value: { repositoryId: string; snapshotId: string; id?: string; questionId?: string }): string { return `${value.repositoryId}:${value.snapshotId}:${value.id ?? value.questionId ?? ""}`; }
-function safeError(error: unknown, fallback: string): string { const message = error instanceof Error ? error.message : fallback; return message.replace(/[\r\n]+/g, " ").slice(0, 240); }
+function failureFromError(rootPath: string, filePath: string, error: unknown, fallback: SafeDiagnosticCode): ProjectSnapshot["health"]["failedFiles"][number] {
+  return { filePath: safeProjectRelativeFile(rootPath, filePath), ...diagnosticForError(error, fallback) };
+}
+function failureWithCode(rootPath: string, filePath: string, code: unknown, detailCode: unknown, fallback: SafeDiagnosticCode): ProjectSnapshot["health"]["failedFiles"][number] {
+  const parsedCode = safeDiagnosticCodeSchema.safeParse(code);
+  return { filePath: safeProjectRelativeFile(rootPath, filePath), ...safeDiagnostic(parsedCode.success ? parsedCode.data : fallback, detailCode) };
+}
+function failureFromAnalyzerResult(rootPath: string, failure: { filePath: string; code?: unknown; detailCode?: unknown }, fallback: SafeDiagnosticCode): ProjectSnapshot["health"]["failedFiles"][number] {
+  return failureWithCode(rootPath, failure.filePath, failure.code, failure.detailCode, fallback);
+}
+function safeProjectRelativeFile(rootPath: string, filePath: unknown): string {
+  if (typeof filePath !== "string") return "<分析器>";
+  if (["<TypeScript Program>", "<Python Project>", "<分析器>", "<项目>"].includes(filePath)) return filePath;
+  const normalized = filePath.replaceAll("\\", "/");
+  if (!normalized || normalized.startsWith("/") || /^[A-Za-z]:/.test(normalized) || normalized.includes("\0") || normalized.split("/").some((part) => part === ".." || part === "")) return "<分析器>";
+  const relativePath = normalizeProjectPath(rootPath, resolve(rootPath, normalized));
+  if (!relativePath || relativePath === "." || relativePath === ".." || relativePath.startsWith("../") || /^[A-Za-z]:/.test(relativePath)) return "<分析器>";
+  return relativePath;
+}
 function isAbort(error: unknown): boolean { return error instanceof Error && error.name === "AbortError"; }
 function comparePosition(aLine: number, aColumn: number, bLine: number, bColumn: number): number { return aLine - bLine || aColumn - bColumn; }
+function sameSpan(left: SourceCitation, right: SourceCitation): boolean { return left.filePath === right.filePath && left.startLine === right.startLine && left.startColumn === right.startColumn && left.endLine === right.endLine && left.endColumn === right.endColumn; }
+function wholeFileSpan(filePath: string, content: string): SourceCitation { const lines = content.split(/\r?\n/); return { filePath, startLine: 1, startColumn: 0, endLine: lines.length, endColumn: lines.at(-1)?.length ?? 0 }; }
 function spansOverlap(a: SourceCitation, b: SourceCitation): boolean { if (a.filePath !== b.filePath) return false; return comparePosition(a.startLine, a.startColumn, b.endLine, b.endColumn) < 0 && comparePosition(b.startLine, b.startColumn, a.endLine, a.endColumn) < 0; }
 function assertSpanWithinContent(span: SourceCitation, content: string): void { const lines = content.split(/\r?\n/); if (span.startLine > lines.length || span.endLine > lines.length || comparePosition(span.startLine, span.startColumn, span.endLine, span.endColumn) >= 0) throw new Error("源码引用范围无效或超出文件边界"); const startLength = lines[span.startLine - 1]?.length ?? 0; const endLength = lines[span.endLine - 1]?.length ?? 0; if (span.startColumn > startLength || span.endColumn > endLength) throw new Error("源码引用列超出文件边界"); }
 function validateCitations(snapshot: ProjectSnapshot, citations: SourceCitation[], readContent: (filePath: string) => string | undefined): SourceCitation[] {
@@ -351,10 +397,17 @@ function validateCitations(snapshot: ProjectSnapshot, citations: SourceCitation[
   return [...unique.values()];
 }
 
-async function discoverAndRead(rootPath: string, signal?: AbortSignal, onRead?: (completed: number, total: number, currentFile: string) => void): Promise<{ discovery: Awaited<ReturnType<typeof discoverProject>>; sources: IndexedSource[] }> {
-  const discovery = await discoverProject(rootPath, signal); const sources: IndexedSource[] = [];
-  for (const [index, absolutePath] of discovery.files.entries()) { throwIfAborted(signal); const projectPath = normalizeProjectPath(rootPath, absolutePath); try { const content = await readFile(absolutePath, "utf8"); sources.push({ absolutePath, projectPath, content, contentHash: contentFingerprint(content), language: languageFromPath(projectPath) }); } catch (error) { discovery.failures.push({ filePath: projectPath, reason: safeError(error, "文件读取失败") }); } onRead?.(index + 1, discovery.files.length, projectPath); }
-  return { discovery, sources };
+async function discoverAndRead(rootPath: string, signal?: AbortSignal, onRead?: (completed: number, total: number, currentFile: string) => void, existingScope?: SecureReadScope, testHooks?: SecureReadTestHooks): Promise<{ discovery: Awaited<ReturnType<typeof discoverProject>>; sources: IndexedSource[] }> {
+  const scope = existingScope ?? await createSecureReadScope(rootPath);
+  const effectiveRoot = scope.rootPath;
+  try {
+    let discovery: Awaited<ReturnType<typeof discoverProject>>;
+    try { discovery = await discoverProject(effectiveRoot, signal); }
+    catch (error) { if (isAbort(error)) throw error; throw new SafeDiagnosticError(diagnosticForError(error, "FILE_DISCOVERY_FAILED").code); }
+    const sources: IndexedSource[] = [];
+    for (const [index, absolutePath] of discovery.files.entries()) { throwIfAborted(signal); const projectPath = normalizeProjectPath(effectiveRoot, absolutePath); try { const content = await readSecureProjectFile(scope, absolutePath, { ...(signal ? { signal } : {}), ...(testHooks ? { testHooks } : {}) }); sources.push({ absolutePath, projectPath, content, contentHash: contentFingerprint(content), language: languageFromPath(projectPath) }); } catch (error) { if (isProjectPathSecurityError(error)) throw error; discovery.failures.push({ filePath: projectPath, ...diagnosticForError(error, "FILE_READ_FAILED") }); } onRead?.(index + 1, discovery.files.length, projectPath); }
+    return { discovery, sources };
+  } finally { if (!existingScope) scope.close(); }
 }
 function compareSourceMaps(expected: Map<string, string>, actual: Map<string, string>): { added: string[]; removed: string[]; changed: string[] } { const added = [...actual.keys()].filter((path) => !expected.has(path)).sort(); const removed = [...expected.keys()].filter((path) => !actual.has(path)).sort(); const changed = [...expected.keys()].filter((path) => actual.has(path) && actual.get(path) !== expected.get(path)).sort(); return { added, removed, changed }; }
 function evidenceForNode(snapshot: ProjectSnapshot, nodeId: string): string[] { return [...new Set(snapshot.edges.filter((edge) => edge.source === nodeId || edge.target === nodeId).map((edge) => edge.evidenceId))]; }

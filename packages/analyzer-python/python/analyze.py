@@ -30,12 +30,32 @@ class Analyzer(ast.NodeVisitor):
         if isinstance(target,ast.Name):return [target.id]
         if isinstance(target,(ast.Tuple,ast.List)):return [name for child in target.elts for name in Analyzer.assigned(child)]
         return []
-    def collect(self,body,scope):
+    @staticmethod
+    def scope_statements(body):
         for statement in body:
+            yield statement
+            if isinstance(statement,(ast.If,ast.For,ast.AsyncFor,ast.While)):
+                yield from Analyzer.scope_statements(statement.body)
+                yield from Analyzer.scope_statements(statement.orelse)
+            elif isinstance(statement,(ast.With,ast.AsyncWith)):
+                yield from Analyzer.scope_statements(statement.body)
+            elif isinstance(statement,(ast.Try,getattr(ast,"TryStar",ast.Try))):
+                yield from Analyzer.scope_statements(statement.body)
+                for handler in statement.handlers:
+                    yield handler
+                    yield from Analyzer.scope_statements(handler.body)
+                yield from Analyzer.scope_statements(statement.orelse)
+                yield from Analyzer.scope_statements(statement.finalbody)
+            elif hasattr(ast,"Match") and isinstance(statement,ast.Match):
+                for case in statement.cases:yield from Analyzer.scope_statements(case.body)
+    def collect(self,body,scope):
+        statements=list(self.scope_statements(body))
+        for statement in statements:
             if isinstance(statement,ast.Global):scope.globals.update(statement.names)
             elif isinstance(statement,ast.Nonlocal):scope.nonlocals.update(statement.names)
-        for statement in body:
-            if isinstance(statement,(ast.FunctionDef,ast.AsyncFunctionDef)):scope.bindings[statement.name]={"kind":"function","qualified":self.qualify(statement.name,scope)}
+        for statement in statements:
+            if isinstance(statement,(ast.FunctionDef,ast.AsyncFunctionDef)):
+                decorated=bool(statement.decorator_list); scope.bindings[statement.name]={"kind":"decorated-function" if decorated else "function","qualified":self.qualify(statement.name,scope)}
             elif isinstance(statement,ast.ClassDef):scope.bindings[statement.name]={"kind":"class","qualified":self.qualify(statement.name,scope)}
             elif isinstance(statement,ast.Import):
                 for alias in statement.names:
@@ -44,11 +64,17 @@ class Analyzer(ast.NodeVisitor):
                 module="."*statement.level+(statement.module or "")
                 for alias in statement.names:
                     local=alias.asname or alias.name; scope.bindings[local]={"kind":"import-member","module":module,"member":alias.name,"local":local}
-            elif isinstance(statement,(ast.Assign,ast.AnnAssign,ast.AugAssign)):
+            elif isinstance(statement,(ast.Assign,ast.AnnAssign,ast.AugAssign,ast.For,ast.AsyncFor)):
                 targets=statement.targets if isinstance(statement,ast.Assign) else [statement.target]
                 for target in targets:
                     for name in self.assigned(target):
                         if name not in scope.globals and name not in scope.nonlocals:scope.bindings[name]={"kind":"variable","qualified":self.qualify(name,scope)}
+            elif isinstance(statement,(ast.With,ast.AsyncWith)):
+                for item in statement.items:
+                    for name in self.assigned(item.optional_vars) if item.optional_vars else []:
+                        if name not in scope.globals and name not in scope.nonlocals:scope.bindings[name]={"kind":"variable","qualified":self.qualify(name,scope)}
+            elif isinstance(statement,ast.ExceptHandler) and statement.name:
+                if statement.name not in scope.globals and statement.name not in scope.nonlocals:scope.bindings[statement.name]={"kind":"variable","qualified":self.qualify(statement.name,scope)}
     def resolve(self,name,scope=None):
         scope=scope or self.scope
         if name in scope.globals:return self.root.bindings.get(name)
@@ -81,6 +107,7 @@ class Analyzer(ast.NodeVisitor):
             binding=self.resolve(node.id)
             if not binding:return {"resolution":"unresolved","rootName":node.id}
             if binding["kind"] in ("function","class"):return {"resolution":"local","rootName":node.id,"targetQualified":binding["qualified"]}
+            if binding["kind"]=="decorated-function":return {"resolution":"decorated","rootName":node.id}
             if binding["kind"].startswith("import-"):
                 result={"resolution":"import","rootName":node.id,"importModule":binding["module"]}
                 if binding.get("member"):result["importMember"]=binding["member"]
@@ -105,7 +132,7 @@ class Analyzer(ast.NodeVisitor):
             return ("Flask",method,self.literal(decorator.args[0]) if decorator.args else "<dynamic>")
         return None
     def enter_function(self,node):
-        qualified=self.qualify(node.name); kind="method" if self.scope.kind=="class" else "function"; self.symbol(node,kind,node.name,qualified,self.scope.qualified or None,"definition")
+        qualified=self.qualify(node.name); kind="method" if self.scope.kind=="class" else "function"; binding_kind="decorated-definition" if node.decorator_list else "definition"; self.symbol(node,kind,node.name,qualified,self.scope.qualified or None,binding_kind)
         for decorator in node.decorator_list:
             route=self.route(decorator)
             if route:
@@ -148,7 +175,26 @@ class Analyzer(ast.NodeVisitor):
                     binding=self.resolve(child.id); self.returns.append({"caller":caller,"target":child.id,"targetQualified":binding.get("qualified") if binding else None,**self.pos(child)})
         self.generic_visit(node)
 
+    def visit_comprehension(self,node,outputs):
+        previous=self.scope
+        generators=node.generators
+        if not generators:return
+        self.visit(generators[0].iter)
+        child=Scope(f"{self.scope.qualified}::<comprehension:{node.lineno}:{node.col_offset}>",self.scope,"comprehension")
+        self.scope=child
+        for index,generator in enumerate(generators):
+            if index:self.visit(generator.iter)
+            for name in self.assigned(generator.target):child.bindings[name]={"kind":"variable","qualified":self.qualify(name,child)}
+            self.visit(generator.target)
+            for condition in generator.ifs:self.visit(condition)
+        for output in outputs:self.visit(output)
+        self.scope=previous
+    def visit_ListComp(self,node):self.visit_comprehension(node,[node.elt])
+    def visit_SetComp(self,node):self.visit_comprehension(node,[node.elt])
+    def visit_GeneratorExp(self,node):self.visit_comprehension(node,[node.elt])
+    def visit_DictComp(self,node):self.visit_comprehension(node,[node.key,node.value])
+
 def main():
     payload=json.load(sys.stdin); source=base64.b64decode(payload["sourceBase64"]).decode("utf-8"); tree=ast.parse(source,filename=payload.get("filePath","<input>")); analyzer=Analyzer(source); analyzer.collect(tree.body,analyzer.root); analyzer.visit(tree)
-    json.dump({"protocolVersion":"2.0.0","symbols":analyzer.symbols,"imports":analyzer.imports,"calls":analyzer.calls,"accesses":analyzer.accesses,"returns":analyzer.returns,"endpoints":analyzer.endpoints},sys.stdout)
+    json.dump({"protocolVersion":"2.1.0","symbols":analyzer.symbols,"imports":analyzer.imports,"calls":analyzer.calls,"accesses":analyzer.accesses,"returns":analyzer.returns,"endpoints":analyzer.endpoints},sys.stdout)
 if __name__=="__main__":main()

@@ -1,4 +1,4 @@
-import { OWNERSHIP_QUESTION_VERSION, OWNERSHIP_SCORING_VERSION, type GraphEdge, type GraphNode, type OwnershipAttempt, type OwnershipGrade, type OwnershipQuestion, type OwnershipQuestionRequest, type OwnershipSubmission, type ProjectSnapshot, type SourceCitation } from "@project-xray/contracts";
+import { OWNERSHIP_QUESTION_VERSION, OWNERSHIP_SCORING_VERSION, type Evidence, type GraphEdge, type GraphNode, type OwnershipAttempt, type OwnershipGrade, type OwnershipQuestion, type OwnershipQuestionRequest, type OwnershipSubmission, type ProjectSnapshot, type SourceCitation } from "@project-xray/contracts";
 import { stableId } from "@project-xray/analyzer-core";
 
 export function createQuestions(snapshot: ProjectSnapshot, request: OwnershipQuestionRequest, attempts: OwnershipAttempt[] = []): OwnershipQuestion[] {
@@ -25,11 +25,34 @@ export function createQuestions(snapshot: ProjectSnapshot, request: OwnershipQue
 
 export function gradeAnswer(question: OwnershipQuestion, submission: OwnershipSubmission, snapshot: ProjectSnapshot, validatedCitations: SourceCitation[]): OwnershipGrade {
   if (question.id !== submission.questionId || question.version !== submission.questionVersion) throw new Error("答案与题目版本不匹配"); if (question.repositoryId !== submission.repositoryId || question.snapshotId !== submission.snapshotId) throw new Error("答案与题目快照不匹配");
-  const edges = new Map(snapshot.edges.map((edge) => [edge.id, edge])); const validatedKeys = new Set(validatedCitations.map(citationKey)); const citedEvidence = new Set(validatedCitations.flatMap((item) => item.evidenceId ? [item.evidenceId] : [])); const feedback: string[] = []; let structurePassed = true; let requiredEvidence: string[] = [];
+  const edges = new Map(snapshot.edges.map((edge) => [edge.id, edge])); const evidenceById = new Map(snapshot.evidence.map((item) => [item.id, item])); const validatedKeys = new Set(validatedCitations.map(citationKey)); const citedEvidence = new Set(validatedCitations.flatMap((item) => item.evidenceId ? [item.evidenceId] : [])); const feedback: string[] = []; let structurePassed = true; let requiredEvidence: string[] = [];
   for (const check of question.deterministicChecks) {
     if (check.kind === "definition") { structurePassed &&= submission.structuredAnswer.kind === "entry" && submission.structuredAnswer.nodeId === check.nodeId; requiredEvidence.push(edges.get(check.edgeId)?.evidenceId ?? ""); if (!structurePassed) feedback.push("选择的定义符号与题目目标不一致。"); }
     if (check.kind === "call-direction") { const correct = submission.structuredAnswer.kind === "call-direction" && submission.structuredAnswer.callerNodeId === check.sourceNodeId && submission.structuredAnswer.calleeNodeId === check.targetNodeId; structurePassed &&= correct; requiredEvidence.push(edges.get(check.edgeId)?.evidenceId ?? ""); if (!correct) feedback.push("调用方向错误：调用者和被调用者不能互换。"); }
-    if (check.kind === "ordered-path") { const answer = submission.structuredAnswer.kind === "call-path" ? submission.structuredAnswer.nodeIds : []; const index = check.legalNodePaths.findIndex((path) => same(path, answer)); const correct = index >= 0; structurePassed &&= correct; if (correct) requiredEvidence.push(...(check.legalEdgePaths[index] ?? []).map((id) => edges.get(id)?.evidenceId ?? "")); else feedback.push("路径顺序无效：每一对相邻步骤都必须存在对应的 verified 调用边；合法替代路径同样可以通过。"); }
+    if (check.kind === "ordered-path") {
+      const answer = submission.structuredAnswer.kind === "call-path" ? submission.structuredAnswer.nodeIds : [];
+      const matchingPaths = check.legalNodePaths.map((path, index) => ({ path, edgeIds: check.legalEdgePaths[index] })).filter(({ path }) => same(path, answer));
+      structurePassed &&= matchingPaths.length > 0;
+      if (!matchingPaths.length) feedback.push("路径顺序无效：每一对相邻步骤都必须存在对应的 verified 调用边；合法替代路径同样可以通过。");
+      else {
+        const alternatives = matchingPaths.flatMap(({ path, edgeIds }) => {
+          const pathEvidence = verifiedPathEvidence(path, edgeIds, edges, evidenceById, snapshot.snapshotId);
+          if (!pathEvidence) return [];
+          const evidenceIds = [...new Set(pathEvidence)];
+          return [{ evidenceIds, hits: evidenceIds.filter((id) => citedEvidence.has(id)).length }];
+        });
+        if (!alternatives.length) {
+          structurePassed = false;
+          feedback.push("路径中的调用边或当前快照源码证据不完整，无法验证该路径。");
+        } else {
+          const best = alternatives.reduce((selected, candidate) => {
+            const coverage = candidate.hits * selected.evidenceIds.length - selected.hits * candidate.evidenceIds.length;
+            return coverage > 0 || (coverage === 0 && candidate.hits > selected.hits) ? candidate : selected;
+          });
+          requiredEvidence.push(...best.evidenceIds);
+        }
+      }
+    }
     if (check.kind === "variable-roles") { if (submission.structuredAnswer.kind !== "variable-flow") { structurePassed = false; feedback.push("请为每个源码引用选择读、写或返回角色。"); continue; } for (const requirement of check.requirements) { const accepted = new Set(requirement.edgeIds.map((id) => edges.get(id)?.evidenceId).filter((id): id is string => Boolean(id))); const matched = submission.structuredAnswer.roles.some((item) => { const citation = submission.citations[item.citationIndex]; return item.role === requirement.role && citation && validatedKeys.has(citationKey(citation)) && citation.evidenceId && accepted.has(citation.evidenceId); }); if (!matched) { structurePassed = false; feedback.push(`${roleText(requirement.role)}角色没有与支持该角色的证据对应。`); } requiredEvidence.push(...accepted); } }
   }
   requiredEvidence = [...new Set(requiredEvidence.filter(Boolean))]; const hits = requiredEvidence.filter((id) => citedEvidence.has(id)).length; const locationScore = Math.round(100 * hits / Math.max(1, requiredEvidence.length)); const structureScore = structurePassed ? 100 : 0; const passed = locationScore === 100 && structurePassed;
@@ -38,6 +61,18 @@ export function gradeAnswer(question: OwnershipQuestion, submission: OwnershipSu
 }
 
 function question(snapshot: ProjectSnapshot, kind: OwnershipQuestion["kind"], concept: OwnershipQuestion["concept"], variantKey: string, prompt: string, objective: string, difficulty: OwnershipQuestion["difficulty"], choices: GraphNode[], evidenceIds: string[], expectedNodeIds: string[], deterministicChecks: OwnershipQuestion["deterministicChecks"], attempts: OwnershipAttempt[]): OwnershipQuestion { const previous = attempts.filter((item) => item.concept.id === concept.id); const retry = previous.find((item) => item.variantKey === variantKey); return { version: OWNERSHIP_QUESTION_VERSION, repositoryId: snapshot.repositoryId, snapshotId: snapshot.snapshotId, id: stableId(snapshot.snapshotId, "ownership-v2", kind, variantKey), kind, prompt, concept, learningObjective: objective, difficulty, choices: uniqueNodes(choices).map((node) => ({ nodeId: node.id, label: node.name, detail: `${node.kind} · ${node.qualifiedName}` })), evidenceIds: [...new Set(evidenceIds)], expectedNodeIds: [...new Set(expectedNodeIds)], deterministicChecks, variantKey, ...(retry ? { retryOfQuestionId: retry.questionId } : {}) }; }
+
+function verifiedPathEvidence(nodeIds: string[], edgeIds: string[] | undefined, edges: Map<string, GraphEdge>, evidenceById: Map<string, Evidence>, snapshotId: string): string[] | null {
+  if (nodeIds.length < 2 || !edgeIds || edgeIds.length !== nodeIds.length - 1) return null;
+  const evidenceIds: string[] = [];
+  for (const [index, edgeId] of edgeIds.entries()) {
+    const edge = edges.get(edgeId);
+    const evidence = edge ? evidenceById.get(edge.evidenceId) : undefined;
+    if (!edge || edge.snapshotId !== snapshotId || edge.kind !== "CALLS" || edge.confidence !== "verified" || edge.source !== nodeIds[index] || edge.target !== nodeIds[index + 1] || !evidence || evidence.snapshotId !== snapshotId || evidence.confidence !== "verified") return null;
+    evidenceIds.push(evidence.id);
+  }
+  return evidenceIds;
+}
 function allowedNodes(snapshot: ProjectSnapshot, request: OwnershipQuestionRequest): Set<string> { if (request.scope.kind === "project" || !request.scope.nodeId) return new Set(snapshot.nodes.map((node) => node.id)); const allowed = new Set([request.scope.nodeId]); if (request.scope.kind === "module") { const files = snapshot.edges.filter((edge) => edge.kind === "CONTAINS" && edge.source === request.scope.nodeId).map((edge) => edge.target); files.forEach((id) => allowed.add(id)); snapshot.edges.filter((edge) => edge.kind === "DEFINES" && files.includes(edge.source)).forEach((edge) => allowed.add(edge.target)); } else snapshot.edges.filter((edge) => edge.source === request.scope.nodeId || edge.target === request.scope.nodeId).forEach((edge) => { allowed.add(edge.source); allowed.add(edge.target); }); return allowed; }
 function callPaths(root: string, edges: GraphEdge[], maxDepth: number, maxPaths: number): Array<{ nodes: string[]; edges: GraphEdge[] }> { const result: Array<{ nodes: string[]; edges: GraphEdge[] }> = []; const queue = [{ nodes: [root], edges: [] as GraphEdge[] }]; let work = 0; while (queue.length && result.length < maxPaths * 8 && work++ < 500) { const path = queue.shift()!; if (path.edges.length >= maxDepth) continue; for (const edge of edges.filter((item) => item.source === path.nodes.at(-1)).sort((a,b) => a.id.localeCompare(b.id))) { if (path.nodes.includes(edge.target)) continue; const next = { nodes: [...path.nodes, edge.target], edges: [...path.edges, edge] }; result.push(next); queue.push(next); } } return result; }
 const uniqueNodes = (nodes: GraphNode[]): GraphNode[] => [...new Map(nodes.map((node) => [node.id, node])).values()]; const same = (a: string[], b: string[]): boolean => a.length === b.length && a.every((item, index) => item === b[index]); const citationKey = (item: SourceCitation): string => `${item.filePath}:${item.startLine}:${item.startColumn}:${item.endLine}:${item.endColumn}:${item.evidenceId ?? ""}`; const roleText = (role: "write" | "read" | "return"): string => ({ write: "写入", read: "读取", return: "返回" })[role];

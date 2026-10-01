@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactElement } from "react";
-import type { Evidence, GraphEdge, GraphNode, IndexTaskEvent, IndexTaskHandle, ProjectOverview, SnapshotRef, SnapshotState, SourceFileResult } from "@project-xray/contracts";
+import { safeDiagnosticMessage, type Evidence, type GraphEdge, type GraphNode, type IndexTaskEvent, type IndexTaskHandle, type ProjectOverview, type SnapshotRef, type SnapshotState, type SourceFileResult } from "@project-xray/contracts";
 import { FlowExplorer } from "./components/FlowExplorer";
 import { ChangeExplorer } from "./components/ChangeExplorer";
 import { ArchitectureWorkspace } from "./components/ArchitectureWorkspace";
@@ -16,6 +16,10 @@ function refOf(project: ProjectOverview): SnapshotRef { return { repositoryId: p
 function identityOf(ref: SnapshotRef | null): string | null { return ref ? JSON.stringify([ref.repositoryId, ref.snapshotId]) : null; }
 function shortId(value: string): string { return value.slice(0, 10); }
 function workspacePageFor(page: Page): WorkspacePage | null { return page === "architecture" || page === "flow" || page === "explain" || page === "diff" ? page : null; }
+function sourceMatchesLocation(source: SourceFileResult | null, project: ProjectOverview, location: Evidence["span"] & { evidenceId?: string }): boolean {
+  const span = source?.targetSpan;
+  return Boolean(source && span && source.repositoryId === project.repositoryId && source.snapshotId === project.snapshotId && source.filePath === location.filePath && span.filePath === location.filePath && span.startLine === location.startLine && span.startColumn === location.startColumn && span.endLine === location.endLine && span.endColumn === location.endColumn && source.evidence?.id === location.evidenceId);
+}
 function NavIcon({ page }: { page: Page }): ReactElement {
   const paths: Record<Page, string> = { overview: 'M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z', architecture: 'M9 3h6v6H9z M2 16h6v5H2z M16 16h6v5h-6z M12 9v4 M5 16v-3h14v3', flow: 'M3 6h12 M11 2l4 4-4 4 M21 18H9 M13 14l-4 4 4 4', explain: 'M5 3h14v18H5z M8 7h8 M8 11h8 M8 15h5', diff: 'M6 5v14 M6 8c0 8 12 0 12 8 M15 4h6 M18 1v6 M3 19h6', ownership: 'M12 2l8 4v6c0 5-8 10-8 10S4 17 4 12V6z M8 12l3 3 5-6' };
   return <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[page]} /></svg>;
@@ -30,6 +34,7 @@ export function App(): ReactElement {
   const comparisonJobs = ownershipSessions.listComparisonJobs();
   const [comparisonFocusRepository, setComparisonFocusRepository] = useState<string | null>(null);
   const activeTask = useRef<string | null>(null); const activeSnapshot = useRef<string | null>(null); const sourceRequest = useRef(0);
+  const sourceRef = useRef(source); sourceRef.current = source;
   const indexRequestSequence = useRef(0); const workspaceActivationEpoch = useRef(0);
   const projectSession = useRef<{ identity: string | null; generation: number }>({ identity: null, generation: 0 });
   const activePage = useRef<Page>("overview"); const pageGeneration = useRef(0);
@@ -80,8 +85,8 @@ export function App(): ReactElement {
         installProject(event.overview, { forceFreshTraining, invalidateSession: !confirmedCurrent, ...(activationEpoch !== undefined ? { activationEpoch } : {}) });
         setSnapshotState(state);
         if (!confirmedCurrent) {
-          ownershipSessions.markStale(ref);
-          ownershipSessions.markWorkspaceStale(ref);
+          ownershipSessions.markStale(ref, state.status === "unavailable" ? "unavailable" : state.status === "missing" ? "missing" : "stale");
+          ownershipSessions.markWorkspaceStale(ref, state.status === "unavailable" ? "unavailable" : state.status === "missing" ? "missing" : "stale");
         }
         navigateTo("overview");
         setTask(null);
@@ -106,7 +111,7 @@ export function App(): ReactElement {
       const state = await window.xray.getSnapshotState(refOf(project));
       if (appMounted.current && projectSession.current.identity === currentIdentity && projectSession.current.generation === currentGeneration && state.repositoryId === project.repositoryId && state.snapshotId === project.snapshotId) {
         setSnapshotState(state);
-        if (state.status !== "current" || state.snapshotAvailability !== "available") { ownershipSessions.markStale(refOf(project)); ownershipSessions.markWorkspaceStale(refOf(project)); }
+        if (state.status !== "current" || state.snapshotAvailability !== "available") { const reason = state.status === "unavailable" ? "unavailable" : state.status === "missing" ? "missing" : "stale"; ownershipSessions.markStale(refOf(project), reason); ownershipSessions.markWorkspaceStale(refOf(project), reason); }
       }
     } catch { /* 调用方显示错误。 */ }
   }, [project, currentIdentity, currentGeneration, ownershipSessions]);
@@ -195,7 +200,7 @@ export function App(): ReactElement {
     sourceRequest.current += 1; setTrainingSource(null);
     ownershipSessions.updateSession(sessionId, (session) => ({ ...session, sourceView: { ...session.sourceView, open: false, loading: false, maximized: false, navigationCollapsed: false, activePane: "navigation" } }));
   }, [ownershipSessions]);
-  const openNode = useCallback((node: GraphNode) => { if (node.filePath && node.span) openLocation(node.span); }, [openLocation]);
+  const openNode = useCallback((node: GraphNode) => { if (node.filePath && node.span) openLocation({ ...node.span, ...(node.evidenceId ? { evidenceId: node.evidenceId } : {}) }); }, [openLocation]);
   const openEdge = useCallback((edge: GraphEdge) => {
     const request = beginSourceRequest();
     if (!request) return;
@@ -217,12 +222,12 @@ export function App(): ReactElement {
     if (!project || !ownerPage || ownerPage === "diff") return;
     const saved = ownershipSessions.ensurePageValue(refOf(project), ownerPage, "sourceView", emptyWorkspaceSourceView()).value;
     if (!saved.open || !saved.location) return;
-    if (source?.repositoryId === project.repositoryId && source.snapshotId === project.snapshotId && source.filePath === saved.location.filePath) return;
+    if (sourceMatchesLocation(sourceRef.current, project, saved.location)) return;
     const request = beginSourceRequest(page);
     if (!request) return;
     updatePageSourceView(ownerPage, (current) => ({ ...current, loading: true, error: "" }));
     readSourceForRequest(request, saved.location);
-  }, [page, project, source, ownershipSessions, beginSourceRequest, readSourceForRequest]);
+  }, [page, project, ownershipSessions, beginSourceRequest, readSourceForRequest]);
   useEffect(() => { restorePageSource(); }, [restorePageSource]);
   const ownershipSessionId = project ? ownershipSessions.sessionId(refOf(project)) : null;
   const pageSourceView = (ownerPage: WorkspacePage): WorkspaceSourceView => project ? ownershipSessions.ensurePageValue(refOf(project), ownerPage, "sourceView", emptyWorkspaceSourceView()).value : emptyWorkspaceSourceView();
@@ -248,7 +253,9 @@ export function App(): ReactElement {
       {comparisonJobs.length > 0 && <section className="comparison-task-tray" aria-label="Git 比较后台任务" data-testid="comparison-task-tray">{comparisonJobs.map((job) => <div className={`comparison-task-row ${job.status}`} key={job.requestId} data-repository-id={job.repositoryId}><div><b>{job.projectName} · {job.request.mode === "working" ? "Index → 工作区" : job.request.mode === "staged" ? "HEAD → Index" : `父提交 ${job.request.parentNumber ?? "1"} → HEAD`}</b><span>{job.status === "starting" ? "正在启动" : job.status === "running" ? `正在比较${job.event?.type === "progress" && job.event.progress.currentFile ? ` · ${job.event.progress.currentFile}` : ""}` : job.status === "cancelling" ? "正在取消，等待后端终态" : job.status === "completed" ? "报告已生成" : job.status === "cancelled" ? "比较已取消" : `比较失败：${job.error || job.cancelError}`}</span>{job.cancelError && <small>取消请求失败：{job.cancelError}</small>}</div><button className="button secondary" onClick={() => openComparison(job.repositoryId)}>打开任务</button>{job.status === "starting" || job.status === "running" || job.status === "cancelling" ? <button className="button secondary" disabled={job.status === "cancelling"} onClick={() => ownershipSessions.requestComparisonCancel(job.repositoryId)}>{job.status === "cancelling" ? "正在取消…" : "取消比较"}</button> : <button className="button secondary" onClick={() => ownershipSessions.dismissComparisonJob(job.repositoryId)}>移除提示</button>}</div>)}</section>}
       {comparisonFocusRepository && diffProject?.repositoryId !== project?.repositoryId && <div className="stale-banner" role="status" data-testid="comparison-project-focus"><b>正在查看后台任务项目：{diffProject?.name}</b><span>当前工作项目仍为 {project?.name ?? "未导入"}；该比较报告只属于其捕获的仓库。</span><button className="button secondary" onClick={returnToCurrentProject}>返回当前项目</button></div>}
       {error && <div className="error-banner"><b>操作失败</b><span>{error}</span><button aria-label="关闭错误提示" onClick={() => setError("")}>×</button></div>}
-      {snapshotState && snapshotState.status !== "current" && <div className="stale-banner" data-testid="stale-banner"><b>工作区已变化</b><span>新增 {snapshotState.addedFiles.length}、修改 {snapshotState.changedFiles.length}、删除/重命名 {snapshotState.removedFiles.length}。历史快照仍可查看；依赖当前源码的解释和答题已失效。</span><button className="button primary" onClick={updateIndex}>更新索引</button></div>}
+      {snapshotState?.status === "unavailable" && <div className="stale-banner" role="status" data-testid="snapshot-unavailable"><b>无法校验当前工作区</b><span>当前无法读取工作区来确认它是否与此快照一致。系统没有判定源码或配置已变化；依赖当前源码的解释和答题暂不可用。</span><button className="button primary" onClick={updateIndex}>重新索引</button></div>}
+      {snapshotState?.status === "missing" && <div className="stale-banner" role="status" data-testid="snapshot-missing"><b>旧版快照缺少源码</b><span>此快照没有保存可供校验的源码。请重新索引以恢复当前源码验证和答题。</span><button className="button primary" onClick={updateIndex}>重新索引</button></div>}
+      {snapshotState?.status === "stale" && <div className="stale-banner" data-testid="stale-banner"><b>工作区已变化</b><span>新增 {snapshotState.addedFiles.length}、修改 {snapshotState.changedFiles.length}、删除/重命名 {snapshotState.removedFiles.length}。历史快照仍可查看；依赖当前源码的解释和答题已失效。</span><button className="button primary" onClick={updateIndex}>更新索引</button></div>}
       {taskEvent && (taskEvent.type === "progress" || taskEvent.type === "failed" || taskEvent.type === "cancelled") && <TaskStatus event={taskEvent} onCancel={cancel} onRetry={retry} />}
       <div className="page-body" data-page={page}>
         {page === "overview" && <Overview project={project} gitUrl={gitUrl} setGitUrl={setGitUrl} importLocal={importLocal} importPath={importPath} importGit={importGit} indexing={Boolean(task)} updateIndex={updateIndex} onNavigate={navigateTo} />}
@@ -262,6 +269,6 @@ export function App(): ReactElement {
   </div>;
 }
 
-function TaskStatus({ event, onCancel, onRetry }: { event: IndexTaskEvent; onCancel: () => void; onRetry: () => void }): ReactElement { if (event.type === "progress") { const percent = event.progress.total > 0 ? Math.round(event.progress.completed / event.progress.total * 100) : 0; return <div className="task-status" data-testid="index-progress"><div><b>后台索引 · {event.progress.phase}</b><span>{event.progress.currentFile ?? "准备中"}</span></div><progress value={event.progress.completed} max={Math.max(1, event.progress.total)} /><code>{percent}%</code><button className="button secondary" onClick={onCancel}>取消</button></div>; } if (event.type === "completed") return <></>; return <div className={`task-status ${event.type}`}><div><b>{event.type === "failed" ? "索引失败" : "索引已取消"}</b><span>{event.message}</span></div><button className="button secondary" onClick={onRetry}>安全重试</button></div>; }
+function TaskStatus({ event, onCancel, onRetry }: { event: IndexTaskEvent; onCancel: () => void; onRetry: () => void }): ReactElement { if (event.type === "progress") { const percent = event.progress.total > 0 ? Math.round(event.progress.completed / event.progress.total * 100) : 0; return <div className="task-status" data-testid="index-progress"><div><b>后台索引 · {event.progress.phase}</b><span>{event.progress.currentFile ?? "准备中"}</span></div><progress value={event.progress.completed} max={Math.max(1, event.progress.total)} /><code>{percent}%</code><button className="button secondary" onClick={onCancel}>取消</button></div>; } if (event.type === "completed") return <></>; return <div className={`task-status ${event.type}`}><div><b>{event.type === "failed" ? "索引失败" : "索引已取消"}</b><span>{event.type === "failed" ? safeDiagnosticMessage(event.code) : event.message}</span></div><button className="button secondary" onClick={onRetry}>安全重试</button></div>; }
 
 function Overview({ project, gitUrl, setGitUrl, importLocal, importPath, importGit, indexing, updateIndex, onNavigate }: { project: ProjectOverview | null; gitUrl: string; setGitUrl: (value: string) => void; importLocal: () => void; importPath: (path: string) => void; importGit: () => void; indexing: boolean; updateIndex: () => void; onNavigate: (page: Page) => void }): ReactElement { const [testPath, setTestPath] = useState(""); const e2e = new URLSearchParams(window.location.search).get("e2e") === "1"; if (!project) return <div className="welcome-grid"><section className="hero"><span className="kicker">理解，而不只是生成</span><h2>让每一条 AI 代码<br />重新变得<span>可解释、可追溯、可掌握。</span></h2><p>导入项目后，后台任务会在本机建立绑定快照的架构、调用和源码证据。</p><button className="button primary" onClick={importLocal} disabled={indexing}>选择本地项目</button>{e2e && <div className="test-import"><input aria-label="测试项目路径" value={testPath} onChange={(event) => setTestPath(event.target.value)} /><button className="button secondary" disabled={!testPath} onClick={() => importPath(testPath)}>导入测试项目</button></div>}</section><section className="import-card"><span className="kicker">或从 Git 导入</span><h3>克隆远程仓库</h3><p className="import-hint">从源码开始建立项目地图。索引在本机完成，无需配置模型。</p><input aria-label="Git 仓库地址" placeholder="https://github.com/team/repository" value={gitUrl} onChange={(event) => setGitUrl(event.target.value)} /><button className="button secondary" onClick={importGit} disabled={indexing || !gitUrl.trim()}>克隆并分析</button></section></div>; return <div className="stack"><section className="overview-hero"><div><span className="kicker">不可变证据快照</span><h2>{project.name}</h2><p>{project.rootPath}</p></div><div><button className="button secondary" onClick={updateIndex} disabled={indexing}>更新索引</button> <button className="button secondary" onClick={importLocal} disabled={indexing}>导入其他项目</button></div></section><div className="stats"><Stat label="已索引" value={project.health.indexedFiles} /><Stat label="模块分组" value={project.counts.modules} /><Stat label="调用关系" value={project.counts.calls} /><Stat label="待确认关系" value={project.counts.unknown} tone={project.counts.unknown ? "warn" : ""} /></div><div className="journey-grid">{[{ page: "architecture" as const, title: "探索项目结构", description: "从模块到符号，用源码核验关系。", step: "01" }, { page: "explain" as const, title: "追踪一个功能", description: "检索入口与静态路径，辨别已知和未知。", step: "02" }, { page: "ownership" as const, title: "验证你的理解", description: "引用真实源码，检验结构与调用方向。", step: "03" }].map((item) => <button key={item.page} className="journey-card" onClick={() => onNavigate(item.page)}><span>{item.step} / WORKFLOW</span><h3>{item.title} <b>↗</b></h3><p>{item.description}</p></button>)}</div><section className="panel"><div className="panel-heading"><div><span className="kicker">索引健康</span><h3>证据覆盖与限制</h3></div><span className={`health ${project.health.status}`}>{({ ready: "可开始探索", partial: "部分索引", failed: "索引失败" } as Record<string, string>)[project.health.status] ?? project.health.status}</span></div><div className="language-grid">{Object.entries(project.health.languageCounts).map(([language, count]) => <div key={language}><span>{language}</span><b>{count}</b></div>)}</div><div className="coverage-summary"><span>跳过 {project.health.skippedFiles} 个文件</span><span>不支持 {project.health.unsupportedFiles} 个文件</span></div><p className="coverage-note">架构和关系来自静态源码分析，不代表实际运行时路径。未解析的动态行为会保留不确定性。</p><details className="coverage-details"><summary>查看忽略规则与分析限制</summary><h4>忽略规则</h4><div className="rule-tags">{project.health.ignoredByRule.map(rule => <code key={rule}>{rule}</code>)}</div><h4>分析限制</h4>{project.health.limitations.map((item) => <p className="limitation" key={item}>{item}</p>)}</details></section></div>; }

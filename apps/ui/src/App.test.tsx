@@ -3,7 +3,7 @@ import { StrictMode, useEffect } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { CHANGESET_VERSION, GRAPH_QUERY_VERSION, TASK_PROTOCOL_VERSION, type ChangeReport, type ComparisonTaskEvent, type GraphEdge, type GraphNode, type GraphQueryResponse, type IndexTaskEvent, type IndexTaskHandle, type ProjectOverview, type SnapshotState, type SourceFileResult, type XRayApi } from "@project-xray/contracts";
+import { CHANGESET_VERSION, GRAPH_QUERY_VERSION, OWNERSHIP_SCORING_VERSION, TASK_PROTOCOL_VERSION, type ChangeReport, type ComparisonTaskEvent, type GraphEdge, type GraphNode, type GraphQueryResponse, type IndexTaskEvent, type IndexTaskHandle, type ProjectOverview, type SnapshotState, type SourceFileResult, type XRayApi } from "@project-xray/contracts";
 
 vi.mock("@monaco-editor/react", () => ({
   default: ({ value, onMount }: { value: string; onMount?: (editor: unknown, monaco: unknown) => void }) => {
@@ -21,7 +21,7 @@ vi.mock("@monaco-editor/react", () => ({
     return <pre data-testid="mock-editor">{value}</pre>;
   },
 }));
-vi.mock("cytoscape", () => ({ default: () => ({ on: () => undefined, destroy: () => undefined, zoom: () => 1, pan: () => ({ x: 0, y: 0 }), $: () => ({ length: 0, map: () => [], unselect: () => undefined }), nodes: () => ({ length: 0, map: () => [] }), getElementById: () => ({ data: () => undefined }), elements: () => ({ remove: () => undefined, removeClass: () => ({ addClass: () => undefined }), addClass: () => undefined }), batch: (callback: () => void) => callback(), add: () => undefined, layout: () => ({ run: () => undefined }), destroyed: () => false, resize: () => undefined, fit: () => undefined, scratch: () => undefined, width: () => 100, height: () => 100, minZoom: () => .08, maxZoom: () => 2.4 }) }));
+vi.mock("cytoscape", () => ({ default: () => ({ on: () => undefined, destroy: () => undefined, zoom: () => 1, pan: () => ({ x: 0, y: 0 }), $: () => ({ length: 0, map: () => [], unselect: () => undefined }), nodes: () => ({ length: 0, map: () => [] }), getElementById: () => ({ data: () => undefined, select: () => undefined }), elements: () => ({ remove: () => undefined, removeClass: () => ({ addClass: () => undefined }), addClass: () => undefined }), batch: (callback: () => void) => callback(), add: () => undefined, layout: () => ({ run: () => undefined }), destroyed: () => false, resize: () => undefined, fit: () => undefined, scratch: () => undefined, width: () => 100, height: () => 100, minZoom: () => .08, maxZoom: () => 2.4 }) }));
 
 import { App } from "./App";
 afterEach(() => cleanup());
@@ -48,7 +48,7 @@ describe("可信快照 UI 闭环", () => {
   let listener: ((event: IndexTaskEvent) => void) | undefined;
   let comparisonListener: ((event: ComparisonTaskEvent) => void) | undefined;
   let indexSubscriptions = 0; let indexUnsubscriptions = 0;
-  let state: "current" | "stale" = "current";
+  let state: "current" | "stale" | "unavailable" = "current";
   let api: XRayApi;
   beforeEach(() => {
     listener = undefined; comparisonListener = undefined; indexSubscriptions = 0; indexUnsubscriptions = 0; state = "current";
@@ -71,7 +71,7 @@ describe("可信快照 UI 闭环", () => {
       getFlow: vi.fn(), explainFeature: vi.fn(),
       startComparison: vi.fn(async (input) => ({ protocolVersion: TASK_PROTOCOL_VERSION as typeof TASK_PROTOCOL_VERSION, taskId: "55555555-5555-4555-8555-555555555555", repositoryId: input.repositoryId, mode: input.mode })), cancelComparison: vi.fn(async () => undefined), onComparisonEvent: (callback) => { comparisonListener = callback; return () => { comparisonListener = undefined; }; }, loadChangeReport: vi.fn(), getChangeReportState: vi.fn(async (input) => ({ ...input, status: "current" as const, checkedAt: new Date().toISOString() })),
       createOwnershipQuestions: vi.fn(async (input) => [{ ...input, version: "2.0.0" as const, id: "q", kind: "entry" as const, prompt: "定位 login", concept: { id: "definition:login", label: "login 定义" }, learningObjective: "定位定义", difficulty: "easy" as const, choices: [{ nodeId: "login", label: "login", detail: "function · login" }], variantKey: "definition:ev" }]),
-      gradeOwnershipAnswer: vi.fn(async (submission) => ({ repositoryId: submission.repositoryId, snapshotId: submission.snapshotId, questionId: submission.questionId, passed: true, location: { score: 100, status: "passed" as const }, structure: { score: 100, status: "passed" as const }, semantic: { status: "not-evaluated" as const, message: "未评估" }, feedback: ["语义未评估"], revealedEvidenceIds: ["ev"], validatedCitations: submission.citations, scoringVersion: "2.0.0" as const })),
+      gradeOwnershipAnswer: vi.fn(async (submission) => ({ repositoryId: submission.repositoryId, snapshotId: submission.snapshotId, questionId: submission.questionId, passed: true, location: { score: 100, status: "passed" as const }, structure: { score: 100, status: "passed" as const }, semantic: { status: "not-evaluated" as const, message: "未评估" }, feedback: ["语义未评估"], revealedEvidenceIds: ["ev"], validatedCitations: submission.citations, scoringVersion: OWNERSHIP_SCORING_VERSION as typeof OWNERSHIP_SCORING_VERSION })),
       getOwnershipProgress: vi.fn(async (ref) => ({ ...ref, attempts: [], concepts: [] })),
       readSource: vi.fn(async (location) => ({ repositoryId: location.repositoryId, snapshotId: location.snapshotId, filePath: location.filePath, language: "TypeScript", content: "export function login(){}", contentHash: "h", workspaceStatus: state, targetSpan: location, ...(location.evidenceId ? { evidence: { ...evidence, snapshotId: location.snapshotId } } : {}) })),
     };
@@ -155,7 +155,7 @@ describe("可信快照 UI 闭环", () => {
     expect(api.gradeOwnershipAnswer).toHaveBeenCalledTimes(1);
     await user.click(screen.getByRole("button", { name: /架构地图/ }));
     const submission = vi.mocked(api.gradeOwnershipAnswer).mock.calls[0]![0];
-    await act(async () => scoring.resolve({ repositoryId: submission.repositoryId, snapshotId: submission.snapshotId, questionId: submission.questionId, passed: true, location: { score: 100, status: "passed" }, structure: { score: 100, status: "passed" }, semantic: { status: "not-evaluated", message: "未评估" }, feedback: ["跨页核验完成"], revealedEvidenceIds: ["ev"], validatedCitations: submission.citations, scoringVersion: "2.0.0" }));
+    await act(async () => scoring.resolve({ repositoryId: submission.repositoryId, snapshotId: submission.snapshotId, questionId: submission.questionId, passed: true, location: { score: 100, status: "passed" }, structure: { score: 100, status: "passed" }, semantic: { status: "not-evaluated", message: "未评估" }, feedback: ["跨页核验完成"], revealedEvidenceIds: ["ev"], validatedCitations: submission.citations, scoringVersion: OWNERSHIP_SCORING_VERSION }));
     await user.click(screen.getByRole("button", { name: /所有权模式/ }));
     expect(await screen.findByText("跨页核验完成")).toBeTruthy();
     expect(api.gradeOwnershipAnswer).toHaveBeenCalledTimes(1);
@@ -304,6 +304,24 @@ describe("可信快照 UI 闭环", () => {
     expect(api.search).toHaveBeenCalledTimes(2);
   });
 
+  it("校验不可用时不声称工作区变化、不显示差异数，并在重新索引后恢复", async () => {
+    api.getCurrentProject = vi.fn(async () => snapshot()); state = "unavailable"; window.xray = api;
+    const user = userEvent.setup(); render(<App />);
+    const banner = await screen.findByTestId("snapshot-unavailable");
+    expect(banner.textContent).toContain("无法校验当前工作区"); expect(banner.textContent).toContain("没有判定源码或配置已变化");
+    expect(banner.textContent).not.toContain("新增 0"); expect(banner.textContent).not.toContain("修改 0"); expect(banner.textContent).not.toContain("删除/重命名 0");
+    await user.click(screen.getByRole("button", { name: /调用 \/ 数据流/ }));
+    expect((await screen.findByRole("button", { name: "搜索" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText(/无法校验当前工作区.*历史关系结果仍可查看/)).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: /所有权模式/ }));
+    const trainingState = await screen.findByTestId("training-stale"); expect(trainingState.textContent).toContain("无法校验当前工作区"); expect(trainingState.textContent).not.toContain("工作区已变化");
+    state = "current"; await user.click(screen.getByRole("button", { name: "重新索引" })); await waitFor(() => expect(api.importLocalProject).toHaveBeenCalled());
+    await act(async () => listener!({ protocolVersion: TASK_PROTOCOL_VERSION, type: "completed", taskId: "22222222-2222-4222-8222-222222222222", rootPath: "C:\\demo", repositoryId: "repo", overview: snapshot("snap-one") }));
+    await waitFor(() => expect(screen.queryByTestId("snapshot-unavailable")).toBeNull());
+    await user.click(screen.getByRole("button", { name: /调用 \/ 数据流/ }));
+    expect((await screen.findByRole("button", { name: "搜索" }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
   it.each(["failed", "cancelled"] as const)("索引%s时仍保留调用流的过期门禁", async (outcome) => {
     api.getCurrentProject = vi.fn(async () => snapshot()); window.xray = api;
     const user = userEvent.setup(); render(<App />); await screen.findByText("不可变证据快照");
@@ -312,7 +330,7 @@ describe("可信快照 UI 闭环", () => {
     await user.click(screen.getByRole("button", { name: "更新索引" })); await waitFor(() => expect(api.importLocalProject).toHaveBeenCalled());
     const taskId = "22222222-2222-4222-8222-222222222222";
     await act(async () => listener!(outcome === "failed"
-      ? { protocolVersion: TASK_PROTOCOL_VERSION, type: "failed", taskId, rootPath: "C:\\demo", repositoryId: "repo", message: "failed", retryable: true }
+      ? { protocolVersion: TASK_PROTOCOL_VERSION, type: "failed", taskId, rootPath: "C:\\demo", repositoryId: "repo", code: "TASK_FAILED", retryable: true }
       : { protocolVersion: TASK_PROTOCOL_VERSION, type: "cancelled", taskId, rootPath: "C:\\demo", repositoryId: "repo", message: "cancelled" }));
     expect(screen.getByTestId("stale-banner")).toBeTruthy();
     expect((screen.getByRole("button", { name: "搜索" }) as HTMLButtonElement).disabled).toBe(true);
@@ -519,6 +537,57 @@ describe("可信快照 UI 闭环", () => {
     expect(vi.mocked(api.queryGraph).mock.calls.filter(([input]) => input.view === "call")).toHaveLength(1);
   });
 
+  it("已有源码打开时，边和节点导航仍切换文件并更新同文件范围", async () => {
+    api.getCurrentProject = vi.fn(async () => snapshot());
+    const location = (filePath: string, startLine: number, startColumn: number, endLine: number, endColumn: number) => ({ filePath, startLine, startColumn, endLine, endColumn });
+    const pythonSpan = location("src/context.py", 12, 4, 12, 11);
+    const firstTsCallSpan = location("src/nested.ts", 3, 9, 3, 16);
+    const helperSpan = location("src/nested.ts", 5, 2, 5, 8);
+    const secondHelperSpan = location("src/nested.ts", 9, 4, 9, 17);
+    const clean: GraphNode = { id: "clean", snapshotId: "snap-one", kind: "function", name: "clean", qualifiedName: "context.clean", filePath: "src/context.py", span: pythonSpan, metadata: {} };
+    const outerA: GraphNode = { id: "outerA", snapshotId: "snap-one", kind: "function", name: "outerA", qualifiedName: "nested.outerA", filePath: "src/nested.ts", span: location("src/nested.ts", 1, 0, 10, 1), metadata: {} };
+    const helper: GraphNode = { id: "helper", snapshotId: "snap-one", kind: "function", name: "helper", qualifiedName: "nested.outerA.helper", filePath: "src/nested.ts", span: helperSpan, metadata: {} };
+    const firstPythonEdge: GraphEdge = { id: "python-call", snapshotId: "snap-one", source: "clean", target: "clean-helper", kind: "CALLS", confidence: "verified", evidenceId: "python-call-evidence", reason: "Python 装饰函数调用 helper" };
+    const firstTsEdge: GraphEdge = { id: "ts-call-first", snapshotId: "snap-one", source: "outerA", target: "helper", kind: "CALLS", confidence: "verified", evidenceId: "ts-call-first-evidence", reason: "TS 调用 helper 第一处" };
+    const secondTsEdge: GraphEdge = { id: "ts-call-second", snapshotId: "snap-one", source: "outerA", target: "helper", kind: "CALLS", confidence: "verified", evidenceId: "ts-call-second-evidence", reason: "TS 调用 helper 第二处" };
+    const spans = new Map([["python-call-evidence", pythonSpan], ["ts-call-first-evidence", firstTsCallSpan], ["ts-call-second-evidence", secondHelperSpan]]);
+    api.search = vi.fn(async (input): Promise<Awaited<ReturnType<XRayApi["search"]>>> => {
+      const item = input.query === "clean" ? clean : outerA;
+      return { repositoryId: input.repositoryId, snapshotId: input.snapshotId, items: [item], total: 1 };
+    });
+    api.queryGraph = vi.fn(async (input): Promise<GraphQueryResponse> => {
+      const { continuationCursor: _cursor, ...query } = input;
+      const isPython = input.rootNodeIds[0] === "clean";
+      return { repositoryId: input.repositoryId, snapshotId: input.snapshotId, version: GRAPH_QUERY_VERSION, query, nodes: isPython ? [clean] : [outerA, helper], edges: isPython ? [firstPythonEdge] : [firstTsEdge, secondTsEdge], evidence: [], unresolved: [], truncated: false, truncationReasons: [], stats: { expandedNodes: 2, scannedEdges: isPython ? 1 : 2, returnedNodes: isPython ? 1 : 2, returnedEdges: isPython ? 1 : 2, depthReached: 1 } };
+    });
+    api.getEvidence = vi.fn(async (input) => ({ ...evidence, id: input.evidenceId, repositoryId: input.repositoryId, snapshotId: input.snapshotId, span: spans.get(input.evidenceId)! }));
+    api.readSource = vi.fn(async (input) => ({ repositoryId: input.repositoryId, snapshotId: input.snapshotId, filePath: input.filePath, language: input.filePath.endsWith(".py") ? "Python" : "TypeScript", content: input.filePath.endsWith(".py") ? "def clean(): pass" : "function outerA() { function helper() {} }", contentHash: `${input.filePath}:${input.startLine}:${input.startColumn}`, workspaceStatus: "current" as const, targetSpan: input, ...(input.evidenceId ? { evidence: { ...evidence, id: input.evidenceId, repositoryId: input.repositoryId, snapshotId: input.snapshotId, span: spans.get(input.evidenceId)! } } : {}) }));
+    window.xray = api;
+
+    const user = userEvent.setup(); render(<App />); await screen.findByText("不可变证据快照");
+    await user.click(screen.getByRole("button", { name: /调用 \/ 数据流/ }));
+    await user.type(screen.getByRole("textbox", { name: "搜索符号" }), "clean"); await user.click(screen.getByRole("button", { name: "搜索" }));
+    await user.click(await screen.findByRole("button", { name: "查询关系" }));
+    await user.click(await screen.findByRole("button", { name: /Python 装饰函数调用 helper/ }));
+    await waitFor(() => expect(screen.getByTestId("source-viewer").getAttribute("data-source-file")).toBe("src/context.py"));
+    expect(screen.getByTestId("source-viewer").getAttribute("data-monaco-selection")).toBe("12:4-12:11");
+
+    await user.clear(screen.getByRole("textbox", { name: "搜索符号" })); await user.type(screen.getByRole("textbox", { name: "搜索符号" }), "outerA");
+    await user.click(screen.getByRole("button", { name: "搜索" })); await user.click(await screen.findByRole("button", { name: "查询关系" }));
+    await user.click(await screen.findByRole("button", { name: /TS 调用 helper 第一处/ }));
+    await waitFor(() => expect(api.readSource).toHaveBeenCalledWith(expect.objectContaining({ filePath: "src/nested.ts", startLine: 3, startColumn: 9 })));
+    await waitFor(() => expect(screen.getByTestId("source-viewer").getAttribute("data-source-file")).toBe("src/nested.ts"));
+    await waitFor(() => expect(screen.getByTestId("source-viewer").getAttribute("data-monaco-selection")).toBe("3:9-3:16"));
+
+    await user.click(screen.getByRole("button", { name: "节点列表" }));
+    await user.click(await screen.findByRole("button", { name: /helper.*src\/nested\.ts/ }));
+    await waitFor(() => expect(screen.getByTestId("source-viewer").getAttribute("data-monaco-selection")).toBe("5:2-5:8"));
+    await user.click(screen.getByRole("button", { name: /TS 调用 helper 第二处/ }));
+    await waitFor(() => expect(screen.getByTestId("source-viewer").getAttribute("data-monaco-selection")).toBe("9:4-9:17"));
+    expect(screen.getByTestId("source-viewer").getAttribute("data-source-file")).toBe("src/nested.ts");
+    expect(vi.mocked(api.readSource).mock.calls.map(([request]) => `${request.filePath}:${request.startLine}:${request.startColumn}`)).toContain("src/nested.ts:3:9");
+  });
+
   it("功能解释在切页期间完成一次，返回后恢复已提交问题、结果和独立源码位置", async () => {
     api.getCurrentProject = vi.fn(async () => snapshot());
     const explanation = deferred<Awaited<ReturnType<XRayApi["explainFeature"]>>>();
@@ -560,7 +629,7 @@ describe("可信快照 UI 闭环", () => {
 
   it("选择比较模式并从重命名文件打开左侧不可变源码", async () => {
     api.getCurrentProject = vi.fn(async () => snapshot()); window.xray = api; const user = userEvent.setup(); render(<App />); await user.click(await screen.findByRole("button", { name: /Git 变更/ })); await user.selectOptions(screen.getByRole("combobox", { name: "比较模式" }), "staged"); await user.click(screen.getByRole("button", { name: "生成比较报告" })); await waitFor(() => expect(comparisonListener).toBeDefined());
-    const identity = { graphIrVersion: "1.1.0", analyzerVersions: { test: "1" }, configurationHash: "cfg", sourceFingerprint: "src" }; const leftSpan = { filePath: "old.ts", startLine: 1, startColumn: 0, endLine: 1, endColumn: 10 }; const rightSpan = { ...leftSpan, filePath: "new.ts" }; const exclusions = { ignored: { count: 0, paths: [] }, secrets: { count: 0, paths: [] }, unsupported: { count: 0, paths: [] }, binary: { count: 0, paths: [] }, oversized: { count: 0, paths: [] }, submodules: { count: 0, paths: [] } }; const sideCompleteness = { status: "complete" as const, indexedFiles: 1, failures: [], exclusions, limitations: [] }; const rightCompleteness = { ...sideCompleteness, status: "partial" as const, failures: [{ filePath: "new.ts", reason: "TypeScript 语法错误 TS1005，位置 1:9" }] }; const report: ChangeReport = { version: CHANGESET_VERSION, id: "report", repositoryId: "repo", mode: "staged", createdAt: new Date().toISOString(), left: { label: "HEAD", kind: "commit", revision: "a".repeat(40), contentFingerprint: "left", manifestFingerprint: "cfg", capturedAt: new Date().toISOString(), snapshot: { repositoryId: "repo", snapshotId: "left-snap" }, analysisIdentity: identity, completeness: sideCompleteness }, right: { label: "Index", kind: "index", contentFingerprint: "right", manifestFingerprint: "cfg", capturedAt: new Date().toISOString(), snapshot: { repositoryId: "repo", snapshotId: "right-snap" }, analysisIdentity: identity, completeness: rightCompleteness }, captureFingerprint: "capture", status: "current", files: [{ id: "change", status: "renamed", oldPath: "old.ts", newPath: "new.ts", similarity: 95, classification: "source", classificationReason: "source", classificationConfidence: "verified", additions: 1, deletions: 1, binary: false, analyzable: true, hunks: [], directChanges: [{ id: "left-direct", side: "left", match: "file", nodeId: "old-file", span: leftSpan, reason: "file" }, { id: "right-direct", side: "right", match: "file", nodeId: "new-file", span: rightSpan, reason: "file" }] }], impactPaths: [], queryBudget: { maxDepth: 4, maxPaths: 30, maxWork: 5000 }, completeness: { status: "partial", unmappedChanges: [], impact: { status: "partial", reasons: ["一侧分析不完整"], unknownEdgeCount: 0 } }, truncated: false, truncationReasons: [], failures: [{ scope: "right:new.ts", reason: "TypeScript 语法错误 TS1005，位置 1:9" }], limitations: [] };
+    const identity = { graphIrVersion: "1.1.0", analyzerVersions: { test: "1" }, configurationHash: "cfg", sourceFingerprint: "src" }; const leftSpan = { filePath: "old.ts", startLine: 1, startColumn: 0, endLine: 1, endColumn: 10 }; const rightSpan = { ...leftSpan, filePath: "new.ts" }; const exclusions = { ignored: { count: 0, paths: [] }, secrets: { count: 0, paths: [] }, unsupported: { count: 0, paths: [] }, binary: { count: 0, paths: [] }, oversized: { count: 0, paths: [] }, submodules: { count: 0, paths: [] } }; const sideCompleteness = { status: "complete" as const, indexedFiles: 1, failures: [], exclusions, limitations: [] }; const rightCompleteness = { ...sideCompleteness, status: "partial" as const, failures: [{ filePath: "new.ts", code: "TYPESCRIPT_SYNTAX_ERROR" as const, detailCode: "TS1005", reason: "TypeScript 存在语法错误（详情已隐藏）" }] }; const report: ChangeReport = { version: CHANGESET_VERSION, id: "report", repositoryId: "repo", mode: "staged", createdAt: new Date().toISOString(), left: { label: "HEAD", kind: "commit", revision: "a".repeat(40), contentFingerprint: "left", manifestFingerprint: "cfg", capturedAt: new Date().toISOString(), snapshot: { repositoryId: "repo", snapshotId: "left-snap" }, analysisIdentity: identity, completeness: sideCompleteness }, right: { label: "Index", kind: "index", contentFingerprint: "right", manifestFingerprint: "cfg", capturedAt: new Date().toISOString(), snapshot: { repositoryId: "repo", snapshotId: "right-snap" }, analysisIdentity: identity, completeness: rightCompleteness }, captureFingerprint: "capture", status: "current", files: [{ id: "change", status: "renamed", oldPath: "old.ts", newPath: "new.ts", similarity: 95, classification: "source", classificationReason: "source", classificationConfidence: "verified", additions: 1, deletions: 1, binary: false, analyzable: true, hunks: [], directChanges: [{ id: "left-direct", side: "left", match: "file", nodeId: "old-file", span: leftSpan, reason: "file" }, { id: "right-direct", side: "right", match: "file", nodeId: "new-file", span: rightSpan, reason: "file" }] }], impactPaths: [], queryBudget: { maxDepth: 4, maxPaths: 30, maxWork: 5000 }, completeness: { status: "partial", unmappedChanges: [], impact: { status: "partial", reasons: ["一侧分析不完整"], unknownEdgeCount: 0 } }, truncated: false, truncationReasons: [], failures: [{ scope: "right:new.ts", code: "TYPESCRIPT_SYNTAX_ERROR" as const, detailCode: "TS1005", reason: "TypeScript 存在语法错误（详情已隐藏）" }], limitations: [] };
     comparisonListener!({ protocolVersion: TASK_PROTOCOL_VERSION, type: "completed", taskId: "55555555-5555-4555-8555-555555555555", repositoryId: "repo", report }); expect((await screen.findByTestId("comparison-partial")).textContent).toMatch(/new\.ts.*TS1005/); await user.click(await screen.findByRole("button", { name: /renamed · old\.ts/ })); await waitFor(() => expect(api.readSource).toHaveBeenCalledWith(expect.objectContaining({ snapshotId: "left-snap", filePath: "old.ts" })));
   });
 });

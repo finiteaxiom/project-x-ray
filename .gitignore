@@ -1,6 +1,7 @@
 # Dependencies and generated build output
 node_modules/
 dist/
+packages/analyzer-core/native/build/
 .turbo/
 .vite/
 coverage/

@@ -1,6 +1,40 @@
 # V1 开发状态
 
-更新日期：2026-09-26
+更新日期：2026-10-01
+
+## 原生异步句柄生命周期与 desktop 复制更新（2026-10-01）
+
+- `OpenWork`/`ReadWork` 现为所有 worker 使用的 `napi_external` 持有强 `napi_ref`；pending open/read 期间拒绝关闭根 scope，pending read 期间拒绝关闭文件句柄。完成及排队失败路径回收引用、pending 计数和 busy 状态；JS scope 只有在原生关闭成功后才标记为 closed。
+- core 隔离子进程用 `--expose-gc` 和四个 PBKDF2 worker 排队后强制 GC，覆盖 open/read 完成、关闭冲突、缺失文件 open 失败与读期间路径逃逸的失败清理。`pnpm --filter @project-xray/analyzer-core test` 当前 6 项通过、1 项因最终文件 symlink 的 `EPERM` 跳过；core typecheck 通过。
+- desktop 的原生模块复制脚本现每次先运行 `analyzer-core/scripts/build-native.cjs`，再复制构建产物；该入口按 native 源与 `.node` 的 mtime 决定是否重编译。第一次直接 desktop build 被仍运行的 Electron 实例阻挡，tsup 清理输出时遇到 `EPERM`；审查方停止其 Electron 实例后，在 native 源晚于 core `.node` 的状态下重跑成功，原生模块重新编译并复制，desktop/core 两份 `.node` 的 SHA-256 一致。本批没有重启 Electron，也没有重跑源码导航验收。
+- 详细证据、首次测试夹具的未处理 rejection 修正和构建限制见[原生生命周期记录](development-runs/2026-10-01-path-escape-diagnostic.md)。
+
+## 当前安全诊断：项目根目录路径竞态（2026-10-01）
+
+- 隔离的确定性 Windows junction 复现确认：本地索引会在一致性复读时拒绝发布快照，但根外内容此前已进入 TypeScript 分析器；Git 工作区捕获可在目录于捕获后恢复时通过前后身份校验，并保存包含根外内容的右侧快照/`current` 报告。
+- **修复已实现，独立审查与真实 Electron 验收待复跑。** Windows Node-API 原生句柄层从持有的项目根句柄解析源码相对路径，在同一 OS 文件句柄上查询最终路径与文件身份并异步分块读取；普通索引首读/复读及 Git `working` 共用该边界。定向 application 19 项、Git 11 项回归通过；core 5 项通过，最终文件 symlink 夹具因本机 `fs.symlink` 返回 `EPERM` 跳过。四个相关包类型检查及 desktop bundle 构建通过；没有启动 Electron 或构建安装包。根因、修复、失败诊断与当前限制见[路径竞态记录](development-runs/2026-10-01-path-escape-diagnostic.md)。
+
+## 已有源码打开时调用流导航修复（2026-09-30）
+
+- 独立真实 Electron 验收发现：先打开 Python `context.py:12`，再在调用流搜索 TS `outerA` 并点击 CALLS，边选择更新但源码仍留在 Python；节点列表选 `helper` 也无变化。关闭源码后重试同一关系立即显示 `src/nested.ts:3:9`，说明关系证据本身可导航。[验收记录](development-runs/2026-09-30-independent-review.md)
+- App 控制器回归复现确认根因：显式导航先清空 `source`，这使页面恢复回调改变并重新运行；恢复逻辑用旧 Python 保存位置启动新读取，递增的请求序号让待处理的 TS 证据请求失效，TS `readSource` 因而没有发出。现在恢复回调从 ref 读取最新源码，但不订阅 `source` 变化；恢复仅随页面/项目上下文变化，跳过逻辑比对仓库、快照、文件、完整范围和证据 ID。项目/快照、页面代次和请求序号校验保持不变。
+- App 真实控制器用例覆盖已有 Python 源码时的 TS 跨文件边导航、`helper` 节点导航及 `nested.ts` 内两段范围更新。修复后 `readSource` 分别使用所选 TS 文件/范围，并且 viewer 的文件和 Monaco 选区随操作改变。
+- 本轮验证：目标回归修复前失败，调用记录显示只有两次 `src/context.py:12:4` 读取、没有 TS 读取；修复后目标回归 1 项通过。`pnpm --filter @project-xray/ui test`（11 文件、82 项通过）、`pnpm typecheck`（10/10）、`pnpm build`（10/10）和 `git diff --check` 均通过。构建仍报告主 UI 与 Monaco 代码块超过 500 kB。
+- 按首批范围的独立真实 Electron 验收已通过：Python → TS CALLS、两组 `helper` 节点、同文件范围更新和跨页恢复均已实操（见[独立验收记录](development-runs/2026-09-30-independent-review.md)）。版本为工作区 `0.1.0`；安装包与发布验收仍未执行。详细失败和修复记录见[开发记录](development-runs/2026-09-30-source-navigation-restore-race.md)。
+
+## V1 可信索引与源码导航修复（2026-09-30）
+
+- TypeScript 嵌套同名声明现在把词法所有者纳入限定名和稳定节点身份；Python 绑定收集补齐控制流中的 `for`/`except`/上下文管理器目标与推导式局部作用域，装饰器重绑定的调用保守保留为 `unknown`。对应分析器版本为 TypeScript `+xray.3` 和 Python `2.1.1`，没有执行被导入项目。
+- 目录发现现在纳入普通隐藏源码目录，同时保留秘密文件、构建/供应商目录排除和不跟随符号链接的限制。普通索引与 Git 比较侧均用实际内容末行生成完整文件范围。
+- 文件节点通过 Graph IR `1.3.0` 的 `evidenceId` 指向其 `verified` 文件证据；架构页把该 ID 传入源码读取，所以空文件的唯一 `1:0–1:0` 范围也能在证据校验下打开。零宽文件范围仍不能用作所有权引用；旧快照需要重新索引才能带上新节点链接。
+- 为 Windows 全仓 Git 子进程测试的并行负载将根 `pnpm test` 设为 Turbo 并发 2；没有放宽测试超时或移除断言。构建仍会提示 UI 与 Monaco 代码块超过 500 kB。
+- 本轮历史验证仍为：`pnpm test --force`（18/18 Turbo 任务成功，150 项测试通过；桌面 Vitest 没有测试文件）、`pnpm typecheck`（10/10）、`pnpm build`（10/10）、`pnpm --filter @project-xray/desktop test:e2e:file-source`（真实 Electron/IPC/Monaco 单行、多行、空文件通过；隐藏源码可检索，秘密、构建和依赖文件未索引）、`git diff --check`。首批按范围独立验收通过（见[独立验收记录](development-runs/2026-09-30-independent-review.md)）；150 项为原开发记录数量，没有改写。安装包验收和完整六功能视觉验收仍未运行。过程与失败诊断见[开发记录](development-runs/2026-09-30-v1-correctness.md)。
+
+## Python 上下文管理器作用域回归修复（2026-09-30）
+
+- `scope_statements` 将同步/异步上下文管理器与带 `orelse` 的 `if`/循环分支分开遍历，继续收集 `with ... as` 和 `async with ... as` 的局部绑定。嵌套控制流可完整扫描，目标变量调用保持 `unknown`，未遮蔽的模块函数调用仍为 `verified`。
+- Python analyzer 升为 `2.1.1`，worker 协议仍为 `2.1.0`：修复改变失败文件能否提供事实，分析器版本纳入快照身份以使旧失败快照需要重索引；IPC/worker 响应形状没有变化。
+- 复验通过：`pnpm --filter @project-xray/analyzer-python test`（16/16）、`pnpm --filter @project-xray/application test`（15/15）、`pnpm typecheck` 和 `pnpm build`（均 10/10）；生产构建已复制修复后的 Python worker。Python with/async with 的遮蔽、`unknown` 关系及源码定位按当前任务范围独立验收通过（见[独立验收记录](development-runs/2026-09-30-independent-review.md)）；未运行安装包验收。详细失败与复验记录见 [上下文管理器开发记录](development-runs/2026-09-30-python-with-scope-regression.md)。
 
 ## CSS 职责归属与级联整理（2026-09-26）
 

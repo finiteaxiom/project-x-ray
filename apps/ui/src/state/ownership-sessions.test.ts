@@ -28,7 +28,7 @@ const completed = (taskId: string, repositoryId = "repo", mode: ComparisonMode =
   protocolVersion: TASK_PROTOCOL_VERSION, type: "completed", taskId, repositoryId, report: report(repositoryId, mode, id),
 } as ComparisonTaskEvent);
 const failed = (taskId: string, repositoryId = "repo"): ComparisonTaskEvent => ({
-  protocolVersion: TASK_PROTOCOL_VERSION, type: "failed", taskId, repositoryId, message: "failed",
+  protocolVersion: TASK_PROTOCOL_VERSION, type: "failed", taskId, repositoryId, code: "GIT_COMPARISON_FAILED", retryable: true,
 } as ComparisonTaskEvent);
 const handle = (taskId: string, repositoryId = "repo", mode: ComparisonMode = "working"): ComparisonTaskHandle => ({
   protocolVersion: TASK_PROTOCOL_VERSION, taskId, repositoryId, mode,

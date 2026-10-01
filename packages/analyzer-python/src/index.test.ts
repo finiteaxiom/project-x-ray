@@ -134,4 +134,107 @@ describe("PythonAnalyzer", () => {
     expect(result.edges).toContainEqual(expect.objectContaining({ kind: "WRITES", target: count.id, confidence: "verified" }));
     expect(result.edges).toContainEqual(expect.objectContaining({ kind: "WRITES", target: value.id, confidence: "verified" }));
   });
+
+  it("按词法作用域处理循环和推导式遮蔽，并保留推导式外安全绑定", async () => {
+    const analyzer = new PythonAnalyzer(); const result = await analyzer.analyze("C:\\repo\\scopes.py", [
+      "def target(): return 1",
+      "def loops(items):",
+      "    for target in items:",
+      "        target()",
+      "def comprehensions(items):",
+      "    collected = [target() for target in items]",
+      "    target()",
+      "    return collected",
+    ].join("\n"), { rootPath: "C:\\repo", repositoryId: "repo", snapshotId: "snap" });
+
+    const calls = result.edges.filter((edge) => edge.kind === "CALLS");
+    const line = (edge: (typeof calls)[number]) => result.evidence.find((item) => item.id === edge.evidenceId)?.span.startLine;
+    expect(calls.find((edge) => line(edge) === 4)).toMatchObject({ confidence: "unknown", unresolvedTarget: "target" });
+    expect(calls.find((edge) => line(edge) === 6)).toMatchObject({ confidence: "unknown", unresolvedTarget: "target" });
+    expect(calls.find((edge) => line(edge) === 7)).toMatchObject({ confidence: "verified" });
+  });
+
+  it("遍历同步 with 子体，保留 optional_vars 遮蔽和绑定写入证据", async () => {
+    const analyzer = new PythonAnalyzer(); const result = await analyzer.analyze("C:\\repo\\context.py", [
+      "def target(): return 1",
+      "def caller(resource, values):",
+      "    if values:",
+      "        with resource as target:",
+      "            for target in values:",
+      "                target()",
+      "            target()",
+      "    target()",
+      "def safe_caller():",
+      "    return target()",
+    ].join("\n"), { rootPath: "C:\\repo", repositoryId: "repo", snapshotId: "snap" });
+
+    const caller = result.nodes.find((node) => node.kind === "function" && node.name === "caller")!;
+    const safeCaller = result.nodes.find((node) => node.kind === "function" && node.name === "safe_caller")!;
+    const localTarget = result.nodes.find((node) => node.kind === "variable" && node.qualifiedName === "context.py::caller.target")!;
+    const calls = result.edges.filter((edge) => edge.kind === "CALLS");
+    const line = (edge: (typeof calls)[number]) => result.evidence.find((item) => item.id === edge.evidenceId)?.span.startLine;
+    expect(localTarget.metadata.bindingKind).toBe("assignment");
+    expect(result.edges.filter((edge) => edge.kind === "WRITES" && edge.source === caller.id && edge.target === localTarget.id).map((edge) => line(edge)).sort()).toEqual([4, 5]);
+    expect(calls.filter((edge) => edge.source === caller.id).map((edge) => [line(edge), edge.confidence, edge.unresolvedTarget])).toEqual([
+      [6, "unknown", "target"], [7, "unknown", "target"], [8, "unknown", "target"],
+    ]);
+    expect(calls.find((edge) => edge.source === safeCaller.id)).toMatchObject({ confidence: "verified" });
+  });
+
+  it("遍历异步 with 子体及其嵌套控制流", async () => {
+    const analyzer = new PythonAnalyzer(); const result = await analyzer.analyze("C:\\repo\\async_context.py", [
+      "def target(): return 1",
+      "async def caller(resource, values):",
+      "    async with resource as target:",
+      "        if values:",
+      "            async for target in values:",
+      "                target()",
+      "        target()",
+      "def safe_caller():",
+      "    return target()",
+    ].join("\n"), { rootPath: "C:\\repo", repositoryId: "repo", snapshotId: "snap" });
+
+    const caller = result.nodes.find((node) => node.kind === "function" && node.name === "caller")!;
+    const calls = result.edges.filter((edge) => edge.kind === "CALLS");
+    const line = (edge: (typeof calls)[number]) => result.evidence.find((item) => item.id === edge.evidenceId)?.span.startLine;
+    expect(calls.filter((edge) => edge.source === caller.id).map((edge) => [line(edge), edge.confidence, edge.unresolvedTarget])).toEqual([
+      [6, "unknown", "target"], [7, "unknown", "target"],
+    ]);
+    expect(calls.some((edge) => edge.confidence === "verified" && line(edge) === 9)).toBe(true);
+    expect(result.nodes.some((node) => node.kind === "variable" && node.qualifiedName === "async_context.py::caller.target" && node.metadata.bindingKind === "assignment")).toBe(true);
+  });
+
+  it("不把装饰器包装的名称绑定伪装为原定义的已验证调用", async () => {
+    const analyzer = new PythonAnalyzer(); const result = await analyzer.analyze("C:\\repo\\decorators.py", [
+      "def safe(): return 1",
+      "def decorator(fn):",
+      "    def replacement(): return fn()",
+      "    return replacement",
+      "@decorator",
+      "def decorated(): return safe()",
+      "def caller():",
+      "    safe()",
+      "    decorated()",
+    ].join("\n"), { rootPath: "C:\\repo", repositoryId: "repo", snapshotId: "snap" });
+
+    const caller = result.nodes.find((node) => node.kind === "function" && node.name === "caller")!;
+    const calls = result.edges.filter((edge) => edge.kind === "CALLS" && edge.source === caller.id);
+    expect(calls).toHaveLength(2);
+    expect(calls.find((edge) => result.nodes.find((node) => node.id === edge.target)?.name === "safe")).toMatchObject({ confidence: "verified" });
+    const decoratedCall = calls.find((edge) => result.nodes.find((node) => node.id === edge.target)?.name === "decorated");
+    expect(decoratedCall).toMatchObject({ confidence: "unknown", unresolvedTarget: "decorated" });
+    expect(result.evidence.find((item) => item.id === decoratedCall?.evidenceId)).toMatchObject({ confidence: "unknown", reason: expect.stringMatching(/装饰器/) });
+  });
+
+  it("跨文件导入装饰定义时仍保留 unknown 及装饰器原因", async () => {
+    const analyzer = new PythonAnalyzer(); const result = await analyzer.analyzeProject([
+      { absolutePath: "C:\\repo\\decorators.py", content: "def wrap(fn): return fn\n@wrap\ndef decorated(): return 1\n" },
+      { absolutePath: "C:\\repo\\consumer.py", content: "from .decorators import decorated\ndef caller(): return decorated()\n" },
+    ], { rootPath: "C:\\repo", repositoryId: "repo", snapshotId: "snap" });
+    const caller = result.nodes.find((node) => node.kind === "function" && node.name === "caller")!;
+    const call = result.edges.find((edge) => edge.kind === "CALLS" && edge.source === caller.id)!;
+    expect(call).toMatchObject({ confidence: "unknown", unresolvedTarget: "decorated", reason: expect.stringMatching(/装饰器/) });
+    expect(result.evidence.find((item) => item.id === call.evidenceId)).toMatchObject({ confidence: "unknown", reason: expect.stringMatching(/装饰器/) });
+    expect(result.unresolvedCalls).toContain("decorated");
+  });
 });

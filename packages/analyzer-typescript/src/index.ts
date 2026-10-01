@@ -1,6 +1,6 @@
 import { dirname, extname, resolve } from "node:path";
 import ts from "typescript";
-import type { Confidence, Evidence, GraphEdge, GraphNode, NodeKind, SourceSpan } from "@project-xray/contracts";
+import { safeDiagnostic, type Confidence, type Evidence, type GraphEdge, type GraphNode, type NodeKind, type SourceSpan } from "@project-xray/contracts";
 import {
   languageFromPath,
   normalizeProjectPath,
@@ -127,7 +127,7 @@ function loadCompilerOptions(rootPath: string, virtualConfigs: TypeScriptProject
 
 export class TypeScriptAnalyzer implements LanguageAnalyzer {
   readonly id = "typescript-program";
-  readonly version = `${ts.version}+xray.2`;
+  readonly version = `${ts.version}+xray.3`;
 
   supports(filePath: string): boolean {
     return SUPPORTED.has(extname(filePath).toLowerCase());
@@ -175,13 +175,13 @@ export class TypeScriptAnalyzer implements LanguageAnalyzer {
     const nodeIdBySymbol = new Map<ts.Symbol, string>();
     const callableNodeIds = new Set<string>();
     const callableIdByNode = new Map<ts.Node, string>();
+    const qualifiedNameByNode = new Map<ts.Node, string>();
     const fileNodeIdByPath = new Map<string, string>();
     const projectSourceFiles = program.getSourceFiles().filter((sourceFile) => projectPathByAbsolute.has(canonicalPath(sourceFile.fileName)));
     const failures = program.getSyntacticDiagnostics().flatMap((diagnostic) => {
       if (!diagnostic.file) return [];
       const filePath = projectPathByAbsolute.get(canonicalPath(diagnostic.file.fileName)); if (!filePath) return [];
-      const position = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start ?? 0);
-      return [{ filePath, reason: `TypeScript 语法错误 TS${diagnostic.code}，位置 ${position.line + 1}:${position.character}` }];
+      return [{ filePath, ...safeDiagnostic("TYPESCRIPT_SYNTAX_ERROR", `TS${diagnostic.code}`) }];
     });
 
     const addEvidence = (sourceFile: ts.SourceFile, projectPath: string, kind: string, node: ts.Node, reason: string, confidence: Confidence = "verified"): string => {
@@ -206,7 +206,8 @@ export class TypeScriptAnalyzer implements LanguageAnalyzer {
           const fileNodeId = fileNodeIdByPath.get(canonicalPath(sourceFile.fileName))!;
           const symbolName = info.nameNode.text;
           const semanticName = symbol ? checker.getFullyQualifiedName(symbol).replace(/^".*"\./, "") : symbolName;
-          const qualifiedName = `${projectPath}::${semanticName}`;
+          const lexicalOwner = findEnclosingQualifiedName(node.parent, qualifiedNameByNode);
+          const qualifiedName = lexicalOwner ? `${lexicalOwner}.${symbolName}` : `${projectPath}::${semanticName}`;
           const nodeId = stableId(context.repositoryId, info.kind, qualifiedName);
           const symbolSpan = spanOf(sourceFile, node, projectPath);
           nodes.push({
@@ -220,9 +221,10 @@ export class TypeScriptAnalyzer implements LanguageAnalyzer {
             span: symbolSpan,
             metadata: { exported: isExported(node), parameter: ts.isParameter(node) },
           });
+          qualifiedNameByNode.set(node, qualifiedName);
           if (symbol) nodeIdBySymbol.set(symbol, nodeId);
           if (info.kind === "function" || info.kind === "method" || info.kind === "class") callableNodeIds.add(nodeId);
-          if (info.callableNode) callableIdByNode.set(info.callableNode, nodeId);
+          if (info.callableNode) { callableIdByNode.set(info.callableNode, nodeId); qualifiedNameByNode.set(info.callableNode, qualifiedName); }
           if (ts.isFunctionDeclaration(node) || ts.isMethodDeclaration(node)) callableIdByNode.set(node, nodeId);
           const evidenceId = addEvidence(sourceFile, projectPath, "symbol-definition", node, `TypeScript Program 定义了 ${info.kind} ${symbolName}`);
           const parentCallable = findEnclosingCallable(node.parent, callableIdByNode);
@@ -371,6 +373,16 @@ function findEnclosingCallable(node: ts.Node | undefined, callableIdByNode: Map<
   while (current) {
     const id = callableIdByNode.get(current);
     if (id) return id;
+    current = current.parent;
+  }
+  return undefined;
+}
+
+function findEnclosingQualifiedName(node: ts.Node | undefined, qualifiedNameByNode: Map<ts.Node, string>): string | undefined {
+  let current = node;
+  while (current) {
+    const qualifiedName = qualifiedNameByNode.get(current);
+    if (qualifiedName) return qualifiedName;
     current = current.parent;
   }
   return undefined;

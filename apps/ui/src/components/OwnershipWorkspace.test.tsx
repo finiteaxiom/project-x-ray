@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { GraphNode, OwnershipGrade, OwnershipPrompt, ProjectOverview, SourceCitation, XRayApi } from "@project-xray/contracts";
+import { OWNERSHIP_SCORING_VERSION, type GraphNode, type OwnershipGrade, type OwnershipPrompt, type ProjectOverview, type SourceCitation, type XRayApi } from "@project-xray/contracts";
 import { OwnershipWorkspace } from "./OwnershipWorkspace";
 import { createOwnershipSessionController } from "../state/ownership-sessions";
 
@@ -19,7 +19,7 @@ vi.mock("./EvidenceWorkspace", () => ({
 
 const project = (snapshotId = "snap-a", repositoryId = "repo"): ProjectOverview => ({ repositoryId, snapshotId, name: "demo", rootPath: "C:\\demo", sourceType: "local", createdAt: "2026-09-25T00:00:00.000Z", analysisIdentity: { graphIrVersion: "1.2.0", analyzerVersions: {}, configurationHash: "cfg", sourceFingerprint: snapshotId }, health: { status: "ready", totalFiles: 1, indexedFiles: 1, skippedFiles: 0, unsupportedFiles: 0, ignoredByRule: [], failedFiles: [], languageCounts: {}, limitations: [] }, counts: { nodes: 0, edges: 0, evidence: 0, modules: 0, files: 0, calls: 0, unknown: 0 } });
 const question = (snapshotId = "snap-a"): OwnershipPrompt => ({ repositoryId: "repo", snapshotId, version: "2.0.0", id: "q-flow", kind: "variable-flow", prompt: "为 value 的三处源码引用标记角色", concept: { id: "variable:value", label: "value 读写" }, learningObjective: "区分写入、读取与返回", difficulty: "medium", choices: [], variantKey: "flow-v1" });
-const gradeFor = (submission: { repositoryId: string; snapshotId: string; questionId: string; citations: SourceCitation[] }): OwnershipGrade => ({ repositoryId: submission.repositoryId, snapshotId: submission.snapshotId, questionId: submission.questionId, passed: true, location: { score: 100, status: "passed" }, structure: { score: 100, status: "passed" }, semantic: { status: "not-evaluated", message: "自由文本未评估" }, feedback: [], revealedEvidenceIds: ["write", "read", "return"], validatedCitations: submission.citations, scoringVersion: "2.0.0" });
+const gradeFor = (submission: { repositoryId: string; snapshotId: string; questionId: string; citations: SourceCitation[] }): OwnershipGrade => ({ repositoryId: submission.repositoryId, snapshotId: submission.snapshotId, questionId: submission.questionId, passed: true, location: { score: 100, status: "passed" }, structure: { score: 100, status: "passed" }, semantic: { status: "not-evaluated", message: "自由文本未评估" }, feedback: [], revealedEvidenceIds: ["write", "read", "return"], validatedCitations: submission.citations, scoringVersion: OWNERSHIP_SCORING_VERSION });
 const deferred = <T,>() => { let resolve!: (value: T) => void; let reject!: (reason: Error) => void; const promise = new Promise<T>((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; };
 const cited = (): SourceCitation[] => [
   { filePath: "src/values.ts", startLine: 1, startColumn: 0, endLine: 1, endColumn: 8, evidenceId: "write" },

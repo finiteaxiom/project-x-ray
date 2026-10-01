@@ -2,23 +2,30 @@ import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { extname, join } from "node:path";
 import { z } from "zod";
-import type { Confidence, Evidence, GraphEdge, GraphNode, NodeKind, SourceSpan } from "@project-xray/contracts";
+import { diagnosticForError, safeDiagnostic, type Confidence, type Evidence, type GraphEdge, type GraphNode, type NodeKind, type SafeDiagnostic, type SourceSpan } from "@project-xray/contracts";
 import { normalizeProjectPath, stableId, throwIfAborted, type AnalyzerContext, type FileAnalysis, type LanguageAnalyzer } from "@project-xray/analyzer-core";
 
 const positionSchema = z.object({ line: z.number().int().positive(), column: z.number().int().nonnegative(), endLine: z.number().int().positive(), endColumn: z.number().int().nonnegative() });
 const symbolSchema = positionSchema.extend({ kind: z.enum(["function", "method", "class", "variable"]), name: z.string(), qualified: z.string(), owner: z.string().optional(), bindingKind: z.string().optional() });
 const importSchema = positionSchema.extend({ module: z.string(), member: z.string().optional(), local: z.string(), alias: z.string().nullable().optional(), scope: z.string() });
-const callSchema = positionSchema.extend({ caller: z.string(), expression: z.string(), resolution: z.enum(["local", "import", "unresolved", "shadowed", "attribute", "dynamic"]), rootName: z.string().optional(), targetQualified: z.string().optional(), importModule: z.string().optional(), importMember: z.string().optional() });
+const callSchema = positionSchema.extend({ caller: z.string(), expression: z.string(), resolution: z.enum(["local", "import", "unresolved", "shadowed", "decorated", "attribute", "dynamic"]), rootName: z.string().optional(), targetQualified: z.string().optional(), importModule: z.string().optional(), importMember: z.string().optional() });
 const accessSchema = positionSchema.extend({ caller: z.string(), target: z.string(), targetQualified: z.string().nullable().optional(), mode: z.enum(["read", "write"]) });
 const returnSchema = positionSchema.extend({ caller: z.string(), target: z.string(), targetQualified: z.string().nullable().optional() });
 const endpointSchema = positionSchema.extend({ framework: z.string(), method: z.string(), route: z.string(), handler: z.string() });
-const pythonResultSchema = z.object({ protocolVersion: z.literal("2.0.0"), symbols: z.array(symbolSchema), imports: z.array(importSchema), calls: z.array(callSchema), accesses: z.array(accessSchema), returns: z.array(returnSchema), endpoints: z.array(endpointSchema) });
+const pythonResultSchema = z.object({ protocolVersion: z.literal("2.1.0"), symbols: z.array(symbolSchema), imports: z.array(importSchema), calls: z.array(callSchema), accesses: z.array(accessSchema), returns: z.array(returnSchema), endpoints: z.array(endpointSchema) });
 type PythonResult = z.infer<typeof pythonResultSchema>;
 export interface PythonProjectSource { absolutePath: string; content: string }
 type PythonFailureKind = "syntax" | "environment" | "timeout" | "protocol" | "process";
-class PythonAnalysisError extends Error { constructor(readonly kind: PythonFailureKind, message: string) { super(message); this.name = "PythonAnalysisError"; } }
+type PythonSyntaxCode = "SyntaxError" | "IndentationError" | "TabError";
+class PythonAnalysisError extends Error { constructor(readonly kind: PythonFailureKind, message: string, readonly detailCode?: PythonSyntaxCode) { super(message); this.name = "PythonAnalysisError"; } }
 const isAbortError = (error: unknown): boolean => error instanceof Error && error.name === "AbortError";
-const pythonDiagnostic = (error: unknown): string => error instanceof PythonAnalysisError ? error.message : "Python 文件分析失败（已隐藏内部错误）";
+const pythonDiagnostic = (error: unknown): SafeDiagnostic => {
+  if (!(error instanceof PythonAnalysisError)) return diagnosticForError(error, "PYTHON_ANALYSIS_FAILED");
+  if (error.kind === "syntax") return safeDiagnostic("PYTHON_SYNTAX_ERROR", error.detailCode);
+  if (error.kind === "environment") return safeDiagnostic("PYTHON_ENVIRONMENT_UNAVAILABLE");
+  if (error.kind === "timeout") return safeDiagnostic("ANALYSIS_TIMEOUT");
+  return safeDiagnostic("PYTHON_ANALYSIS_FAILED");
+};
 
 function analyzerWorkerPath(): string {
   const resourcesPath = (process as NodeJS.Process & { resourcesPath?: string }).resourcesPath;
@@ -51,7 +58,7 @@ function runPythonAnalyzer(filePath: string, source: string, signal?: AbortSigna
     child.on("error", (error: NodeJS.ErrnoException) => finish(() => reject(new PythonAnalysisError("environment", `Python 运行环境不可用（${error.code ?? "启动失败"}）`))));
     child.on("close", (code) => {
       if (settled) return;
-      if (code !== 0) { const finalLine = stderr.trim().split(/\r?\n/).at(-1) ?? ""; const syntaxType = finalLine.match(/^(SyntaxError|IndentationError|TabError):/)?.[1]; finish(() => reject(syntaxType ? new PythonAnalysisError("syntax", `Python 语法错误（${syntaxType}）`) : new PythonAnalysisError("process", `Python 分析器异常退出（${code ?? "无退出码"}）`))); return; }
+      if (code !== 0) { const finalLine = stderr.trim().split(/\r?\n/).at(-1) ?? ""; const syntaxType = finalLine.match(/^(SyntaxError|IndentationError|TabError):/)?.[1] as PythonSyntaxCode | undefined; finish(() => reject(syntaxType ? new PythonAnalysisError("syntax", `Python 语法错误（${syntaxType}）`, syntaxType) : new PythonAnalysisError("process", `Python 分析器异常退出（${code ?? "无退出码"}）`))); return; }
       const parsed = (() => { try { return pythonResultSchema.safeParse(JSON.parse(stdout)); } catch { return { success: false } as const; } })();
       finish(() => parsed.success ? resolve(parsed.data) : reject(new PythonAnalysisError("protocol", "Python 分析器返回了无效结果")));
     });
@@ -67,7 +74,7 @@ function resolveImportedModule(sourcePath: string, imported: string): string {
 }
 
 export class PythonAnalyzer implements LanguageAnalyzer {
-  readonly id = "python-ast"; readonly version = "2.0.0";
+  readonly id = "python-ast"; readonly version = "2.1.1";
   supports(filePath: string): boolean { return extname(filePath).toLowerCase() === ".py"; }
 
   async analyze(filePath: string, source: string, context: AnalyzerContext): Promise<FileAnalysis> {
@@ -81,7 +88,7 @@ export class PythonAnalyzer implements LanguageAnalyzer {
     for (const call of result.calls) {
       const caller = symbols.get(call.caller); if (!caller) continue; const span = spanOf(call); let target = call.targetQualified ? symbols.get(call.targetQualified) : undefined; let confidence: Confidence = target ? "verified" : "unknown"; let reason = target ? "词法绑定解析到当前文件定义" : "观察到调用表达式，但目标尚未证明";
       if (!target && call.resolution === "import") { const relative = call.importModule?.startsWith(".") ?? false; target = stableId(context.repositoryId, "python-import-call", projectPath, call.importModule ?? "", call.importMember ?? ""); confidence = relative ? "unknown" : "inferred"; reason = relative ? "相对 import 绑定存在，但目标模块尚未解析" : "import 绑定确认外部包来源，但未分析外部实现"; nodes.push({ id: target, snapshotId: context.snapshotId, kind: relative ? "unresolved-call" : "external-dependency", name: call.expression, qualifiedName: `${call.importModule ?? ""}${call.importMember ? `.${call.importMember}` : ""}`, metadata: { unresolved: relative, referenceKind: relative ? "unresolved-call" : "external-dependency", importModule: call.importModule, importMember: call.importMember, callExpression: call.expression } }); }
-      if (!target) { target = stableId(context.repositoryId, "unresolved-call", projectPath, call.caller, call.expression, String(call.line), String(call.column)); unresolvedCalls.push(call.expression); nodes.push({ id: target, snapshotId: context.snapshotId, kind: call.resolution === "dynamic" ? "unsupported-semantic" : "unresolved-call", name: call.expression, qualifiedName: `${projectPath}::${call.caller}::${call.expression}`, filePath: projectPath, span, metadata: { unresolved: true, referenceKind: call.resolution === "dynamic" ? "unsupported-semantic" : "unresolved-call", resolution: call.resolution, importModule: call.importModule, importMember: call.importMember } }); reason = call.resolution === "shadowed" ? "名称被参数或变量遮蔽，不能证明其为可调用定义" : call.resolution === "attribute" ? "属性调用缺少可靠接收者类型，不按方法名猜测" : call.resolution === "dynamic" ? "动态调用结构不受当前静态分析支持" : reason; }
+      if (!target) { target = stableId(context.repositoryId, "unresolved-call", projectPath, call.caller, call.expression, String(call.line), String(call.column)); unresolvedCalls.push(call.expression); nodes.push({ id: target, snapshotId: context.snapshotId, kind: call.resolution === "dynamic" ? "unsupported-semantic" : "unresolved-call", name: call.expression, qualifiedName: `${projectPath}::${call.caller}::${call.expression}`, filePath: projectPath, span, metadata: { unresolved: true, referenceKind: call.resolution === "dynamic" ? "unsupported-semantic" : "unresolved-call", resolution: call.resolution, importModule: call.importModule, importMember: call.importMember } }); reason = call.resolution === "shadowed" ? "名称被参数或变量遮蔽，不能证明其为可调用定义" : call.resolution === "decorated" ? "名称绑定来自装饰器定义；装饰器可能返回包装对象，无法证明最终调用目标" : call.resolution === "attribute" ? "属性调用缺少可靠接收者类型，不按方法名猜测" : call.resolution === "dynamic" ? "动态调用结构不受当前静态分析支持" : reason; }
       const evidenceId = addEvidence("call-expression", span, `观察到 Python 调用表达式 ${call.expression}；${reason}`, confidence); addEdge({ source: caller, target, kind: "CALLS", confidence, evidenceId, reason, ...(confidence === "unknown" ? { unresolvedTarget: call.expression } : {}) }, `${call.line}:${call.column}`);
     }
     for (const access of result.accesses) { const caller = symbols.get(access.caller); const variable = access.targetQualified ? symbols.get(access.targetQualified) : undefined; if (!caller || !variable || caller === variable) continue; const span = spanOf(access); const kind = access.mode === "write" ? "WRITES" : "READS"; const evidenceId = addEvidence(`variable-${access.mode}`, span, `${access.mode === "write" ? "写入" : "读取"}词法绑定 ${access.targetQualified}`); addEdge({ source: caller, target: variable, kind, confidence: "verified", evidenceId, reason: "Python AST 名称上下文及词法绑定确认变量访问" }, `${access.line}:${access.column}`); }
@@ -91,8 +98,8 @@ export class PythonAnalyzer implements LanguageAnalyzer {
   }
 
   async analyzeProject(sources: PythonProjectSource[], context: AnalyzerContext): Promise<FileAnalysis> {
-    const parts = new Array<FileAnalysis | undefined>(sources.length); const failures: Array<{ filePath: string; reason: string }> = []; let cursor = 0; const concurrency = Math.max(1, Math.min(4, sources.length));
-    await Promise.all(Array.from({ length: concurrency }, async () => { while (cursor < sources.length) { throwIfAborted(context.abortSignal); const index = cursor++; const source = sources[index]!; try { parts[index] = await this.analyze(source.absolutePath, source.content, context); } catch (error) { if (context.abortSignal?.aborted || isAbortError(error)) throw error; failures.push({ filePath: normalizeProjectPath(context.rootPath, source.absolutePath), reason: pythonDiagnostic(error) }); } } }));
+    const parts = new Array<FileAnalysis | undefined>(sources.length); const failures: NonNullable<FileAnalysis["failures"]> = []; let cursor = 0; const concurrency = Math.max(1, Math.min(4, sources.length));
+    await Promise.all(Array.from({ length: concurrency }, async () => { while (cursor < sources.length) { throwIfAborted(context.abortSignal); const index = cursor++; const source = sources[index]!; try { parts[index] = await this.analyze(source.absolutePath, source.content, context); } catch (error) { if (context.abortSignal?.aborted || isAbortError(error)) throw error; failures.push({ filePath: normalizeProjectPath(context.rootPath, source.absolutePath), ...pythonDiagnostic(error) }); } } }));
     const completed = parts.filter((part): part is FileAnalysis => Boolean(part)); const nodes = completed.flatMap((part) => part.nodes); const evidence = completed.flatMap((part) => part.evidence); const nodeById = new Map(nodes.map((node) => [node.id, node]));
     const moduleFiles = new Map<string, string>(); const symbolsByModule = new Map<string, Map<string, GraphNode>>();
     for (const [index, source] of sources.entries()) if (parts[index]) { const path = normalizeProjectPath(context.rootPath, source.absolutePath); const module = moduleName(path); moduleFiles.set(module, stableId(context.repositoryId, "file", path)); const map = new Map<string, GraphNode>(); for (const node of parts[index]!.nodes) if (["function", "method", "class"].includes(node.kind) && node.qualifiedName.startsWith(`${path}::`)) map.set(node.qualifiedName.slice(path.length + 2), node); symbolsByModule.set(module, map); }
@@ -100,11 +107,14 @@ export class PythonAnalyzer implements LanguageAnalyzer {
       const sourcePath = evidence.find((item) => item.id === edge.evidenceId)?.span.filePath; const targetNode = nodeById.get(edge.target); if (!sourcePath || !targetNode) return edge;
       const imported = typeof targetNode.metadata.importModule === "string" ? targetNode.metadata.importModule : undefined; if (!imported) return edge; const module = resolveImportedModule(sourcePath, imported); const file = moduleFiles.get(module);
       if (edge.kind === "IMPORTS" && file) return { ...edge, id: stableId(context.snapshotId, edge.source, file, "IMPORTS", edge.evidenceId), target: file, confidence: "verified" as const, reason: "Python 模块路径及包结构解析到项目源码", unresolvedTarget: undefined };
-      if (edge.kind === "CALLS" && file) { const member = typeof targetNode.metadata.importMember === "string" ? targetNode.metadata.importMember : undefined; const target = member ? symbolsByModule.get(module)?.get(member) : undefined; if (target) return { ...edge, id: stableId(context.snapshotId, edge.source, target.id, "CALLS", edge.evidenceId), target: target.id, confidence: "verified" as const, reason: "Python import 本地绑定解析到项目内成员定义", unresolvedTarget: undefined }; return { ...edge, confidence: "unknown" as const, reason: "项目模块已解析，但导入成员或调用目标无法证明", unresolvedTarget: targetNode.name }; }
+      if (edge.kind === "CALLS" && file) { const member = typeof targetNode.metadata.importMember === "string" ? targetNode.metadata.importMember : undefined; const target = member ? symbolsByModule.get(module)?.get(member) : undefined; if (target?.metadata.bindingKind === "decorated-definition") return { ...edge, confidence: "unknown" as const, reason: "项目模块成员带有装饰器，最终调用目标无法由静态语义证明", unresolvedTarget: target.name }; if (target) return { ...edge, id: stableId(context.snapshotId, edge.source, target.id, "CALLS", edge.evidenceId), target: target.id, confidence: "verified" as const, reason: "Python import 本地绑定解析到项目内成员定义", unresolvedTarget: undefined }; return { ...edge, confidence: "unknown" as const, reason: "项目模块已解析，但导入成员或调用目标无法证明", unresolvedTarget: targetNode.name }; }
       return edge;
     });
+    const edgeByEvidence = new Map(resolvedEdges.map((edge) => [edge.evidenceId, edge]));
+    const resolvedEvidence = unique(evidence.map((item) => { const edge = edgeByEvidence.get(item.id); return !edge || (item.confidence === edge.confidence && item.reason.endsWith(edge.reason)) ? item : { ...item, confidence: edge.confidence, reason: `${item.reason}；${edge.reason}` }; }));
+    const decoratedUnresolvedCalls = resolvedEdges.filter((edge) => edge.kind === "CALLS" && edge.reason.includes("装饰器") && edge.unresolvedTarget).map((edge) => edge.unresolvedTarget!);
     const referenced = new Set(resolvedEdges.flatMap((edge) => [edge.source, edge.target]));
-    return { nodes: unique(nodes).filter((node) => !node.metadata.unresolved || referenced.has(node.id)), edges: unique(resolvedEdges), evidence: unique(evidence), unresolvedCalls: completed.flatMap((part) => part.unresolvedCalls), failures: [...failures, ...completed.flatMap((part) => part.failures ?? [])].sort((a, b) => a.filePath.localeCompare(b.filePath)) };
+    return { nodes: unique(nodes).filter((node) => !node.metadata.unresolved || referenced.has(node.id)), edges: unique(resolvedEdges), evidence: resolvedEvidence, unresolvedCalls: [...new Set([...completed.flatMap((part) => part.unresolvedCalls), ...decoratedUnresolvedCalls])], failures: [...failures, ...completed.flatMap((part) => part.failures ?? [])].sort((a, b) => a.filePath.localeCompare(b.filePath)) };
   }
 }
 

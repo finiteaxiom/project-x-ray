@@ -1,8 +1,10 @@
 import { createHash } from "node:crypto";
-import { readFile, realpath, stat } from "node:fs/promises";
+import { realpath, stat } from "node:fs/promises";
 import { dirname, extname, relative, resolve, sep } from "node:path";
 import fg from "fast-glob";
-import type { Evidence, GraphEdge, GraphNode } from "@project-xray/contracts";
+import { diagnosticForError, type Evidence, type GraphEdge, type GraphNode, type SafeDiagnosticCode, type SafeDiagnosticDetailCode } from "@project-xray/contracts";
+import { createSecureReadScope, readSecureProjectFile } from "./secure-read.js";
+export { createSecureReadScope, isProjectPathSecurityError, ProjectPathSecurityError, readProjectFileSecure, readSecureProjectFile, readSecureProjectFileBuffer, type SecureReadScope, type SecureReadTestHooks } from "./secure-read.js";
 
 export interface AnalyzerContext {
   rootPath: string;
@@ -16,7 +18,7 @@ export interface FileAnalysis {
   edges: GraphEdge[];
   evidence: Evidence[];
   unresolvedCalls: string[];
-  failures?: Array<{ filePath: string; reason: string }>;
+  failures?: Array<{ filePath: string; code: SafeDiagnosticCode; reason: string; detailCode?: SafeDiagnosticDetailCode }>;
 }
 
 export interface LanguageAnalyzer {
@@ -70,19 +72,21 @@ export interface ProjectDiscovery {
   secretPaths: string[];
   oversizedPaths: string[];
   ignoredByRule: string[];
-  failures: Array<{ filePath: string; reason: string }>;
+  failures: Array<{ filePath: string; code: SafeDiagnosticCode; reason: string; detailCode?: SafeDiagnosticDetailCode }>;
 }
+
+export interface ProjectDiscoveryTestHooks { beforeEntry?: (absolutePath: string) => void | Promise<void> }
 
 export function throwIfAborted(signal?: AbortSignal): void {
   if (signal?.aborted) throw new DOMException("索引任务已取消", "AbortError");
 }
 
-export async function discoverProject(rootPath: string, signal?: AbortSignal): Promise<ProjectDiscovery> {
+export async function discoverProject(rootPath: string, signal?: AbortSignal, testHooks?: ProjectDiscoveryTestHooks): Promise<ProjectDiscovery> {
   const resolvedRoot = await realpath(rootPath);
   throwIfAborted(signal);
-  const entries = await fg("**/*", { cwd: resolvedRoot, absolute: true, onlyFiles: true, followSymbolicLinks: false, ignore: HARD_DIRECTORY_IGNORE, suppressErrors: true });
+  const entries = await fg("**/*", { cwd: resolvedRoot, absolute: true, onlyFiles: true, dot: true, followSymbolicLinks: false, ignore: HARD_DIRECTORY_IGNORE, suppressErrors: true });
   const files: string[] = [];
-  const failures: Array<{ filePath: string; reason: string }> = [];
+  const failures: ProjectDiscovery["failures"] = [];
   let unsupportedFiles = 0;
   let ignoredFiles = 0;
   const unsupportedPaths: string[] = [];
@@ -97,13 +101,14 @@ export async function discoverProject(rootPath: string, signal?: AbortSignal): P
     if (classification === "ignored") { ignoredFiles += 1; ignoredPaths.push(projectPath); continue; }
     if (classification === "unsupported") { unsupportedFiles += 1; unsupportedPaths.push(projectPath); continue; }
     try {
+      await testHooks?.beforeEntry?.(entry);
       const realEntry = await realpath(entry);
       assertContainedPath(resolvedRoot, realEntry);
       const info = await stat(realEntry);
       if (info.size > 2_000_000) { ignoredFiles += 1; oversizedPaths.push(projectPath); continue; }
       files.push(realEntry);
     } catch (error) {
-      failures.push({ filePath: projectPath, reason: error instanceof Error ? error.message : "无法访问" });
+      failures.push({ filePath: projectPath, ...diagnosticForError(error, "FILE_DISCOVERY_FAILED") });
     }
   }
   return { files: files.sort((a, b) => a.localeCompare(b)), unsupportedFiles, ignoredFiles, unsupportedPaths: unsupportedPaths.sort(), ignoredPaths: ignoredPaths.sort(), secretPaths: secretPaths.sort(), oversizedPaths: oversizedPaths.sort(), ignoredByRule: HARD_DIRECTORY_IGNORE, failures };
@@ -122,12 +127,13 @@ export function assertContainedPath(rootPath: string, candidatePath: string): vo
   }
 }
 
-export async function readProjectFile(rootPath: string, filePath: string): Promise<string> {
-  const resolvedRoot = await realpath(rootPath);
-  const candidate = resolve(resolvedRoot, filePath);
-  const resolvedFile = await realpath(candidate);
-  assertContainedPath(resolvedRoot, resolvedFile);
-  return readFile(resolvedFile, "utf8");
+export async function readProjectFile(rootPath: string, filePath: string, options: { signal?: AbortSignal; testHooks?: import("./secure-read.js").SecureReadTestHooks } = {}): Promise<string> {
+  const scope = await createSecureReadScope(rootPath);
+  try {
+    const candidate = resolve(scope.rootPath, filePath);
+    assertContainedPath(scope.rootPath, candidate);
+    return await readSecureProjectFile(scope, candidate, options);
+  } finally { scope.close(); }
 }
 
 export function normalizeProjectPath(rootPath: string, filePath: string): string {

@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ReactElement } from "react";
 import type { GraphEdge, GraphNode, GraphQueryResponse, ProjectOverview, SourceFileResult } from "@project-xray/contracts";
-import { GRAPH_QUERY_VERSION } from "@project-xray/contracts";
+import { GRAPH_QUERY_VERSION, safeDiagnosticMessage } from "@project-xray/contracts";
 import { GraphCanvas, type GraphViewState } from "./GraphCanvas";
 import { EvidenceWorkspace } from "./EvidenceWorkspace";
 import { useWorkspacePageState, type OwnershipSessionController, type WorkspaceSourceView } from "../state/ownership-sessions";
@@ -31,6 +31,8 @@ export function FlowExplorer({ project, onNode, onEdge, source, sessions, source
   const graphViewCache = useRef(new Map<string, GraphViewState>(Object.entries(graphViews)));
   const searchSequence = useRef(0); const querySequence = useRef(0);
   const lifecycle = sessions.getPageRecord(ref, "flow")?.lifecycle ?? "active";
+  const validationReason = sessions.getPageRecord(ref, "flow")?.state.snapshotValidationReason;
+  const staleMessage = validationReason === "unavailable" ? `${safeDiagnosticMessage("SNAPSHOT_VALIDATION_UNAVAILABLE")}；历史关系结果仍可查看，恢复校验或重新索引后可以重新查询。` : validationReason === "missing" ? "旧版快照缺少源码；历史关系结果仍可查看，请重新索引后查询。" : "工作区已变化；当前快照的调用流会话已失效，历史结果仍可查看。更新索引后可以重新查询。";
   const canQuery = lifecycle === "active";
   useEffect(() => () => { setGraphViews(Object.fromEntries([...graphViewCache.current.entries()].slice(-8))); }, []);
 
@@ -65,7 +67,7 @@ export function FlowExplorer({ project, onNode, onEdge, source, sessions, source
   const selectEdge = (edge: GraphEdge): void => { setSelectedResultId(edge.id); onEdge(edge); };
 
   return <EvidenceWorkspace project={ref} source={source} navigationLabel="关系图" presentation={sourceView.presentation} onPresentationChange={(next) => onSourceViewChange((current) => ({ ...current, open: next.sourceVisible, presentation: next }))} editorState={sourceView.editor} onEditorStateChange={(editor) => onSourceViewChange((current) => ({ ...current, editor }))} onCloseSource={onCloseSource} navigation={<section className="panel graph-panel"><div className="panel-heading"><div><span className="kicker">从一个符号开始</span><h3>探索代码之间的关系</h3></div><ConfidenceLegend /></div>
-    {lifecycle !== "active" && <div className="stale-banner" role="status">当前快照的调用流会话已过期，保留历史结果供查看；请激活新快照后重新查询。</div>}
+    {lifecycle !== "active" && <div className="stale-banner" role="status">{staleMessage}</div>}
     {error && <div className="error-banner" role="alert">查询失败：{error}<button className="button secondary" onClick={() => setError("")}>关闭</button></div>}
     <div className="flow-controls"><input aria-label="搜索符号" placeholder="输入函数、类或文件名称" value={search} onChange={(event) => setSearch(event.target.value)} onKeyDown={(event) => event.key === "Enter" && !event.nativeEvent.isComposing && find()} /><button className="button secondary" disabled={searching || !canQuery} onClick={find}>{searching ? "搜索中…" : "搜索"}</button><select aria-label="选择符号" value={selected} onChange={(event) => setSelected(event.target.value)}><option value="">选择搜索结果</option>{symbols.map(node => <option key={node.id} value={node.id}>{node.qualifiedName} · {node.filePath ?? node.kind}</option>)}</select><select aria-label="关系视图" value={view} onChange={(event) => setView(event.target.value as "call" | "data" | "dependency")}><option value="call">调用关系</option><option value="data">数据读写与传递</option><option value="dependency">导入与依赖</option></select><button className="button primary" disabled={!selected || !validOptions || querying || searching || !canQuery} onClick={() => execute()}>{querying ? "查询中…" : "查询关系"}</button></div>
     {searched && !symbols.length && <p className="query-feedback" role="status">没有找到匹配的符号。尝试文件名、函数名或缩短关键词。</p>}

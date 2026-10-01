@@ -13,6 +13,45 @@ describe("TypeScriptAnalyzer", () => {
     expect(result.edges.some((edge) => edge.kind === "CALLS" && edge.confidence === "verified")).toBe(true);
   });
 
+  it("区分不同外层函数中的同名局部函数及其调用证据", async () => {
+    const analyzer = new TypeScriptAnalyzer();
+    const result = await analyzer.analyze("C:\\repo\\nested.ts", [
+      "function first() {",
+      "  function helper() {",
+      "    return 1;",
+      "  }",
+      "  helper();",
+      "}",
+      "function second() {",
+      "  function helper() {",
+      "    return 2;",
+      "  }",
+      "  helper();",
+      "}",
+    ].join("\n"), { rootPath: "C:\\repo", repositoryId: "repo", snapshotId: "snap" });
+
+    const first = result.nodes.find((node) => node.kind === "function" && node.name === "first")!;
+    const second = result.nodes.find((node) => node.kind === "function" && node.name === "second")!;
+    const helpers = result.nodes.filter((node) => node.kind === "function" && node.name === "helper");
+    const firstHelper = helpers.find((node) => node.span?.startLine === 2)!;
+    const secondHelper = helpers.find((node) => node.span?.startLine === 8)!;
+
+    expect(helpers).toHaveLength(2);
+    expect(new Set(helpers.map((node) => node.id)).size).toBe(2);
+    expect(firstHelper.qualifiedName).toBe("nested.ts::first.helper");
+    expect(secondHelper.qualifiedName).toBe("nested.ts::second.helper");
+    expect(firstHelper.span).toMatchObject({ filePath: "nested.ts", startLine: 2, startColumn: 2, endLine: 4, endColumn: 3 });
+    expect(secondHelper.span).toMatchObject({ filePath: "nested.ts", startLine: 8, startColumn: 2, endLine: 10, endColumn: 3 });
+
+    for (const [owner, helper, callLine] of [[first, firstHelper, 5], [second, secondHelper, 11]] as const) {
+      const definition = result.edges.find((edge) => edge.kind === "DEFINES" && edge.source === owner.id && edge.target === helper.id);
+      expect(definition).toMatchObject({ confidence: "verified" });
+      const call = result.edges.find((edge) => edge.kind === "CALLS" && edge.source === owner.id && edge.target === helper.id);
+      expect(call).toMatchObject({ confidence: "verified" });
+      expect(result.evidence.find((item) => item.id === call?.evidenceId)?.span).toMatchObject({ startLine: callLine, startColumn: 2, endLine: callLine, endColumn: 10 });
+    }
+  });
+
   it("使用 TypeChecker 解析跨文件导入、参数流和路由入口", async () => {
     const analyzer = new TypeScriptAnalyzer();
     const result = await analyzer.analyzeProject([

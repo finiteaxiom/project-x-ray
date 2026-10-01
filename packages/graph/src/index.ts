@@ -158,6 +158,7 @@ export class GraphStore {
   }
 
   saveSnapshot(snapshot: ProjectSnapshot, sources: Array<{ filePath: string; contentHash: string; language: string; content: string }> = [], makeCurrent = true): void {
+    snapshot = projectSnapshotSchema.parse(snapshot);
     const save = this.database.transaction(() => {
       const existing = this.database.prepare("SELECT is_current FROM snapshot_overviews WHERE snapshot_id = ?").get(snapshot.snapshotId) as { is_current: number } | undefined;
       const isCurrent = makeCurrent || existing?.is_current === 1 ? 1 : 0;
@@ -404,7 +405,7 @@ export class GraphStore {
     return [...groups.values()].sort((a, b) => a.targetModuleId.localeCompare(b.targetModuleId));
   }
 
-  saveChangeReport(report: ChangeReport): void { this.database.prepare("INSERT OR REPLACE INTO change_reports(report_id,repository_id,created_at,capture_fingerprint,payload) VALUES(?,?,?,?,?)").run(report.id, report.repositoryId, report.createdAt, report.captureFingerprint, JSON.stringify(report)); }
+  saveChangeReport(report: ChangeReport): void { report = parseChangeReport(report); this.database.prepare("INSERT OR REPLACE INTO change_reports(report_id,repository_id,created_at,capture_fingerprint,payload) VALUES(?,?,?,?,?)").run(report.id, report.repositoryId, report.createdAt, report.captureFingerprint, JSON.stringify(report)); }
   loadChangeReport(reportId: string): ChangeReport | null { const row = this.database.prepare("SELECT payload FROM change_reports WHERE report_id=?").get(reportId) as PayloadRow | undefined; return row ? parseChangeReport(JSON.parse(row.payload)) : null; }
 
   readSnapshotSource(snapshotId: string, filePath: string): { content: string; contentHash: string; language: string } | null {

@@ -43,6 +43,12 @@ describe("证据工作区布局", () => {
     expect(screen.getByTestId("evidence-workspace").className).toContain("without-source"); expect(screen.queryByTestId("source-viewer")).toBeNull();
   });
 
+  it("源码可读但工作区无法校验时不误报缺失或变化", () => {
+    const unavailable = { ...source, workspaceStatus: "unavailable" as const };
+    render(<EvidenceWorkspace project={{ repositoryId: "repo", snapshotId: "snap" }} source={unavailable} navigation={<div>关系导航</div>} />);
+    const status = screen.getByText(/无法校验当前工作区/); expect(status.textContent).toContain("不可变快照内容"); expect(status.textContent).not.toMatch(/文件不存在|源码已变化/);
+  });
+
   it("按工作区实际宽度切换单栏面板，隐藏面板不保留可聚焦内容且不覆盖分栏偏好", async () => {
     const callbacks: ResizeObserverCallback[] = [];
     vi.stubGlobal("ResizeObserver", class { constructor(private readonly callback: ResizeObserverCallback) {} observe(target: Element) { if (target.getAttribute("data-testid") === "evidence-workspace") callbacks.push(this.callback); } disconnect() {} unobserve() {} });

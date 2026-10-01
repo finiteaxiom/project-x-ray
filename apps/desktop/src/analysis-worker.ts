@@ -1,6 +1,6 @@
 import { parentPort, workerData } from "node:worker_threads";
 import { XRayApplication } from "@project-xray/application";
-import { TASK_PROTOCOL_VERSION, workerRequestSchema, workerResponseSchema, type ComparisonTaskEvent, type IndexTaskEvent, type WorkerRequest, type WorkerResponse } from "@project-xray/contracts";
+import { TASK_PROTOCOL_VERSION, diagnosticForError, workerRequestSchema, workerResponseSchema, type ComparisonTaskEvent, type IndexTaskEvent, type WorkerRequest, type WorkerResponse } from "@project-xray/contracts";
 
 interface WorkerConfiguration { databasePath: string; projectDatabaseRoot: string; cacheRoot: string }
 const port = parentPort;
@@ -31,14 +31,14 @@ async function start(request: Extract<WorkerRequest, { operation: "start-index" 
     event({ protocolVersion: TASK_PROTOCOL_VERSION, type: "completed", taskId: request.taskId, rootPath: request.rootPath, repositoryId: snapshot.repositoryId, overview: application.getCurrentProject()! });
   } catch (error) {
     if (controller.signal.aborted || (error instanceof Error && error.name === "AbortError")) event({ protocolVersion: TASK_PROTOCOL_VERSION, type: "cancelled", taskId: request.taskId, rootPath: request.rootPath, message: "索引已取消；上一份完整快照保持不变。" });
-    else event({ protocolVersion: TASK_PROTOCOL_VERSION, type: "failed", taskId: request.taskId, rootPath: request.rootPath, message: sanitize(error), retryable: true });
+    else event({ protocolVersion: TASK_PROTOCOL_VERSION, type: "failed", taskId: request.taskId, rootPath: request.rootPath, code: diagnosticForError(error, "TASK_FAILED").code, retryable: true });
   } finally { controllers.delete(request.taskId); }
 }
 
 async function startComparison(request: Extract<WorkerRequest, { operation: "start-comparison" }>): Promise<void> {
   const controller = new AbortController(); controllers.set(request.taskId, controller); const repositoryId = request.input.repositoryId;
   try { const report = await application.createChangeReport(request.input, { signal: controller.signal, onProgress: (progress) => comparisonEvent({ protocolVersion: TASK_PROTOCOL_VERSION, type: "progress", taskId: request.taskId, repositoryId, progress }) }); comparisonEvent({ protocolVersion: TASK_PROTOCOL_VERSION, type: "completed", taskId: request.taskId, repositoryId, report }); }
-  catch (error) { if (controller.signal.aborted || (error instanceof Error && error.name === "AbortError")) comparisonEvent({ protocolVersion: TASK_PROTOCOL_VERSION, type: "cancelled", taskId: request.taskId, repositoryId, message: "变更比较已取消；既有快照和报告保持不变。" }); else comparisonEvent({ protocolVersion: TASK_PROTOCOL_VERSION, type: "failed", taskId: request.taskId, repositoryId, message: sanitize(error), retryable: true }); }
+  catch (error) { if (controller.signal.aborted || (error instanceof Error && error.name === "AbortError")) comparisonEvent({ protocolVersion: TASK_PROTOCOL_VERSION, type: "cancelled", taskId: request.taskId, repositoryId, message: "变更比较已取消；既有快照和报告保持不变。" }); else comparisonEvent({ protocolVersion: TASK_PROTOCOL_VERSION, type: "failed", taskId: request.taskId, repositoryId, code: diagnosticForError(error, "GIT_COMPARISON_FAILED").code, retryable: true }); }
   finally { controllers.delete(request.taskId); }
 }
 
@@ -75,12 +75,11 @@ async function handle(request: WorkerRequest): Promise<unknown> {
 
 port.on("message", (raw: unknown) => {
   const parsed = workerRequestSchema.safeParse(raw);
-  if (!parsed.success) { const requestId = typeof raw === "object" && raw && "requestId" in raw ? String(raw.requestId) : "invalid"; send({ type: "response", requestId, ok: false, error: "工作线程请求格式无效" }); return; }
+  if (!parsed.success) { const requestId = typeof raw === "object" && raw && "requestId" in raw ? String(raw.requestId) : "invalid"; send({ type: "response", requestId, ok: false, code: "TASK_FAILED" }); return; }
   void handle(parsed.data).then(
     (payload) => send({ type: "response", requestId: parsed.data.requestId, ok: true, payload }),
-    (error) => send({ type: "response", requestId: parsed.data.requestId, ok: false, error: sanitize(error) }),
+    (error) => send({ type: "response", requestId: parsed.data.requestId, ok: false, code: diagnosticForError(error, "TASK_FAILED").code }),
   );
 });
 
-function sanitize(error: unknown): string { return (error instanceof Error ? error.message : "分析任务失败").replace(/[\r\n]+/g, " ").slice(0, 300); }
 process.once("exit", () => application.close());

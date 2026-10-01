@@ -5,13 +5,17 @@
   "type": "module",
   "exports": "./src/index.ts",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build:native": "node scripts/build-native.cjs",
+    "build": "node scripts/build-native.cjs && tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run --exclude dist/**",
+    "test": "node scripts/build-native.cjs && vitest run --exclude dist/**",
     "lint": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@project-xray/contracts": "workspace:*",
     "fast-glob": "^3.3.3"
+  },
+  "devDependencies": {
+    "node-gyp": "12.4.0"
   }
 }

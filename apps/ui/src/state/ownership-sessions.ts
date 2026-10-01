@@ -1,4 +1,4 @@
-import type { ChangeReport, ComparisonMode, ComparisonRequest, ComparisonTaskEvent, ComparisonTaskHandle, Evidence, GraphNode, OwnershipGrade, OwnershipProgress, OwnershipPrompt, OwnershipSubmission, ProjectOverview, SnapshotRef, SourceCitation } from "@project-xray/contracts";
+import { safeDiagnosticMessage, type ChangeReport, type ComparisonMode, type ComparisonRequest, type ComparisonTaskEvent, type ComparisonTaskHandle, type Evidence, type GraphNode, type OwnershipGrade, type OwnershipProgress, type OwnershipPrompt, type OwnershipSubmission, type ProjectOverview, type SnapshotRef, type SourceCitation } from "@project-xray/contracts";
 import { useCallback, useSyncExternalStore, type Dispatch, type SetStateAction } from "react";
 
 export type TrainingScopeKind = "project" | "module" | "symbol";
@@ -8,6 +8,7 @@ export type TrainingLocation = Evidence["span"] & { evidenceId?: string };
 export type EditorSelection = Pick<SourceCitation, "startLine" | "startColumn" | "endLine" | "endColumn">;
 export type TrainingChannel = "questions" | "progress" | "files" | "scope" | "grade" | "evidence";
 export type TrainingLifecycle = "active" | "stale" | "archived";
+export type WorkspaceValidationReason = "stale" | "missing" | "unavailable";
 export type TrainingRound = { questions: OwnershipPrompt[]; scope: TrainingScope | null };
 export type TrainingSourceView = {
   open: boolean;
@@ -27,6 +28,7 @@ export type OwnershipTrainingSession = {
   ref: SnapshotRef;
   generation: number;
   lifecycle: TrainingLifecycle;
+  snapshotValidationReason: WorkspaceValidationReason | null;
   round: TrainingRound;
   index: number;
   finished: boolean;
@@ -95,7 +97,7 @@ const emptyPending = (): Record<TrainingChannel, boolean> => ({ questions: false
 function createSession(ref: SnapshotRef, generation: number): OwnershipTrainingSession {
   const stableRef = Object.freeze({ repositoryId: ref.repositoryId, snapshotId: ref.snapshotId });
   return {
-    id: `${identityOf(stableRef)}:${generation}`, ref: stableRef, generation, lifecycle: "active",
+    id: `${identityOf(stableRef)}:${generation}`, ref: stableRef, generation, lifecycle: "active", snapshotValidationReason: null,
     round: { questions: [], scope: null }, index: 0, finished: false, answer: "", citations: [],
     caller: "", callee: "", path: [], entry: "", roles: {}, grade: null, progress: null,
     scopeKind: "project", scopeQuery: "", scopeNode: null, scopeOptions: [], fileQuery: "",
@@ -183,7 +185,7 @@ export class OwnershipSessionController {
     for (const key of this.pageRequests.keys()) if (key.startsWith(prefix) && (!channel || key === `${prefix}${channel}`)) this.pageRequests.delete(key);
   }
 
-  markWorkspaceStale(ref: SnapshotRef): void {
+  markWorkspaceStale(ref: SnapshotRef, reason: WorkspaceValidationReason = "stale"): void {
     // Materialize the evidence pages even when the current view has not opened
     // them yet, so a later mount inherits the confirmed stale lifecycle.
     for (const page of ["architecture", "flow", "explain"] as const) {
@@ -191,15 +193,16 @@ export class OwnershipSessionController {
       if (!this.pageSessions.has(key)) this.pageSessions.set(key, { ref: Object.freeze({ ...ref }), page, generation: 1, lifecycle: "active", state: {}, lastTouchedAt: Date.now() });
     }
     for (const [key, record] of this.pageSessions) {
-      if (record.page !== "diff" && record.ref.repositoryId === ref.repositoryId && record.ref.snapshotId === ref.snapshotId && record.lifecycle === "active") {
+      if (record.page !== "diff" && record.ref.repositoryId === ref.repositoryId && record.ref.snapshotId === ref.snapshotId && record.lifecycle !== "archived" && !(record.lifecycle === "stale" && record.state.snapshotValidationReason === reason)) {
         const state = { ...record.state };
+        state.snapshotValidationReason = reason;
         const sourceView = state.sourceView as WorkspaceSourceView | undefined;
         if (sourceView?.loading) state.sourceView = { ...sourceView, loading: false };
         if (record.page === "flow") { state.searching = false; state.querying = false; }
         if (record.page === "explain" && state.state === "loading") {
           state.state = "error";
           state.failedQuery = state.submittedQuery;
-          state.error = "工作区已变化；本次未完成的解释已失效。更新索引后可以重新追踪。";
+          state.error = reason === "unavailable" ? `${safeDiagnosticMessage("SNAPSHOT_VALIDATION_UNAVAILABLE")}；本次未完成的解释已失效。恢复校验后可以重新追踪。` : reason === "missing" ? "旧版快照没有可校验的源码；本次未完成的解释已失效。重新索引后可以重新追踪。" : "工作区已变化；本次未完成的解释已失效。更新索引后可以重新追踪。";
         }
         this.pageSessions.set(key, { ...record, state, generation: record.generation + 1, lifecycle: "stale", lastTouchedAt: Date.now() });
         this.invalidateWorkspaceRequest(ref, record.page);
@@ -239,6 +242,7 @@ export class OwnershipSessionController {
 
   private reactivatedPageState(record: WorkspacePageRecord): Record<string, unknown> {
     const state = { ...record.state };
+    delete state.snapshotValidationReason;
     const sourceView = state.sourceView as WorkspaceSourceView | undefined;
     if (sourceView) state.sourceView = { ...sourceView, loading: false, error: "" };
 
@@ -260,7 +264,7 @@ export class OwnershipSessionController {
       state.navigationErrorEvidenceId = null;
       state.openingEvidence = "";
       if (state.state === "loading") state.state = "idle";
-      if (state.state === "error" && typeof state.error === "string" && state.error.startsWith("工作区已变化；")) {
+      if (state.state === "error" && typeof state.error === "string" && (state.error.startsWith("工作区已变化；") || state.error.startsWith("无法校验当前工作区；") || state.error.startsWith("旧版快照没有可校验的源码；"))) {
         state.state = "idle";
         state.failedQuery = "";
       }
@@ -368,7 +372,7 @@ export class OwnershipSessionController {
       this.updateComparisonJob(job.repositoryId, job.requestId, (prior) => ({ ...prior, status: "completed", event, report: event.report, error: "", finishedAt: Date.now() }));
       this.comparisonStartOperations.delete(job.requestId);
     } else if (event.type === "failed") {
-      this.updateComparisonJob(job.repositoryId, job.requestId, (prior) => ({ ...prior, status: "failed", event, error: event.message, finishedAt: Date.now() }));
+      this.updateComparisonJob(job.repositoryId, job.requestId, (prior) => ({ ...prior, status: "failed", event, error: safeDiagnosticMessage(event.code), finishedAt: Date.now() }));
       this.comparisonStartOperations.delete(job.requestId);
     } else if (event.type === "cancelled") {
       this.updateComparisonJob(job.repositoryId, job.requestId, (prior) => ({ ...prior, status: "cancelled", event, error: event.message, finishedAt: Date.now() }));
@@ -467,14 +471,13 @@ export class OwnershipSessionController {
     }
   }
 
-  markStale(ref: SnapshotRef): void {
+  markStale(ref: SnapshotRef, reason: WorkspaceValidationReason = "stale"): void {
     const id = this.sessionId(ref);
     if (!id) return;
     const session = this.sessions.get(id);
-    if (!session || session.lifecycle !== "active") return;
-    this.invalidate(id);
-    this.sequences.delete(id);
-    this.updateSession(id, (current) => ({ ...current, lifecycle: "stale", pending: emptyPending(), message: "", failureChannel: null }));
+    if (!session || session.lifecycle === "archived" || (session.lifecycle === "stale" && session.snapshotValidationReason === reason)) return;
+    if (session.lifecycle === "active") { this.invalidate(id); this.sequences.delete(id); }
+    this.updateSession(id, (current) => ({ ...current, lifecycle: "stale", snapshotValidationReason: reason, pending: emptyPending(), message: "", failureChannel: null }));
   }
 
   invalidateChannel(id: string, channel: TrainingChannel): void {

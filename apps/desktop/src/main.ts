@@ -5,7 +5,7 @@ import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import {
   IPC_CHANNELS, TASK_PROTOCOL_VERSION, changeReportRequestSchema, changeReportSchema, changeReportStateSchema, comparisonRequestSchema, comparisonTaskEventSchema, comparisonTaskHandleSchema, evidenceLocationSchema, evidenceRangeRequestSchema, evidenceRangeResponseSchema, evidenceRequestSchema, identifiedEvidenceSchema, explanationSchema, flowResultSchema, graphQueryRequestSchema, graphQueryResponseSchema, importGitInputSchema, indexTaskEventSchema,
   indexTaskHandleSchema, moduleExpansionRequestSchema, moduleExpansionResponseSchema, moduleListRequestSchema, moduleListResponseSchema, moduleOverviewRequestSchema, moduleOverviewResponseSchema, moduleRelationEdgesRequestSchema, moduleRelationEdgesResponseSchema, ownershipGradeSchema, ownershipProgressSchema, ownershipPromptSchema, ownershipQuestionRequestSchema, ownershipSubmissionSchema, projectOverviewSchema, searchRequestSchema, searchResponseSchema,
-  snapshotRefSchema, snapshotStateSchema, sourceFileResultSchema, workerRequestSchema, workerResponseSchema,
+  snapshotRefSchema, snapshotStateSchema, sourceFileResultSchema, SafeDiagnosticError, diagnosticForError, workerRequestSchema, workerResponseSchema,
   type ComparisonRequest, type ComparisonTaskEvent, type ComparisonTaskHandle, type IndexProgress, type IndexTaskEvent, type IndexTaskHandle, type WorkerRequest,
 } from "@project-xray/contracts";
 import { z } from "zod";
@@ -35,10 +35,10 @@ class AnalysisBroker {
       const message = workerResponseSchema.safeParse(raw); if (!message.success) return;
       if (message.data.type !== "response") return;
       const pending = this.pending.get(message.data.requestId); if (!pending) return; this.pending.delete(message.data.requestId);
-      if (message.data.ok) pending.resolve(message.data.payload); else pending.reject(new Error(message.data.error));
+      if (message.data.ok) pending.resolve(message.data.payload); else pending.reject(new SafeDiagnosticError(message.data.code));
     });
-    worker.on("error", (error) => { if (this.queryWorker === worker) this.failPending(error); });
-    worker.on("exit", (code) => { if (this.queryWorker === worker && code !== 0) this.failPending(new Error("后台查询工作线程异常退出")); });
+    worker.on("error", (error) => { if (this.queryWorker === worker) this.failPending(new SafeDiagnosticError(diagnosticForError(error, "WORKER_FAILED").code)); });
+    worker.on("exit", (code) => { if (this.queryWorker === worker && code !== 0) this.failPending(new SafeDiagnosticError("WORKER_FAILED")); });
     return worker;
   }
   private failPending(error: Error): void { for (const pending of this.pending.values()) pending.reject(error); this.pending.clear(); }
@@ -58,14 +58,14 @@ class AnalysisBroker {
       else { record.settled = true; if (event.type === "completed") this.restartQueryWorker(); void worker.terminate(); }
       this.emit(event);
     });
-    worker.on("error", () => { if (!record.settled) this.finishFailed(record, "后台分析工作线程异常退出"); });
-    worker.on("exit", (code) => { if (code !== 0 && !record.settled) this.finishFailed(record, "后台分析工作线程被中止"); });
+    worker.on("error", () => { if (!record.settled) this.finishFailed(record, "WORKER_FAILED"); });
+    worker.on("exit", (code) => { if (code !== 0 && !record.settled) this.finishFailed(record, "WORKER_FAILED"); });
     const request: WorkerRequest = { requestId: randomUUID(), operation: "start-index", taskId, rootPath: input.rootPath, sourceType: input.sourceType, ...(input.branch ? { branch: input.branch } : {}) };
     // 先让 IPC 调用把 taskId 返回给渲染进程，避免极小项目在 UI 记录任务身份前就完成。
     setTimeout(() => { if (!record.settled) worker.postMessage(request); }, 25);
     return indexTaskHandleSchema.parse({ protocolVersion: TASK_PROTOCOL_VERSION, taskId, rootPath: input.rootPath });
   }
-  private finishFailed(record: TaskRecord, message: string): void { record.settled = true; this.emit({ protocolVersion: TASK_PROTOCOL_VERSION, type: "failed", taskId: record.taskId, rootPath: record.rootPath, message, retryable: true }); }
+  private finishFailed(record: TaskRecord, code: "WORKER_FAILED"): void { record.settled = true; this.emit({ protocolVersion: TASK_PROTOCOL_VERSION, type: "failed", taskId: record.taskId, rootPath: record.rootPath, code, retryable: true }); }
   async cancel(taskId: string): Promise<void> {
     const record = this.tasks.get(taskId); if (!record || record.settled) return;
     record.worker.postMessage({ requestId: randomUUID(), operation: "cancel-index", taskId } satisfies WorkerRequest);
@@ -77,7 +77,7 @@ class AnalysisBroker {
   }
   retry(taskId: string): IndexTaskHandle { const input = this.history.get(taskId); if (!input) throw new Error("找不到可重试任务"); return this.start(input); }
   // A comparison publishes an independent report without changing the indexed snapshot; keep query RPCs alive while this worker exits.
-  startComparison(input: ComparisonRequest): ComparisonTaskHandle { for (const task of this.comparisonTasks.values()) if (!task.settled) void this.cancelComparison(task.taskId); const taskId = randomUUID(); const worker = this.worker(); const record: ComparisonTaskRecord = { taskId, input, worker, settled: false }; this.comparisonTasks.set(taskId, record); worker.on("message", (raw) => { const message = workerResponseSchema.safeParse(raw); if (!message.success || message.data.type !== "comparison-event") return; const event = comparisonTaskEventSchema.parse(message.data.event); if (event.taskId !== taskId || record.settled) return; if (event.type !== "progress") { record.settled = true; void worker.terminate(); } this.emitComparison(event); }); worker.on("error", (error) => { if (!record.settled) { record.settled = true; this.emitComparison({ protocolVersion: TASK_PROTOCOL_VERSION, type: "failed", taskId, repositoryId: input.repositoryId, message: error.message.replace(/[\r\n]+/g, " ").slice(0, 300), retryable: true }); } }); const request: WorkerRequest = { requestId: randomUUID(), operation: "start-comparison", taskId, input }; setTimeout(() => { if (!record.settled) worker.postMessage(request); }, 25); return comparisonTaskHandleSchema.parse({ protocolVersion: TASK_PROTOCOL_VERSION, taskId, repositoryId: input.repositoryId, mode: input.mode }); }
+  startComparison(input: ComparisonRequest): ComparisonTaskHandle { for (const task of this.comparisonTasks.values()) if (!task.settled) void this.cancelComparison(task.taskId); const taskId = randomUUID(); const worker = this.worker(); const record: ComparisonTaskRecord = { taskId, input, worker, settled: false }; this.comparisonTasks.set(taskId, record); worker.on("message", (raw) => { const message = workerResponseSchema.safeParse(raw); if (!message.success || message.data.type !== "comparison-event") return; const event = comparisonTaskEventSchema.parse(message.data.event); if (event.taskId !== taskId || record.settled) return; if (event.type !== "progress") { record.settled = true; void worker.terminate(); } this.emitComparison(event); }); const failWorker = (): void => { if (!record.settled) { record.settled = true; this.emitComparison({ protocolVersion: TASK_PROTOCOL_VERSION, type: "failed", taskId, repositoryId: input.repositoryId, code: "WORKER_FAILED", retryable: true }); } }; worker.on("error", failWorker); worker.on("exit", (code) => { if (code !== 0) failWorker(); }); const request: WorkerRequest = { requestId: randomUUID(), operation: "start-comparison", taskId, input }; setTimeout(() => { if (!record.settled) worker.postMessage(request); }, 25); return comparisonTaskHandleSchema.parse({ protocolVersion: TASK_PROTOCOL_VERSION, taskId, repositoryId: input.repositoryId, mode: input.mode }); }
   async cancelComparison(taskId: string): Promise<void> { const record = this.comparisonTasks.get(taskId); if (!record || record.settled) return; record.worker.postMessage({ requestId: randomUUID(), operation: "cancel-comparison", taskId } satisfies WorkerRequest); await new Promise((resolve) => setTimeout(resolve, 100)); if (record.settled) return; record.settled = true; await record.worker.terminate(); this.emitComparison({ protocolVersion: TASK_PROTOCOL_VERSION, type: "cancelled", taskId, repositoryId: record.input.repositoryId, message: "变更比较已取消；既有快照和报告保持不变。" }); }
   async close(): Promise<void> { for (const task of this.tasks.values()) if (!task.settled) await task.worker.terminate(); for (const task of this.comparisonTasks.values()) if (!task.settled) await task.worker.terminate(); await this.queryWorker.terminate(); }
 }
