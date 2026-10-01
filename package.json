@@ -15,7 +15,8 @@
     "verify": "pnpm typecheck && pnpm test && pnpm build",
     "test:e2e": "pnpm build && pnpm --filter @project-xray/desktop test:e2e",
     "benchmark": "tsx benchmarks/run.ts",
-    "dist:win": "pnpm build && electron-builder --win portable --x64"
+    "dist:win": "pnpm build && electron-builder --win portable --x64",
+    "verify:win-portable": "node apps/desktop/scripts/windows-portable-acceptance.cjs"
   },
   "build": {
     "appId": "com.projectxray.desktop",
@@ -27,6 +28,7 @@
     },
     "files": [
       "apps/desktop/dist/**/*",
+      "!apps/desktop/dist/python-analyze.py",
       "apps/desktop/package.json",
       "apps/ui/dist/**/*",
       "package.json"
@@ -34,6 +36,12 @@
     "asar": true,
     "asarUnpack": [
       "**/*.node"
+    ],
+    "extraResources": [
+      {
+        "from": "apps/desktop/dist/python-analyze.py",
+        "to": "python-analyze.py"
+      }
     ],
     "win": {
       "target": [

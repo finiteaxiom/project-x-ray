@@ -2,6 +2,12 @@
 
 更新日期：2026-10-01
 
+## 当前独立验收入口（2026-10-01）
+
+当前仅推进Windows。昨日安全边界、源码导航和评分修正的实际验收见[独立记录](development-runs/2026-09-30-independent-review.md)；下面各小节保留当时的开发验证，不能把其中“待复跑”当作最新状态。
+
+项目级追加排除配置已集成为`c7c271a`。继续降级验收发现的失败诊断未展示、依赖恢复覆盖同ID历史快照两项缺陷已分别由Luna与Sol修复。协调方在集成源码独立验证228测试通过、1项既有Windows权限跳过，类型检查10/10、重打包构建10/10及结构检查25项通过，并实际操作新外层portable完成Python/Git缺失、恢复、反复快照复用、Git双侧源码、跨项目后重启，以及新证据身份下的导航/解释/引用评分抽查。本轮实际覆盖、产物哈希和限制统一见[Windows独立验收](development-runs/2026-10-01-windows-independent-review.md)，队列见[推进计划](development-runs/2026-10-01-windows-completion-plan.md)。Python/Git仍为外部依赖；当前结论不包含干净Windows机器、安装器或完整V1发布验收。
+
 ## 原生异步句柄生命周期与 desktop 复制更新（2026-10-01）
 
 - `OpenWork`/`ReadWork` 现为所有 worker 使用的 `napi_external` 持有强 `napi_ref`；pending open/read 期间拒绝关闭根 scope，pending read 期间拒绝关闭文件句柄。完成及排队失败路径回收引用、pending 计数和 busy 状态；JS scope 只有在原生关闭成功后才标记为 closed。

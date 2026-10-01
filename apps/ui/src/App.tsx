@@ -1,6 +1,6 @@
 import { IgnoreSettingsEditor } from "./components/IgnoreSettingsEditor";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactElement } from "react";
-import { safeDiagnosticMessage, type Evidence, type GraphEdge, type GraphNode, type IndexTaskEvent, type IndexTaskHandle, type ProjectOverview, type SnapshotRef, type SnapshotState, type SourceFileResult } from "@project-xray/contracts";
+import { diagnosticFailureSchema, safeDiagnosticMessage, type Evidence, type GraphEdge, type GraphNode, type IndexTaskEvent, type IndexTaskHandle, type ProjectOverview, type SnapshotRef, type SnapshotState, type SourceFileResult } from "@project-xray/contracts";
 import { FlowExplorer } from "./components/FlowExplorer";
 import { ChangeExplorer } from "./components/ChangeExplorer";
 import { ArchitectureWorkspace } from "./components/ArchitectureWorkspace";
@@ -277,4 +277,47 @@ export function App(): ReactElement {
 
 function TaskStatus({ event, onCancel, onRetry }: { event: IndexTaskEvent; onCancel: () => void; onRetry: () => void }): ReactElement { if (event.type === "progress") { const percent = event.progress.total > 0 ? Math.round(event.progress.completed / event.progress.total * 100) : 0; return <div className="task-status" data-testid="index-progress"><div><b>后台索引 · {event.progress.phase}</b><span>{event.progress.currentFile ?? "准备中"}</span></div><progress value={event.progress.completed} max={Math.max(1, event.progress.total)} /><code>{percent}%</code><button className="button secondary" onClick={onCancel}>取消</button></div>; } if (event.type === "completed") return <></>; return <div className={`task-status ${event.type}`}><div><b>{event.type === "failed" ? "索引失败" : "索引已取消"}</b><span>{event.type === "failed" ? safeDiagnosticMessage(event.code) : event.message}</span></div><button className="button secondary" onClick={onRetry}>安全重试</button></div>; }
 
-function Overview({ project, gitUrl, setGitUrl, importLocal, importPath, importGit, indexing, updateIndex, onNavigate, onSettingsSaved, configurationUnavailable }: { project: ProjectOverview | null; gitUrl: string; setGitUrl: (value: string) => void; importLocal: () => void; importPath: (path: string) => void; importGit: () => void; indexing: boolean; updateIndex: () => void; onNavigate: (page: Page) => void; onSettingsSaved: () => Promise<void>; configurationUnavailable: boolean }): ReactElement { const [testPath, setTestPath] = useState(""); const e2e = new URLSearchParams(window.location.search).get("e2e") === "1"; if (!project) return <div className="welcome-grid"><section className="hero"><span className="kicker">理解，而不只是生成</span><h2>让每一条 AI 代码<br />重新变得<span>可解释、可追溯、可掌握。</span></h2><p>导入项目后，后台任务会在本机建立绑定快照的架构、调用和源码证据。</p><button className="button primary" onClick={importLocal} disabled={indexing}>选择本地项目</button>{e2e && <div className="test-import"><input aria-label="测试项目路径" value={testPath} onChange={(event) => setTestPath(event.target.value)} /><button className="button secondary" disabled={!testPath} onClick={() => importPath(testPath)}>导入测试项目</button></div>}</section><section className="import-card"><span className="kicker">或从 Git 导入</span><h3>克隆远程仓库</h3><p className="import-hint">从源码开始建立项目地图。索引在本机完成，无需配置模型。</p><input aria-label="Git 仓库地址" placeholder="https://github.com/team/repository" value={gitUrl} onChange={(event) => setGitUrl(event.target.value)} /><button className="button secondary" onClick={importGit} disabled={indexing || !gitUrl.trim()}>克隆并分析</button></section></div>; return <div className="stack"><section className="overview-hero"><div><span className="kicker">不可变证据快照</span><h2>{project.name}</h2><p>{project.rootPath}</p></div><div><button className="button secondary" onClick={updateIndex} disabled={indexing}>更新索引</button> <button className="button secondary" onClick={importLocal} disabled={indexing}>导入其他项目</button></div></section><IgnoreSettingsEditor project={project} indexing={indexing} onSaved={onSettingsSaved} reindex={updateIndex} configurationUnavailable={configurationUnavailable} /><div className="stats"><Stat label="已索引" value={project.health.indexedFiles} /><Stat label="模块分组" value={project.counts.modules} /><Stat label="调用关系" value={project.counts.calls} /><Stat label="待确认关系" value={project.counts.unknown} tone={project.counts.unknown ? "warn" : ""} /></div><div className="journey-grid">{[{ page: "architecture" as const, title: "探索项目结构", description: "从模块到符号，用源码核验关系。", step: "01" }, { page: "explain" as const, title: "追踪一个功能", description: "检索入口与静态路径，辨别已知和未知。", step: "02" }, { page: "ownership" as const, title: "验证你的理解", description: "引用真实源码，检验结构与调用方向。", step: "03" }].map((item) => <button key={item.page} className="journey-card" onClick={() => onNavigate(item.page)}><span>{item.step} / WORKFLOW</span><h3>{item.title} <b>↗</b></h3><p>{item.description}</p></button>)}</div><section className="panel"><div className="panel-heading"><div><span className="kicker">索引健康</span><h3>证据覆盖与限制</h3></div><span className={`health ${project.health.status}`}>{({ ready: "可开始探索", partial: "部分索引", failed: "索引失败" } as Record<string, string>)[project.health.status] ?? project.health.status}</span></div><div className="language-grid">{Object.entries(project.health.languageCounts).map(([language, count]) => <div key={language}><span>{language}</span><b>{count}</b></div>)}</div><div className="coverage-summary"><span>跳过 {project.health.skippedFiles} 个文件</span><span>不支持 {project.health.unsupportedFiles} 个文件</span></div><p className="coverage-note">架构和关系来自静态源码分析，不代表实际运行时路径。未解析的动态行为会保留不确定性。</p><details className="coverage-details"><summary>查看忽略规则与分析限制</summary><h4>忽略规则</h4><div className="rule-tags">{project.health.ignoredByRule.map(rule => <code key={rule}>{rule}</code>)}</div><h4>分析限制</h4>{project.health.limitations.map((item) => <p className="limitation" key={item}>{item}</p>)}</details></section></div>; }
+type OverviewProps = {
+  project: ProjectOverview | null;
+  gitUrl: string;
+  setGitUrl: (value: string) => void;
+  importLocal: () => void;
+  importPath: (path: string) => void;
+  importGit: () => void;
+  indexing: boolean;
+  updateIndex: () => void;
+  onNavigate: (page: Page) => void;
+  onSettingsSaved: () => Promise<void>;
+  configurationUnavailable: boolean;
+};
+
+function Overview({ project, gitUrl, setGitUrl, importLocal, importPath, importGit, indexing, updateIndex, onNavigate, onSettingsSaved, configurationUnavailable }: OverviewProps): ReactElement {
+  const [testPath, setTestPath] = useState("");
+  const e2e = new URLSearchParams(window.location.search).get("e2e") === "1";
+  if (!project) return <div className="welcome-grid"><section className="hero"><span className="kicker">理解，而不只是生成</span><h2>让每一条 AI 代码<br />重新变得<span>可解释、可追溯、可掌握。</span></h2><p>导入项目后，后台任务会在本机建立绑定快照的架构、调用和源码证据。</p><button className="button primary" onClick={importLocal} disabled={indexing}>选择本地项目</button>{e2e && <div className="test-import"><input aria-label="测试项目路径" value={testPath} onChange={(event) => setTestPath(event.target.value)} /><button className="button secondary" disabled={!testPath} onClick={() => importPath(testPath)}>导入测试项目</button></div>}</section><section className="import-card"><span className="kicker">或从 Git 导入</span><h3>克隆远程仓库</h3><p className="import-hint">从源码开始建立项目地图。索引在本机完成，无需配置模型。</p><input aria-label="Git 仓库地址" placeholder="https://github.com/team/repository" value={gitUrl} onChange={(event) => setGitUrl(event.target.value)} /><button className="button secondary" onClick={importGit} disabled={indexing || !gitUrl.trim()}>克隆并分析</button></section></div>;
+
+  const failedFiles = project.health.failedFiles.map((failure) => diagnosticFailureSchema.parse(failure));
+  const hasPythonEnvironmentFailure = failedFiles.some((failure) => failure.code === "PYTHON_ENVIRONMENT_UNAVAILABLE");
+  return <div className="stack">
+    <section className="overview-hero"><div><span className="kicker">不可变证据快照</span><h2>{project.name}</h2><p>{project.rootPath}</p></div><div><button className="button secondary" onClick={updateIndex} disabled={indexing}>更新索引</button> <button className="button secondary" onClick={importLocal} disabled={indexing}>导入其他项目</button></div></section>
+    <IgnoreSettingsEditor project={project} indexing={indexing} onSaved={onSettingsSaved} reindex={updateIndex} configurationUnavailable={configurationUnavailable} />
+    <div className="stats"><Stat label="已索引" value={project.health.indexedFiles} /><Stat label="模块分组" value={project.counts.modules} /><Stat label="调用关系" value={project.counts.calls} /><Stat label="待确认关系" value={project.counts.unknown} tone={project.counts.unknown ? "warn" : ""} /></div>
+    <div className="journey-grid">{[{ page: "architecture" as const, title: "探索项目结构", description: "从模块到符号，用源码核验关系。", step: "01" }, { page: "explain" as const, title: "追踪一个功能", description: "检索入口与静态路径，辨别已知和未知。", step: "02" }, { page: "ownership" as const, title: "验证你的理解", description: "引用真实源码，检验结构与调用方向。", step: "03" }].map((item) => <button key={item.page} className="journey-card" onClick={() => onNavigate(item.page)}><span>{item.step} / WORKFLOW</span><h3>{item.title} <b>↗</b></h3><p>{item.description}</p></button>)}</div>
+    <section className="panel">
+      <div className="panel-heading"><div><span className="kicker">索引健康</span><h3>证据覆盖与限制</h3></div><span className={`health ${project.health.status}`}>{({ ready: "可开始探索", partial: "部分索引", failed: "索引失败" } as Record<string, string>)[project.health.status] ?? project.health.status}</span></div>
+      <div className="language-grid">{Object.entries(project.health.languageCounts).map(([language, count]) => <div key={language}><span>{language}</span><b>{count}</b></div>)}</div>
+      <div className="coverage-summary"><span>跳过 {project.health.skippedFiles} 个文件</span><span>不支持 {project.health.unsupportedFiles} 个文件</span><span>失败 {failedFiles.length} 个文件</span></div>
+      <p className="coverage-note">架构和关系来自静态源码分析，不代表实际运行时路径。未解析的动态行为会保留不确定性。</p>
+      <details className="coverage-details">
+        <summary>查看忽略规则与分析限制</summary>
+        <h4>忽略规则</h4>
+        <div className="rule-tags">{project.health.ignoredByRule.map(rule => <code key={rule}>{rule}</code>)}</div>
+        <h4>分析限制</h4>
+        {project.health.limitations.map((item) => <p className="limitation" key={item}>{item}</p>)}
+        <h4>失败文件（{failedFiles.length}）</h4>
+        {failedFiles.length === 0 ? <p className="limitation">没有失败文件。</p> : <ul aria-label="失败文件诊断">{failedFiles.map((failure, index) => <li key={`${failure.filePath}:${failure.code}:${index}`}><code>{failure.filePath}</code> · {safeDiagnosticMessage(failure.code)} <code>{failure.code}</code>{failure.detailCode && <> · 详情码 <code>{failure.detailCode}</code></>}</li>)}</ul>}
+        {hasPythonEnvironmentFailure && <p className="limitation">安装 Python，并将 python.exe 所在目录加入 PATH；在新终端确认 <code>python --version</code> 可找到解释器。修改 PATH 后，请退出并重新启动 Project X-Ray，再点击“更新索引”重新索引。</p>}
+      </details>
+    </section>
+  </div>;
+}

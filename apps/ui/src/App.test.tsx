@@ -106,6 +106,97 @@ describe("可信快照 UI 闭环", () => {
     await screen.findByText(overview.snapshotId);
   }
 
+  it("Overview shows the safe Python environment failure and a reindex instruction", async () => {
+    const overview = snapshot();
+    overview.health = {
+      ...overview.health,
+      status: "partial",
+      failedFiles: [{ filePath: "src/analysis.py", code: "PYTHON_ENVIRONMENT_UNAVAILABLE", reason: "raw Python spawn error" }],
+    };
+    api.getCurrentProject = vi.fn(async () => overview);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await screen.findByText("不可变证据快照");
+    await user.click(screen.getByText("查看忽略规则与分析限制"));
+
+    expect(screen.getByText("失败文件（1）")).toBeTruthy();
+    expect(screen.getByText("失败 1 个文件")).toBeTruthy();
+    expect(screen.getByText("src/analysis.py")).toBeTruthy();
+    expect(document.body.textContent).toContain("Python 分析环境不可用");
+    expect(screen.getByText("PYTHON_ENVIRONMENT_UNAVAILABLE")).toBeTruthy();
+    expect(document.body.textContent).toMatch(/python\.exe.*PATH.*python --version.*更新索引/);
+    expect(document.body.textContent).toMatch(/修改 PATH.*重新启动 Project X-Ray.*更新索引/);
+    expect(document.body.textContent).not.toContain("raw Python spawn error");
+  });
+
+  it("Overview shows existing analyzer failures with normalized messages and safe codes", async () => {
+    const overview = snapshot();
+    overview.health = {
+      ...overview.health,
+      status: "partial",
+      failedFiles: [{ filePath: "src/broken.ts", code: "TYPESCRIPT_SYNTAX_ERROR", detailCode: "TS1005", reason: "raw parser exception with source" }],
+    };
+    api.getCurrentProject = vi.fn(async () => overview);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await screen.findByText("不可变证据快照");
+    await user.click(screen.getByText("查看忽略规则与分析限制"));
+
+    expect(screen.getByText("失败文件（1）")).toBeTruthy();
+    expect(screen.getByText("src/broken.ts")).toBeTruthy();
+    expect(document.body.textContent).toContain("TypeScript 语法错误（详情已隐藏）");
+    expect(screen.getByText("TYPESCRIPT_SYNTAX_ERROR")).toBeTruthy();
+    expect(screen.getByText("TS1005")).toBeTruthy();
+    expect(document.body.textContent).not.toContain("raw parser exception with source");
+  });
+
+  it("Overview explicitly reports when the snapshot has no failed files", async () => {
+    api.getCurrentProject = vi.fn(async () => snapshot());
+    const user = userEvent.setup();
+    render(<App />);
+
+    await screen.findByText("不可变证据快照");
+    await user.click(screen.getByText("查看忽略规则与分析限制"));
+
+    expect(screen.getByText("失败 0 个文件")).toBeTruthy();
+    expect(screen.getByText("失败文件（0）")).toBeTruthy();
+    expect(screen.getByText("没有失败文件。")).toBeTruthy();
+    expect(screen.queryByText(/python\.exe/)).toBeNull();
+  });
+
+  it("Overview redacts untrusted legacy diagnostic text and absolute paths", async () => {
+    const overview = snapshot();
+    const sourceMarker = "PRIVATE_OLD_DIAGNOSTIC_SOURCE_MARKER";
+    const oldAbsolutePath = "D:\\private\\workspace\\src\\legacy.py";
+    overview.health = {
+      ...overview.health,
+      status: "partial",
+      failedFiles: [{
+        filePath: oldAbsolutePath,
+        code: "UNTRUSTED_PRIVATE_CODE" as never,
+        detailCode: `D:\\private\\${sourceMarker}` as never,
+        reason: `Parser failed near ${sourceMarker} at ${oldAbsolutePath}`,
+      }],
+    };
+    api.getCurrentProject = vi.fn(async () => overview);
+    const user = userEvent.setup();
+    render(<App />);
+
+    await screen.findByText("不可变证据快照");
+    await user.click(screen.getByText("查看忽略规则与分析限制"));
+
+    const renderedText = document.body.textContent ?? "";
+    expect(screen.getByText("<项目>")).toBeTruthy();
+    expect(renderedText).toContain("历史诊断详情已隐藏");
+    expect(screen.getByText("LEGACY_DIAGNOSTIC_REDACTED")).toBeTruthy();
+    expect(renderedText).not.toContain(sourceMarker);
+    expect(renderedText).not.toContain("UNTRUSTED_PRIVATE_CODE");
+    expect(renderedText).not.toContain("D:\\private\\workspace");
+    expect(renderedText).not.toContain("D:\\private\\");
+  });
+
   it("StrictMode 下跨页恢复训练草稿、实际范围和源码位置，且生成与评分各执行一次", async () => {
     api.getCurrentProject = vi.fn(async () => snapshot());
     const generation = deferred<Awaited<ReturnType<XRayApi["createOwnershipQuestions"]>>>();

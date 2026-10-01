@@ -6,6 +6,8 @@ Project X-Ray 是一个本地优先的 AI 代码所有权系统：它从真实�
 
 V1 开发中。当前首发语言为 JavaScript、TypeScript 和 Python，首发平台为 Windows 桌面端。
 
+Windows x64 便携包的构建、外部 Python/Git 要求和数据位置见[便携包说明](docs/windows-portable.md)。当前验收范围与限制见[开发状态](docs/DEVELOPMENT.md)。
+
 ## 本地开发
 
 ```powershell
