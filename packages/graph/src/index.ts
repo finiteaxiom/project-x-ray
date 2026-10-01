@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 import { createHash } from "node:crypto";
 import {
+  IGNORE_POLICY_VERSION, projectIgnoreSettingsSchema, ignoreRulesSchema, SafeDiagnosticError, type ProjectIgnoreSettings,
   GRAPH_QUERY_VERSION, MODULE_OVERVIEW_VERSION, parseChangeReport, graphQueryRequestSchema, projectOverviewSchema, projectSnapshotSchema,
   type ChangeReport, type EvidenceRangeResponse,
   type Evidence, type FlowResult, type GraphEdge, type GraphNode, type GraphQueryRequest, type GraphQueryResponse, type MasteryRecord, type OwnershipAttempt,
@@ -21,6 +22,7 @@ function parseStoredSnapshot(payload: string): ProjectSnapshot {
   if (parsed.success) return parsed.data;
   if (!raw || typeof raw !== "object") throw new Error("快照数据无效");
   const legacy = raw as Record<string, unknown>;
+  if (legacy.analysisIdentity && typeof legacy.analysisIdentity === "object" && "ignorePolicy" in legacy.analysisIdentity) throw new SafeDiagnosticError("IGNORE_SETTINGS_INVALID");
   const health = legacy.health && typeof legacy.health === "object" ? legacy.health as Record<string, unknown> : {};
   return projectSnapshotSchema.parse({
     ...legacy,
@@ -144,6 +146,38 @@ export class GraphStore {
     this.database.prepare("INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES(5, ?)").run(new Date().toISOString());
     this.database.prepare("INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES(6, ?)").run(new Date().toISOString());
     this.database.prepare("INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES(7, ?)").run(new Date().toISOString());
+    this.database.transaction(() => {
+      this.database.exec("CREATE TABLE IF NOT EXISTS project_ignore_settings(repository_id TEXT PRIMARY KEY, payload TEXT NOT NULL)");
+      this.database.prepare("INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES(8, ?)").run(new Date().toISOString());
+    })();
+  }
+
+  loadIgnoreSettings(repositoryId: string): ProjectIgnoreSettings {
+    const row = this.database.prepare("SELECT payload FROM project_ignore_settings WHERE repository_id=?").get(repositoryId) as PayloadRow | undefined;
+    if (!row) return { version: IGNORE_POLICY_VERSION, revision: 0, rules: [] };
+    try { return projectIgnoreSettingsSchema.parse(JSON.parse(row.payload)); }
+    catch { throw new SafeDiagnosticError("IGNORE_SETTINGS_INVALID"); }
+  }
+
+  assertIgnoreRevision(repositoryId: string, revision: number): void {
+    if (this.loadIgnoreSettings(repositoryId).revision !== revision) throw new SafeDiagnosticError("IGNORE_SETTINGS_CONFLICT");
+  }
+
+  withIgnoreRevision<T>(repositoryId: string, revision: number, work: () => T): T {
+    // Reserve the settings database for the complete synchronous publication,
+    // including compatibility writes to a legacy source database.
+    return this.database.transaction(() => { this.assertIgnoreRevision(repositoryId, revision); return work(); }).immediate();
+  }
+
+  saveIgnoreSettings(repositoryId: string, expectedRevision: number, rules: string[]): ProjectIgnoreSettings {
+    const parsed = ignoreRulesSchema.safeParse(rules); if (!parsed.success) throw new SafeDiagnosticError("IGNORE_SETTINGS_INVALID");
+    return this.database.transaction(() => {
+      const prior = this.loadIgnoreSettings(repositoryId); this.assertIgnoreRevision(repositoryId, expectedRevision);
+      if (JSON.stringify(prior.rules) === JSON.stringify(parsed.data)) return prior;
+      const next: ProjectIgnoreSettings = { version: IGNORE_POLICY_VERSION, revision: prior.revision + 1, rules: parsed.data };
+      this.database.prepare("INSERT OR REPLACE INTO project_ignore_settings(repository_id,payload) VALUES(?,?)").run(repositoryId, JSON.stringify(next));
+      return next;
+    })();
   }
 
   private ensureEvidenceColumns(): void {
@@ -157,9 +191,10 @@ export class GraphStore {
     if (!columns.has("is_current")) this.database.exec("ALTER TABLE snapshot_overviews ADD COLUMN is_current INTEGER NOT NULL DEFAULT 1");
   }
 
-  saveSnapshot(snapshot: ProjectSnapshot, sources: Array<{ filePath: string; contentHash: string; language: string; content: string }> = [], makeCurrent = true): void {
+  saveSnapshot(snapshot: ProjectSnapshot, sources: Array<{ filePath: string; contentHash: string; language: string; content: string }> = [], makeCurrent = true, ignoreRevision?: number): void {
     snapshot = projectSnapshotSchema.parse(snapshot);
     const save = this.database.transaction(() => {
+      if (ignoreRevision !== undefined) this.assertIgnoreRevision(snapshot.repositoryId, ignoreRevision);
       const existing = this.database.prepare("SELECT is_current FROM snapshot_overviews WHERE snapshot_id = ?").get(snapshot.snapshotId) as { is_current: number } | undefined;
       const isCurrent = makeCurrent || existing?.is_current === 1 ? 1 : 0;
       this.database.prepare("DELETE FROM nodes WHERE snapshot_id = ?").run(snapshot.snapshotId);
@@ -405,7 +440,7 @@ export class GraphStore {
     return [...groups.values()].sort((a, b) => a.targetModuleId.localeCompare(b.targetModuleId));
   }
 
-  saveChangeReport(report: ChangeReport): void { report = parseChangeReport(report); this.database.prepare("INSERT OR REPLACE INTO change_reports(report_id,repository_id,created_at,capture_fingerprint,payload) VALUES(?,?,?,?,?)").run(report.id, report.repositoryId, report.createdAt, report.captureFingerprint, JSON.stringify(report)); }
+  saveChangeReport(report: ChangeReport, ignoreRevision?: number): void { this.database.transaction(() => { if (ignoreRevision !== undefined) this.assertIgnoreRevision(report.repositoryId, ignoreRevision); report = parseChangeReport(report); this.database.prepare("INSERT OR REPLACE INTO change_reports(report_id,repository_id,created_at,capture_fingerprint,payload) VALUES(?,?,?,?,?)").run(report.id, report.repositoryId, report.createdAt, report.captureFingerprint, JSON.stringify(report)); })(); }
   loadChangeReport(reportId: string): ChangeReport | null { const row = this.database.prepare("SELECT payload FROM change_reports WHERE report_id=?").get(reportId) as PayloadRow | undefined; return row ? parseChangeReport(JSON.parse(row.payload)) : null; }
 
   readSnapshotSource(snapshotId: string, filePath: string): { content: string; contentHash: string; language: string } | null {
@@ -421,8 +456,9 @@ export class GraphStore {
     return (this.database.prepare("SELECT payload FROM mastery_records WHERE snapshot_id = ? ORDER BY completed_at").all(snapshotId) as StoredSnapshotRow[]).map((row) => JSON.parse(row.payload) as MasteryRecord);
   }
 
-  saveOwnershipAttempt(attempt: OwnershipAttempt): void {
+  saveOwnershipAttempt(attempt: OwnershipAttempt, ignoreRevision?: number): void {
     this.database.transaction(() => {
+      if (ignoreRevision !== undefined) this.assertIgnoreRevision(attempt.repositoryId, ignoreRevision);
       this.database.prepare("INSERT INTO ownership_attempts(attempt_id,repository_id,snapshot_id,concept_id,completed_at,payload) VALUES(@attemptId,@repositoryId,@snapshotId,@conceptId,@completedAt,@payload)").run({ ...attempt, conceptId: attempt.concept.id, payload: JSON.stringify(attempt) });
     })();
   }

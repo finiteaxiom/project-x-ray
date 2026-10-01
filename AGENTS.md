@@ -205,6 +205,8 @@ LLM 输出永远不是一级证据。LLM 可以对分析器返回的证据进行
 
 只按“执行反馈与规则沉淀”的门槛维护；详细过程保存在对应开发记录中。
 
+- 项目配置能改变证据范围时，异步当前性校验后的评分或快照发布必须捕获配置修订，并在持久化事务内核验；跨数据库兼容写入须在配置数据库持有事务锁直到发布结束。用第二连接在校验后、写入前改变配置的回归确认拒绝旧结果且无写入。配置损坏或校验异常须显式进入不可校验状态，界面不得沿用旧 `current`。[项目排除配置记录](docs/development-runs/2026-10-01-project-ignore-config.md)
+
 - 修改 TypeScript 或 Python 的词法绑定时，为同名嵌套声明、循环/异常/上下文管理器绑定、推导式作用域和装饰器重绑定加入带精确源码范围的回归；遍历 AST 前核对每种节点实际提供的字段（例如 `With` 没有 `orelse`）；无法静态证明的包装调用维持 `unknown`，语义修复时更新分析器版本。[分析器记录](docs/development-runs/2026-09-30-v1-correctness.md) · [上下文管理器回归记录](docs/development-runs/2026-09-30-python-with-scope-regression.md)
 - 目录发现要同时验证隐藏源码可索引、秘密文件及构建/供应商目录仍被排除、符号链接不逃逸；安全复现还应在发现与实际打开之间替换受控符号链接/目录联接，并分别确认外部内容是否被读取、交给分析器及写入索引或 Git 比较快照。文件打开必须从持有的项目根目录句柄解析受限相对路径（Windows `NtCreateFile` 的 `RootDirectory` 或 POSIX `openat`）；单独比较绝对路径前缀不足以绑定可改名根目录。不要依赖 glob 默认值推断隐藏文件策略。[目录与排除记录](docs/development-runs/2026-09-30-v1-correctness.md) · [路径竞态诊断](docs/development-runs/2026-10-01-path-escape-diagnostic.md)
 - Windows 原生文件检查必须在目标 Node/Electron 运行时验证句柄桥接；不要假定 Node 的数字 fd 能由另一个 addon CRT 的 `_get_osfhandle` 安全转换。无法证明桥接时，让同一原生层持有并校验实际 OS handle，再从该 handle 读取。[路径竞态修复记录](docs/development-runs/2026-10-01-path-escape-diagnostic.md)

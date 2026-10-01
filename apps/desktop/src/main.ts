@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { Worker } from "node:worker_threads";
 import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import {
-  IPC_CHANNELS, TASK_PROTOCOL_VERSION, changeReportRequestSchema, changeReportSchema, changeReportStateSchema, comparisonRequestSchema, comparisonTaskEventSchema, comparisonTaskHandleSchema, evidenceLocationSchema, evidenceRangeRequestSchema, evidenceRangeResponseSchema, evidenceRequestSchema, identifiedEvidenceSchema, explanationSchema, flowResultSchema, graphQueryRequestSchema, graphQueryResponseSchema, importGitInputSchema, indexTaskEventSchema,
+  ignoreSettingsRequestSchema, ignoreSettingsResponseSchema, saveIgnoreSettingsRequestSchema, IPC_CHANNELS, TASK_PROTOCOL_VERSION, changeReportRequestSchema, changeReportSchema, changeReportStateSchema, comparisonRequestSchema, comparisonTaskEventSchema, comparisonTaskHandleSchema, evidenceLocationSchema, evidenceRangeRequestSchema, evidenceRangeResponseSchema, evidenceRequestSchema, identifiedEvidenceSchema, explanationSchema, flowResultSchema, graphQueryRequestSchema, graphQueryResponseSchema, importGitInputSchema, indexTaskEventSchema,
   indexTaskHandleSchema, moduleExpansionRequestSchema, moduleExpansionResponseSchema, moduleListRequestSchema, moduleListResponseSchema, moduleOverviewRequestSchema, moduleOverviewResponseSchema, moduleRelationEdgesRequestSchema, moduleRelationEdgesResponseSchema, ownershipGradeSchema, ownershipProgressSchema, ownershipPromptSchema, ownershipQuestionRequestSchema, ownershipSubmissionSchema, projectOverviewSchema, searchRequestSchema, searchResponseSchema,
   snapshotRefSchema, snapshotStateSchema, sourceFileResultSchema, SafeDiagnosticError, diagnosticForError, workerRequestSchema, workerResponseSchema,
   type ComparisonRequest, type ComparisonTaskEvent, type ComparisonTaskHandle, type IndexProgress, type IndexTaskEvent, type IndexTaskHandle, type WorkerRequest,
@@ -22,6 +22,7 @@ interface ComparisonTaskRecord { taskId: string; input: ComparisonRequest; worke
 
 class AnalysisBroker {
   private queryWorker: Worker;
+  private savingIgnoreSettings = false;
   private readonly pending = new Map<string, Pending>();
   private readonly tasks = new Map<string, TaskRecord>();
   private readonly comparisonTasks = new Map<string, ComparisonTaskRecord>();
@@ -44,10 +45,14 @@ class AnalysisBroker {
   private failPending(error: Error): void { for (const pending of this.pending.values()) pending.reject(error); this.pending.clear(); }
   private restartQueryWorker(): void { const old = this.queryWorker; this.failPending(new Error("索引更新后查询上下文已刷新，请重试")); this.queryWorker = this.createQueryWorker(); void old.terminate(); }
   request(input: Record<string, unknown>): Promise<unknown> {
+    const saving = input.operation === "save-ignore-settings";
+    if (saving && (this.savingIgnoreSettings || [...this.tasks.values()].some(task => !task.settled) || [...this.comparisonTasks.values()].some(task => !task.settled))) return Promise.reject(new SafeDiagnosticError("IGNORE_SETTINGS_BUSY"));
     const requestId = randomUUID(); const request = workerRequestSchema.parse({ ...input, requestId });
-    return new Promise((resolve, reject) => { this.pending.set(requestId, { resolve, reject }); this.queryWorker.postMessage(request); });
+    if (saving) this.savingIgnoreSettings = true;
+    return new Promise((resolve, reject) => { this.pending.set(requestId, { resolve, reject }); this.queryWorker.postMessage(request); }).finally(() => { if (saving) this.savingIgnoreSettings = false; });
   }
   start(input: RetryInput): IndexTaskHandle {
+    if (this.savingIgnoreSettings) throw new SafeDiagnosticError("IGNORE_SETTINGS_BUSY");
     for (const task of this.tasks.values()) if (!task.settled) void this.cancel(task.taskId);
     const taskId = randomUUID(); const worker = this.worker();
     const record: TaskRecord = { taskId, ...input, worker, phase: "queued", settled: false }; this.tasks.set(taskId, record); this.history.set(taskId, input);
@@ -77,7 +82,7 @@ class AnalysisBroker {
   }
   retry(taskId: string): IndexTaskHandle { const input = this.history.get(taskId); if (!input) throw new Error("找不到可重试任务"); return this.start(input); }
   // A comparison publishes an independent report without changing the indexed snapshot; keep query RPCs alive while this worker exits.
-  startComparison(input: ComparisonRequest): ComparisonTaskHandle { for (const task of this.comparisonTasks.values()) if (!task.settled) void this.cancelComparison(task.taskId); const taskId = randomUUID(); const worker = this.worker(); const record: ComparisonTaskRecord = { taskId, input, worker, settled: false }; this.comparisonTasks.set(taskId, record); worker.on("message", (raw) => { const message = workerResponseSchema.safeParse(raw); if (!message.success || message.data.type !== "comparison-event") return; const event = comparisonTaskEventSchema.parse(message.data.event); if (event.taskId !== taskId || record.settled) return; if (event.type !== "progress") { record.settled = true; void worker.terminate(); } this.emitComparison(event); }); const failWorker = (): void => { if (!record.settled) { record.settled = true; this.emitComparison({ protocolVersion: TASK_PROTOCOL_VERSION, type: "failed", taskId, repositoryId: input.repositoryId, code: "WORKER_FAILED", retryable: true }); } }; worker.on("error", failWorker); worker.on("exit", (code) => { if (code !== 0) failWorker(); }); const request: WorkerRequest = { requestId: randomUUID(), operation: "start-comparison", taskId, input }; setTimeout(() => { if (!record.settled) worker.postMessage(request); }, 25); return comparisonTaskHandleSchema.parse({ protocolVersion: TASK_PROTOCOL_VERSION, taskId, repositoryId: input.repositoryId, mode: input.mode }); }
+  startComparison(input: ComparisonRequest): ComparisonTaskHandle { if (this.savingIgnoreSettings) throw new SafeDiagnosticError("IGNORE_SETTINGS_BUSY"); for (const task of this.comparisonTasks.values()) if (!task.settled) void this.cancelComparison(task.taskId); const taskId = randomUUID(); const worker = this.worker(); const record: ComparisonTaskRecord = { taskId, input, worker, settled: false }; this.comparisonTasks.set(taskId, record); worker.on("message", (raw) => { const message = workerResponseSchema.safeParse(raw); if (!message.success || message.data.type !== "comparison-event") return; const event = comparisonTaskEventSchema.parse(message.data.event); if (event.taskId !== taskId || record.settled) return; if (event.type !== "progress") { record.settled = true; void worker.terminate(); } this.emitComparison(event); }); const failWorker = (): void => { if (!record.settled) { record.settled = true; this.emitComparison({ protocolVersion: TASK_PROTOCOL_VERSION, type: "failed", taskId, repositoryId: input.repositoryId, code: "WORKER_FAILED", retryable: true }); } }; worker.on("error", failWorker); worker.on("exit", (code) => { if (code !== 0) failWorker(); }); const request: WorkerRequest = { requestId: randomUUID(), operation: "start-comparison", taskId, input }; setTimeout(() => { if (!record.settled) worker.postMessage(request); }, 25); return comparisonTaskHandleSchema.parse({ protocolVersion: TASK_PROTOCOL_VERSION, taskId, repositoryId: input.repositoryId, mode: input.mode }); }
   async cancelComparison(taskId: string): Promise<void> { const record = this.comparisonTasks.get(taskId); if (!record || record.settled) return; record.worker.postMessage({ requestId: randomUUID(), operation: "cancel-comparison", taskId } satisfies WorkerRequest); await new Promise((resolve) => setTimeout(resolve, 100)); if (record.settled) return; record.settled = true; await record.worker.terminate(); this.emitComparison({ protocolVersion: TASK_PROTOCOL_VERSION, type: "cancelled", taskId, repositoryId: record.input.repositoryId, message: "变更比较已取消；既有快照和报告保持不变。" }); }
   async close(): Promise<void> { for (const task of this.tasks.values()) if (!task.settled) await task.worker.terminate(); for (const task of this.comparisonTasks.values()) if (!task.settled) await task.worker.terminate(); await this.queryWorker.terminate(); }
 }
@@ -89,6 +94,8 @@ function registerIpc(): void {
   ipcMain.handle(IPC_CHANNELS.importGitProject, (_event, raw) => { const input = importGitInputSchema.parse(raw); return requireBroker().start({ rootPath: input.url, sourceType: "git", ...(input.branch ? { branch: input.branch } : {}) }); });
   ipcMain.handle(IPC_CHANNELS.cancelIndex, (_event, taskId) => requireBroker().cancel(z.string().uuid().parse(taskId)));
   ipcMain.handle(IPC_CHANNELS.retryIndex, (_event, taskId) => requireBroker().retry(z.string().uuid().parse(taskId)));
+  ipcMain.handle(IPC_CHANNELS.getIgnoreSettings, async (_event, raw) => ignoreSettingsResponseSchema.parse(await requireBroker().request({ operation: "get-ignore-settings", ref: ignoreSettingsRequestSchema.parse(raw) })));
+  ipcMain.handle(IPC_CHANNELS.saveIgnoreSettings, async (_event, raw) => ignoreSettingsResponseSchema.parse(await requireBroker().request({ operation: "save-ignore-settings", input: saveIgnoreSettingsRequestSchema.parse(raw) })));
   ipcMain.handle(IPC_CHANNELS.getCurrentProject, async () => { const value = await requireBroker().request({ operation: "get-current" }); return value === null ? null : projectOverviewSchema.parse(value); });
   ipcMain.handle(IPC_CHANNELS.getSnapshotState, async (_event, raw) => snapshotStateSchema.parse(await requireBroker().request({ operation: "get-state", ref: snapshotRefSchema.parse(raw) })));
   ipcMain.handle(IPC_CHANNELS.listModules, async (_event, raw) => { const input = moduleListRequestSchema.parse(raw); return moduleListResponseSchema.parse(await requireBroker().request({ operation: "list-modules", input })); });

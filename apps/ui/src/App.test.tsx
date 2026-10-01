@@ -3,7 +3,7 @@ import { StrictMode, useEffect } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { CHANGESET_VERSION, GRAPH_QUERY_VERSION, OWNERSHIP_SCORING_VERSION, TASK_PROTOCOL_VERSION, type ChangeReport, type ComparisonTaskEvent, type GraphEdge, type GraphNode, type GraphQueryResponse, type IndexTaskEvent, type IndexTaskHandle, type ProjectOverview, type SnapshotState, type SourceFileResult, type XRayApi } from "@project-xray/contracts";
+import { IGNORE_POLICY_VERSION, CHANGESET_VERSION, GRAPH_QUERY_VERSION, OWNERSHIP_SCORING_VERSION, TASK_PROTOCOL_VERSION, type ChangeReport, type ComparisonTaskEvent, type GraphEdge, type GraphNode, type GraphQueryResponse, type IndexTaskEvent, type IndexTaskHandle, type ProjectOverview, type SnapshotState, type SourceFileResult, type XRayApi } from "@project-xray/contracts";
 
 vi.mock("@monaco-editor/react", () => ({
   default: ({ value, onMount }: { value: string; onMount?: (editor: unknown, monaco: unknown) => void }) => {
@@ -53,6 +53,8 @@ describe("可信快照 UI 闭环", () => {
   beforeEach(() => {
     listener = undefined; comparisonListener = undefined; indexSubscriptions = 0; indexUnsubscriptions = 0; state = "current";
     api = {
+      getIgnoreSettings: vi.fn(async (ref) => ({ ...ref, settings: { version: IGNORE_POLICY_VERSION, revision: 0, rules: [] }, policy: { version: IGNORE_POLICY_VERSION, hash: "empty", rules: [] }, defaultRules: [] })),
+      saveIgnoreSettings: vi.fn(),
       getCurrentProject: vi.fn(async () => null),
       selectLocalProject: vi.fn(async () => handle("11111111-1111-4111-8111-111111111111")),
       importLocalProject: vi.fn(async () => handle("22222222-2222-4222-8222-222222222222")),
@@ -302,6 +304,16 @@ describe("可信快照 UI 闭环", () => {
     await waitFor(() => expect(api.queryGraph).toHaveBeenCalledTimes(2));
     expect(screen.getByText("auth.login")).toBeTruthy();
     expect(api.search).toHaveBeenCalledTimes(2);
+  });
+
+  it("后续校验异常不保留旧current并关闭依赖当前源码的操作", async () => {
+    api.getCurrentProject = vi.fn(async () => snapshot()); window.xray = api;
+    render(<App />); await screen.findByText("不可变证据快照");
+    await waitFor(() => expect(api.getSnapshotState).toHaveBeenCalled());
+    vi.mocked(api.getSnapshotState).mockRejectedValue(new Error("固定校验错误"));
+    fireEvent.focus(window); await screen.findByTestId("snapshot-unavailable");
+    fireEvent.click(screen.getByRole("button", { name: /调用 \/ 数据流/ }));
+    expect(await screen.findByRole("button", { name: "搜索" })).toHaveProperty("disabled", true);
   });
 
   it("校验不可用时不声称工作区变化、不显示差异数，并在重新索引后恢复", async () => {

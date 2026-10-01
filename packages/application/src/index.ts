@@ -2,14 +2,14 @@ import { basename, dirname, extname, join, resolve } from "node:path";
 import { existsSync, mkdirSync, readdirSync } from "node:fs";
 import { mkdir, realpath } from "node:fs/promises";
 import {
-  GRAPH_IR_VERSION, SafeDiagnosticError, diagnosticForError, safeDiagnostic, safeDiagnosticCodeSchema,
+  GRAPH_IR_VERSION, ignoreSettingsRequestSchema, saveIgnoreSettingsRequestSchema, type SaveIgnoreSettingsRequest, type IgnoreSettingsResponse, type IgnorePolicy, SafeDiagnosticError, diagnosticForError, safeDiagnostic, safeDiagnosticCodeSchema,
   CHANGESET_VERSION, GRAPH_QUERY_VERSION, type ChangeFile, type ChangeReport, type ComparisonRequest, type ComparisonSide, type DirectChange, type Evidence, type EvidenceLocation, type FeatureExplanation, type FlowResult, type GraphEdge, type GraphNode, type GraphQueryRequest, type GraphQueryResponse, type ImpactPath,
   OWNERSHIP_SCORING_VERSION, type IndexProgress, type OwnershipAttempt, type OwnershipGrade, type OwnershipProgress, type OwnershipQuestion, type OwnershipQuestionRequest, type OwnershipSubmission, type ProjectSnapshot, type SafeDiagnosticCode, type SafeDiagnosticDetailCode,
   type ProjectOverview, type ModuleExpansionRequest, type ModuleExpansionResponse, type ModuleListRequest, type ModuleListResponse, type ModuleOverviewRequest, type ModuleOverviewResponse, type ModuleRelationEdgesRequest, type ModuleRelationEdgesResponse, type SearchRequest, type SearchResponse, type EvidenceRangeResponse,
   type SnapshotRef, type SnapshotState, type SourceCitation, type SourceFileResult, type IdentifiedEvidence,
 } from "@project-xray/contracts";
 import {
-  assertContainedPath, contentFingerprint, createSecureReadScope, discoverProject, isAnalysisConfig, isProjectPathSecurityError, languageFromPath, moduleNameForPath, normalizeProjectPath,
+  DEFAULT_IGNORE, classifyProjectPath, createIgnorePolicy, configurationFingerprint, assertContainedPath, contentFingerprint, createSecureReadScope, discoverProject, isAnalysisConfig, isProjectPathSecurityError, languageFromPath, moduleNameForPath, normalizeProjectPath,
   readProjectFile, readSecureProjectFile, sourceFingerprint, stableId, throwIfAborted, type LanguageAnalyzer, type SecureReadScope, type SecureReadTestHooks,
 } from "@project-xray/analyzer-core";
 import { TypeScriptAnalyzer } from "@project-xray/analyzer-typescript";
@@ -66,6 +66,21 @@ export class XRayApplication {
 
   getCurrentProject(): ProjectOverview | null { return this.current; }
 
+  getIgnoreSettings(ref: SnapshotRef): IgnoreSettingsResponse {
+    if (!ignoreSettingsRequestSchema.safeParse({ repositoryId: ref.repositoryId, snapshotId: ref.snapshotId }).success) throw new SafeDiagnosticError("IGNORE_SETTINGS_INVALID");
+    const { snapshot } = this.requireSnapshot(ref);
+    const settings = this.storeForRepository(snapshot.repositoryId).loadIgnoreSettings(snapshot.repositoryId);
+    return { repositoryId: ref.repositoryId, snapshotId: ref.snapshotId, settings, policy: createIgnorePolicy(settings.rules), defaultRules: DEFAULT_IGNORE, ...(snapshot.analysisIdentity.ignorePolicy ? { snapshotPolicy: snapshot.analysisIdentity.ignorePolicy } : {}) };
+  }
+
+  saveIgnoreSettings(raw: SaveIgnoreSettingsRequest): IgnoreSettingsResponse {
+    const parsed = saveIgnoreSettingsRequestSchema.safeParse(raw); if (!parsed.success) throw new SafeDiagnosticError("IGNORE_SETTINGS_INVALID");
+    const input = parsed.data; this.requireSnapshot(input);
+    const settings = this.storeForRepository(input.repositoryId).saveIgnoreSettings(input.repositoryId, input.expectedRevision, input.rules);
+    if (settings.revision !== input.expectedRevision) this.questions.clear();
+    return this.getIgnoreSettings(input);
+  }
+
   async importGit(input: { url: string; branch?: string | undefined }, options: IndexOptions = {}): Promise<ProjectSnapshot> {
     await mkdir(this.cacheRoot, { recursive: true }); throwIfAborted(options.signal);
     const rootPath = await cloneRepository(this.cacheRoot, input.url, input.branch);
@@ -79,10 +94,14 @@ export class XRayApplication {
     try { secureScope = await createSecureReadScope(rootPath); }
     catch (error) { if (isAbort(error)) throw error; throw new SafeDiagnosticError(diagnosticForError(error, "FILE_ACCESS_FAILED").code); }
     const safeRoot = secureScope.rootPath;
+    const repositoryId = stableId("repository", safeRoot.toLocaleLowerCase());
     try {
+    const settingsStore = this.storeForRepository(repositoryId);
+    const settings = settingsStore.loadIgnoreSettings(repositoryId);
+    const policy = createIgnorePolicy(settings.rules);
     progress?.({ phase: "discovering", completed: 0, total: 0 });
     let discovery: Awaited<ReturnType<typeof discoverProject>>;
-    try { discovery = await discoverProject(safeRoot, options.signal); }
+    try { discovery = await discoverProject(safeRoot, options.signal, undefined, policy); }
     catch (error) { if (isAbort(error)) throw error; throw new SafeDiagnosticError(diagnosticForError(error, "FILE_DISCOVERY_FAILED").code); }
     const sources: IndexedSource[] = [];
     const failures: ProjectSnapshot["health"]["failedFiles"] = discovery.failures.map((failure) => failureWithCode(safeRoot, failure.filePath, failure.code, failure.detailCode, "FILE_DISCOVERY_FAILED"));
@@ -97,10 +116,9 @@ export class XRayApplication {
     }
 
     const sourceIdentity = sourceFingerprint(sources.map((item) => ({ path: item.projectPath, content: item.content })));
-    const repositoryId = stableId("repository", safeRoot.toLocaleLowerCase());
     const analyzerVersions = Object.fromEntries(this.analyzers.map((item) => [item.id, item.version]));
-    const configurationHash = sourceFingerprint(sources.filter((item) => isAnalysisConfig(item.projectPath)).map((item) => ({ path: item.projectPath, content: item.content })));
-    const analysisIdentity = { graphIrVersion: GRAPH_IR_VERSION, analyzerVersions, configurationHash, sourceFingerprint: sourceIdentity };
+    const configurationHash = configurationFingerprint(sourceFingerprint(sources.filter((item) => isAnalysisConfig(item.projectPath)).map((item) => ({ path: item.projectPath, content: item.content }))), policy);
+    const analysisIdentity = { graphIrVersion: GRAPH_IR_VERSION, analyzerVersions, configurationHash, sourceFingerprint: sourceIdentity, ignorePolicy: policy };
     const snapshotId = stableId(repositoryId, sourceIdentity, GRAPH_IR_VERSION, JSON.stringify(analyzerVersions), configurationHash);
     const rootNodeId = stableId(repositoryId, "repository-root");
     const nodes: GraphNode[] = [{ id: rootNodeId, snapshotId, kind: "repository", name: basename(safeRoot), qualifiedName: safeRoot, metadata: { sourceType } }];
@@ -145,18 +163,18 @@ export class XRayApplication {
       repositoryId, snapshotId, name: basename(safeRoot), rootPath: safeRoot, sourceType, ...(gitHead ? { gitHead } : {}), createdAt: new Date().toISOString(), analysisIdentity,
       sourceFiles: sources.map(({ projectPath: filePath, contentHash, content, language }) => ({ filePath, contentHash, bytes: Buffer.byteLength(content), language })),
       nodes: dedupedNodes, edges: [...new Map(edges.map((edge) => [edge.id, edge])).values()], evidence: [...new Map(evidence.map((item) => [item.id, item])).values()],
-      health: { status: failures.length > 0 ? "partial" : "ready", totalFiles: discovery.files.length + discovery.unsupportedFiles + discovery.ignoredFiles, indexedFiles: sources.length, skippedFiles: discovery.ignoredFiles, unsupportedFiles: discovery.unsupportedFiles, ignoredByRule: discovery.ignoredByRule, failedFiles: failures, languageCounts, limitations: ["静态分析不等同于运行时追踪", "按规则排除的目录只报告规则，不枚举目录内文件数量", "配置身份仅包含 package.json、pyproject.toml、requirements.txt、tsconfig.json 与 jsconfig.json；extends 指向的外部配置不解析"] },
+      health: { status: failures.length > 0 ? "partial" : "ready", totalFiles: discovery.files.length + discovery.unsupportedFiles + discovery.ignoredFiles, indexedFiles: sources.length, skippedFiles: discovery.ignoredFiles, unsupportedFiles: discovery.unsupportedFiles, ignoredByRule: discovery.ignoredByRule, failedFiles: failures, languageCounts, limitations: ["静态分析不等同于运行时追踪", "按规则排除的目录只报告规则，不枚举目录内文件数量", "配置身份包含项目排除策略及 package.json、pyproject.toml、requirements.txt、tsconfig.json 与 jsconfig.json；extends 指向的外部配置不解析"] },
     };
 
     progress?.({ phase: "verifying", completed: 0, total: sources.length });
-    const verified = await discoverAndRead(safeRoot, options.signal, (completed, total, currentFile) => progress?.({ phase: "verifying", completed, total, currentFile }), secureScope, options.testOnlySecureReadHooks);
+    const verified = await discoverAndRead(safeRoot, options.signal, (completed, total, currentFile) => progress?.({ phase: "verifying", completed, total, currentFile }), secureScope, options.testOnlySecureReadHooks, policy);
     const initialMap = new Map(sources.map((item) => [item.projectPath, item.contentHash])); const verifiedMap = new Map(verified.sources.map((item) => [item.projectPath, item.contentHash]));
     const drift = compareSourceMaps(initialMap, verifiedMap);
     if (drift.added.length || drift.removed.length || drift.changed.length || verified.discovery.failures.length) throw new SafeDiagnosticError("INDEX_SOURCE_CHANGED");
     throwIfAborted(options.signal);
     progress?.({ phase: "persisting", completed: sources.length, total: sources.length });
     const store = this.storeForRepository(repositoryId);
-    store.saveSnapshot(snapshot, sources.map((item) => ({ filePath: item.projectPath, contentHash: item.contentHash, language: item.language, content: item.content })));
+    store.saveSnapshot(snapshot, sources.map((item) => ({ filePath: item.projectPath, contentHash: item.contentHash, language: item.language, content: item.content })), true, settings.revision);
     throwIfAborted(options.signal);
     this.snapshotStores.set(snapshotId, store); this.current = overviewFromSnapshot(snapshot); this.questions.clear();
     return snapshot;
@@ -185,10 +203,17 @@ export class XRayApplication {
 
   async getSnapshotState(ref: SnapshotRef): Promise<SnapshotState> {
     const { snapshot } = this.requireSnapshot(ref); const checkedAt = new Date().toISOString();
-    const validationLimitations = ["在重新发现与逐文件读取完成时校验；普通文件系统不提供跨文件原子快照", "只验证已声明支持的五类配置文件；不跟踪外部 extends 或解释器/编译器的隐式配置"];
+    const validationLimitations = ["在重新发现与逐文件读取完成时校验；普通文件系统不提供跨文件原子快照", "验证本地项目排除配置及五类源码配置文件；不跟踪外部 extends 或解释器/编译器的隐式配置"];
     if (snapshot.analysisIdentity.graphIrVersion.startsWith("legacy-")) return { ...ref, status: "missing", snapshotAvailability: "legacy-missing-source", changedFiles: [], addedFiles: [], removedFiles: [], missingFiles: ["<旧版快照未保存源码>"], configurationChanged: true, validationLimitations, checkedAt };
+    const settingsStore = this.storeForRepository(snapshot.repositoryId);
+    let settings: ReturnType<GraphStore["loadIgnoreSettings"]>;
+    try { settings = settingsStore.loadIgnoreSettings(snapshot.repositoryId); }
+    catch { return { ...ref, status: "unavailable", snapshotAvailability: "available", changedFiles: [], addedFiles: [], removedFiles: [], missingFiles: [], configurationChanged: false, validationLimitations: [...validationLimitations, safeDiagnostic("IGNORE_SETTINGS_INVALID").reason], checkedAt }; }
+    const policy = createIgnorePolicy(settings.rules);
+    const policyChanged = snapshot.analysisIdentity.ignorePolicy ? snapshot.analysisIdentity.ignorePolicy.hash !== policy.hash : policy.rules.length > 0;
+    if (policyChanged) return { ...ref, status: "stale", snapshotAvailability: "available", changedFiles: [], addedFiles: [], removedFiles: [], missingFiles: [], configurationChanged: true, validationLimitations, checkedAt };
     let current: Awaited<ReturnType<typeof discoverAndRead>>;
-    try { current = await discoverAndRead(snapshot.rootPath); }
+    try { current = await discoverAndRead(snapshot.rootPath, undefined, undefined, undefined, undefined, policy); settingsStore.assertIgnoreRevision(snapshot.repositoryId, settings.revision); }
     catch { return { ...ref, status: "unavailable", snapshotAvailability: "available", changedFiles: [], addedFiles: [], removedFiles: [], missingFiles: [], configurationChanged: false, validationLimitations, checkedAt }; }
     const expected = new Map(snapshot.sourceFiles.map((item) => [item.filePath, item.contentHash])); const actual = new Map(current.sources.map((item) => [item.projectPath, item.contentHash]));
     const drift = compareSourceMaps(expected, actual); const configPaths = new Set([...drift.added, ...drift.removed, ...drift.changed].filter(isAnalysisConfig));
@@ -210,7 +235,7 @@ export class XRayApplication {
   getFlow(ref: SnapshotRef, nodeId: string, depth = 3): FlowResult { return queryFlow(this.requireSnapshot(ref).snapshot, nodeId, depth); }
 
   async explainFeature(ref: SnapshotRef, query: string): Promise<FeatureExplanation> {
-    const snapshot = await this.requireCurrentSnapshot(ref); const seeds = searchNodes(snapshot, expandFeatureQuery(query), 12).sort((a, b) => Number(b.kind === "endpoint") - Number(a.kind === "endpoint"));
+    const snapshot = await this.requireCurrentSnapshot(ref); this.assertSnapshotPolicyCurrent(snapshot); const seeds = searchNodes(snapshot, expandFeatureQuery(query), 12).sort((a, b) => Number(b.kind === "endpoint") - Number(a.kind === "endpoint"));
     if (seeds.length === 0) return { ...ref, title: `解释：${query}`, summary: "索引中没有找到足够的相关符号。", structure: "related-evidence", steps: [], unknowns: ["请尝试使用路由、函数名、类名或文件名中的关键词。"] };
     const root = seeds[0]!; const bounded = this.requireStore(ref).queryGraph({ version: GRAPH_QUERY_VERSION, ...ref, rootNodeIds: [root.id], view: "call", direction: "outgoing", maxDepth: 6, maxNodes: 80, maxEdges: 160, maxWork: 1200, confidences: ["verified", "inferred", "unknown"] });
     const path = firstCallPath(root, bounded.nodes, bounded.edges);
@@ -244,39 +269,42 @@ export class XRayApplication {
   }
 
   async createChangeReport(input: ComparisonRequest, options: ComparisonOptions = {}): Promise<ChangeReport> {
-    const base = this.requireSnapshot(input).snapshot; const progress = options.onProgress; throwIfAborted(options.signal);
+    const base = this.requireSnapshot(input).snapshot; const settings = this.storeForRepository(base.repositoryId).loadIgnoreSettings(base.repositoryId); const policy = createIgnorePolicy(settings.rules); const progress = options.onProgress; throwIfAborted(options.signal);
     progress?.({ phase: "capturing", completed: 0, total: 1 });
-    const captured = await captureComparison(base.rootPath, input.mode, input.parentNumber ?? 1, options.signal, options.testOnlySecureReadHooks ? { secureReadHooks: options.testOnlySecureReadHooks } : {}); throwIfAborted(options.signal);
+    const captured = await captureComparison(base.rootPath, input.mode, input.parentNumber ?? 1, options.signal, options.testOnlySecureReadHooks ? { secureReadHooks: options.testOnlySecureReadHooks } : {}, policy); throwIfAborted(options.signal);
     progress?.({ phase: "analyzing-left", completed: 0, total: captured.left.sources.length });
-    const leftSnapshot = await this.analyzeComparisonSide(base, captured.left, options.signal, (completed, total, currentFile) => progress?.({ phase: "analyzing-left", completed, total, currentFile }));
+    const leftSnapshot = await this.analyzeComparisonSide(base, captured.left, policy, settings.revision, options.signal, (completed, total, currentFile) => progress?.({ phase: "analyzing-left", completed, total, currentFile }));
     progress?.({ phase: "analyzing-right", completed: 0, total: captured.right.sources.length });
-    const rightSnapshot = await this.analyzeComparisonSide(base, captured.right, options.signal, (completed, total, currentFile) => progress?.({ phase: "analyzing-right", completed, total, currentFile }));
+    const rightSnapshot = await this.analyzeComparisonSide(base, captured.right, policy, settings.revision, options.signal, (completed, total, currentFile) => progress?.({ phase: "analyzing-right", completed, total, currentFile }));
     progress?.({ phase: "diffing", completed: 0, total: captured.changes.length });
     const files = captured.changes.map((change, index) => { const id = stableId(base.repositoryId, captured.captureFingerprint, String(index), change.oldPath ?? "", change.newPath ?? ""); const hunks = change.hunks.map((hunk, hunkIndex) => ({ id: stableId(id, "hunk", String(hunkIndex)), ...hunk })); const directChanges = mapDirectChanges(id, change.status, hunks, change.oldPath, change.newPath, leftSnapshot, rightSnapshot); const classified = classifyChangePath(change.newPath ?? change.oldPath ?? "", change.binary); return { id, ...change, ...classified, hunks, directChanges, analyzable: !change.binary && directChanges.some((item) => item.nodeId), ...(!change.binary && directChanges.some((item) => item.nodeId) ? {} : { unsupportedReason: change.binary ? "二进制内容不进行源码分析" : "两侧受支持源码图中没有可映射符号" }) } satisfies ChangeFile; });
     progress?.({ phase: "propagating", completed: 0, total: files.length });
     const impactPaths: ImpactPath[] = []; let usedWork = 0; let truncated = false; const truncationReasons = new Set<string>(); const store = this.storeForRepository(base.repositoryId);
     for (const [index, file] of files.entries()) { throwIfAborted(options.signal); const currentFile = file.newPath ?? file.oldPath; progress?.({ phase: "propagating", completed: index, total: files.length, ...(currentFile ? { currentFile } : {}) }); for (const direct of file.directChanges) { if (!direct.nodeId || impactPaths.length >= input.maxPaths || usedWork >= input.maxWork) { if (direct.nodeId) { truncated = true; truncationReasons.add(impactPaths.length >= input.maxPaths ? "路径数量预算" : "工作量预算"); } continue; } const snapshot = direct.side === "left" ? leftSnapshot : rightSnapshot; const remainingWork = Math.max(1, input.maxWork - usedWork); const paths = impactPathsForDirect(file.id, direct, snapshot, store, input.maxDepth, input.maxPaths - impactPaths.length, remainingWork); for (const path of paths.items) impactPaths.push(path); usedWork += paths.usedWork; if (paths.truncated) { truncated = true; truncationReasons.add(paths.reason); } } }
-    const left = comparisonSide(captured.left, leftSnapshot); const right = comparisonSide(captured.right, rightSnapshot); const createdAt = new Date().toISOString(); const queryBudget = { maxDepth: input.maxDepth, maxPaths: input.maxPaths, maxWork: input.maxWork }; const unmappedChanges = files.flatMap((file) => file.directChanges.filter((item) => !item.nodeId).map((item) => ({ changeId: file.id, side: item.side, reason: item.reason }))); const failures = [...left.completeness.failures.map((item) => ({ scope: `left:${item.filePath}`, code: item.code, ...(item.detailCode ? { detailCode: item.detailCode } : {}), reason: item.reason })), ...right.completeness.failures.map((item) => ({ scope: `right:${item.filePath}`, code: item.code, ...(item.detailCode ? { detailCode: item.detailCode } : {}), reason: item.reason }))]; const unknownEdgeCount = impactPaths.flatMap((path) => path.edges).filter((edge) => edge.confidence === "unknown" || Boolean(edge.unresolvedTarget)).length; const impactReasons = [...truncationReasons, ...(unknownEdgeCount ? [`${unknownEdgeCount} 条影响边目标未知`] : []), ...(failures.length ? ["一侧或两侧分析不完整"] : [])]; const completenessStatus = left.completeness.status === "partial" || right.completeness.status === "partial" || unmappedChanges.length > 0 || impactReasons.length > 0 ? "partial" : "complete"; let publicationStatus: ChangeReport["status"] = "current"; try { if (await comparisonStateFingerprint(base.rootPath, input.mode, options.signal) !== captured.captureFingerprint) publicationStatus = "stale"; } catch { publicationStatus = "missing"; }
+    const left = comparisonSide(captured.left, leftSnapshot); const right = comparisonSide(captured.right, rightSnapshot); const createdAt = new Date().toISOString(); const queryBudget = { maxDepth: input.maxDepth, maxPaths: input.maxPaths, maxWork: input.maxWork }; const unmappedChanges = files.flatMap((file) => file.directChanges.filter((item) => !item.nodeId).map((item) => ({ changeId: file.id, side: item.side, reason: item.reason }))); const failures = [...left.completeness.failures.map((item) => ({ scope: `left:${item.filePath}`, code: item.code, ...(item.detailCode ? { detailCode: item.detailCode } : {}), reason: item.reason })), ...right.completeness.failures.map((item) => ({ scope: `right:${item.filePath}`, code: item.code, ...(item.detailCode ? { detailCode: item.detailCode } : {}), reason: item.reason }))]; const unknownEdgeCount = impactPaths.flatMap((path) => path.edges).filter((edge) => edge.confidence === "unknown" || Boolean(edge.unresolvedTarget)).length; const impactReasons = [...truncationReasons, ...(unknownEdgeCount ? [`${unknownEdgeCount} 条影响边目标未知`] : []), ...(failures.length ? ["一侧或两侧分析不完整"] : [])]; const completenessStatus = left.completeness.status === "partial" || right.completeness.status === "partial" || unmappedChanges.length > 0 || impactReasons.length > 0 ? "partial" : "complete"; let publicationStatus: ChangeReport["status"] = "current"; try { if (await comparisonStateFingerprint(base.rootPath, input.mode, options.signal, undefined, undefined, policy) !== captured.captureFingerprint) publicationStatus = "stale"; } catch { publicationStatus = "missing"; }
     const report: ChangeReport = { version: CHANGESET_VERSION, id: stableId(base.repositoryId, captured.captureFingerprint, input.mode, leftSnapshot.snapshotId, rightSnapshot.snapshotId, JSON.stringify(queryBudget)), repositoryId: base.repositoryId, mode: input.mode, createdAt, left, right, captureFingerprint: captured.captureFingerprint, status: publicationStatus, files, impactPaths, queryBudget, completeness: { status: completenessStatus, unmappedChanges, impact: { status: impactReasons.length ? "partial" : "complete", reasons: impactReasons, unknownEdgeCount } }, truncated, truncationReasons: [...truncationReasons], failures, limitations: [...captured.limitations, "报告发布前再次核验当前 Git 身份；之后的变化由状态轮询识别，历史快照仍可读", "影响路径按稳定的广度优先顺序选择有限代表路径；不是全部可能路径", "影响路径来自对应侧静态 CALLS/HANDLES 或文件级 IMPORTS 反向可达，只表示可能影响，不证明运行时执行或必然损坏", "配置或分析器身份不同造成的图事实差异不会自动归因于某一行代码"] };
-    throwIfAborted(options.signal); progress?.({ phase: "persisting", completed: 0, total: 1 }); store.saveChangeReport(report); return report;
+    throwIfAborted(options.signal); progress?.({ phase: "persisting", completed: 0, total: 1 }); store.saveChangeReport(report, settings.revision); return report;
   }
 
   loadChangeReport(input: { repositoryId: string; reportId: string }): ChangeReport { const report = this.storeForRepository(input.repositoryId).loadChangeReport(input.reportId); if (!report || report.repositoryId !== input.repositoryId) throw new Error("变更报告不存在"); return report; }
-  async getChangeReportState(input: { repositoryId: string; reportId: string }): Promise<{ repositoryId: string; reportId: string; status: "current" | "stale" | "missing"; checkedAt: string; reason?: string }> { const report = this.loadChangeReport(input); const checkedAt = new Date().toISOString(); const leftSnapshot = this.requireSnapshot(report.left.snapshot).snapshot; try { const current = await comparisonStateFingerprint(leftSnapshot.rootPath, report.mode); return { ...input, status: current === report.captureFingerprint ? "current" : "stale", checkedAt, ...(current === report.captureFingerprint ? {} : { reason: "HEAD、index 或工作区已偏离报告捕获身份" }) }; } catch { return { ...input, status: "missing", checkedAt, reason: "Git 仓库或所需对象已不可访问" }; } }
+  async getChangeReportState(input: { repositoryId: string; reportId: string }): Promise<{ repositoryId: string; reportId: string; status: "current" | "stale" | "missing"; checkedAt: string; reason?: string }> { const report = this.loadChangeReport(input); const checkedAt = new Date().toISOString(); const leftSnapshot = this.requireSnapshot(report.left.snapshot).snapshot; try { const settingsStore = this.storeForRepository(input.repositoryId); const settings = settingsStore.loadIgnoreSettings(input.repositoryId); const policy = createIgnorePolicy(settings.rules); const oldPolicy = leftSnapshot.analysisIdentity.ignorePolicy; if (oldPolicy ? oldPolicy.hash !== policy.hash : policy.rules.length > 0) return { ...input, status: "stale", checkedAt, reason: "项目排除配置已变化" }; const current = await comparisonStateFingerprint(leftSnapshot.rootPath, report.mode, undefined, undefined, undefined, oldPolicy ? policy : undefined); settingsStore.assertIgnoreRevision(input.repositoryId, settings.revision); return { ...input, status: current === report.captureFingerprint ? "current" : "stale", checkedAt, ...(current === report.captureFingerprint ? {} : { reason: "HEAD、index 或工作区已偏离报告捕获身份" }) }; } catch { return { ...input, status: "missing", checkedAt, reason: "Git 仓库或所需对象已不可访问" }; } }
 
   async createOwnershipQuestions(input: OwnershipQuestionRequest): Promise<OwnershipQuestion[]> {
-    const snapshot = await this.requireCurrentSnapshot(input); const store = this.requireStore(input); const generated = createQuestions(snapshot, input, store.listOwnershipAttempts(snapshot.repositoryId));
+    const snapshot = await this.requireCurrentSnapshot(input); this.assertSnapshotPolicyCurrent(snapshot); const store = this.requireStore(input); const generated = createQuestions(snapshot, input, store.listOwnershipAttempts(snapshot.repositoryId));
     for (const question of generated) this.questions.set(questionKey(question), question); return generated;
   }
 
   async gradeOwnershipAnswer(submission: OwnershipSubmission): Promise<OwnershipGrade> {
-    const { snapshot, store } = this.requireSnapshot(submission); const state = await this.getSnapshotState(submission);
+    const { snapshot, store } = this.requireSnapshot(submission);
+    const settingsStore = this.storeForRepository(snapshot.repositoryId); const settingsRevision = settingsStore.loadIgnoreSettings(snapshot.repositoryId).revision;
+    const state = await this.getSnapshotState(submission);
     if (state.status !== "current") throw new SafeDiagnosticError("SNAPSHOT_NOT_CURRENT");
+    this.assertSnapshotPolicyCurrent(snapshot);
     const question = this.questions.get(questionKey(submission)); if (!question) throw new Error("题目不存在、已经完成或属于其他快照");
     const citations = validateCitations(snapshot, submission.citations, (filePath) => store.readSnapshotSource(snapshot.snapshotId, filePath)?.content);
     const grade = gradeAnswer(question, submission, snapshot, citations);
     const completedAt = new Date().toISOString(); const attempt: OwnershipAttempt = { repositoryId: snapshot.repositoryId, snapshotId: snapshot.snapshotId, attemptId: stableId(snapshot.snapshotId, question.id, completedAt), questionId: question.id, questionVersion: question.version, concept: question.concept, questionKind: question.kind, variantKey: question.variantKey, structuredAnswer: submission.structuredAnswer, citations: grade.validatedCitations, locationScore: grade.location.score, structureScore: grade.structure.score, passed: grade.passed, scoringVersion: OWNERSHIP_SCORING_VERSION, semanticText: submission.answer, completedAt, legacy: false };
-    store.saveOwnershipAttempt(attempt);
+    settingsStore.withIgnoreRevision(snapshot.repositoryId, settingsRevision, () => store.saveOwnershipAttempt(attempt, settingsStore === store ? settingsRevision : undefined));
     // Failed attempts remain retryable, while every attempt is still persisted.
     // The server-owned question keeps the deterministic rules out of the renderer.
     if (grade.passed) this.questions.delete(questionKey(question));
@@ -297,27 +325,36 @@ export class XRayApplication {
     const opensEmptyFile = stored.content.length === 0 && item?.kind === "file" && sameSpan(targetSpan, item.span) && targetSpan.startLine === 1 && targetSpan.startColumn === 0 && targetSpan.endLine === 1 && targetSpan.endColumn === 0;
     if (!opensEmptyFile) assertSpanWithinContent(targetSpan, stored.content);
     let workspaceStatus: "current" | "stale" | "missing" | "unavailable" = "current"; let currentHash: string | undefined;
-    try { currentHash = contentFingerprint(await readProjectFile(snapshot.rootPath, location.filePath)); if (currentHash !== stored.contentHash) workspaceStatus = "stale"; }
+    try {
+      const policy = createIgnorePolicy(this.storeForRepository(snapshot.repositoryId).loadIgnoreSettings(snapshot.repositoryId).rules);
+      if (["secret", "ignored"].includes(classifyProjectPath(location.filePath, policy))) workspaceStatus = "unavailable";
+      else { currentHash = contentFingerprint(await readProjectFile(snapshot.rootPath, location.filePath)); if (currentHash !== stored.contentHash) workspaceStatus = "stale"; }
+    }
     catch (error) { workspaceStatus = error instanceof Error && (error as NodeJS.ErrnoException).code === "ENOENT" ? "missing" : "unavailable"; }
     return { repositoryId: snapshot.repositoryId, snapshotId: snapshot.snapshotId, filePath: location.filePath, language: stored.language, content: stored.content, contentHash: stored.contentHash, workspaceStatus, ...(currentHash ? { currentHash } : {}), targetSpan, ...(item ? { evidence: item } : {}) };
   }
 
   close(): void { for (const store of new Set([this.legacyStore, ...this.stores.values()])) store.close(); }
 
-  private async analyzeComparisonSide(base: ProjectSnapshot, side: CapturedSide, signal?: AbortSignal, progress?: (completed: number, total: number, currentFile: string) => void): Promise<ProjectSnapshot> {
+  private async analyzeComparisonSide(base: ProjectSnapshot, side: CapturedSide, policy: IgnorePolicy, ignoreRevision: number, signal?: AbortSignal, progress?: (completed: number, total: number, currentFile: string) => void): Promise<ProjectSnapshot> {
     const sources: IndexedSource[] = side.sources.map((item) => ({ absolutePath: resolve(base.rootPath, item.projectPath), projectPath: item.projectPath, content: item.content, contentHash: item.contentHash, language: item.language }));
-    const analyzerVersions = Object.fromEntries(this.analyzers.map((item) => [item.id, item.version])); const analysisIdentity = { graphIrVersion: GRAPH_IR_VERSION, analyzerVersions, configurationHash: side.manifestFingerprint, sourceFingerprint: side.contentFingerprint }; const snapshotId = stableId(base.repositoryId, side.contentFingerprint, GRAPH_IR_VERSION, JSON.stringify(analyzerVersions), side.manifestFingerprint); const existing = this.storeForRepository(base.repositoryId).loadSnapshot(snapshotId); if (existing) { this.snapshotStores.set(snapshotId, this.storeForRepository(base.repositoryId)); return existing; }
+    const analyzerVersions = Object.fromEntries(this.analyzers.map((item) => [item.id, item.version])); const analysisIdentity = { graphIrVersion: GRAPH_IR_VERSION, analyzerVersions, configurationHash: configurationFingerprint(side.manifestFingerprint, policy), sourceFingerprint: side.contentFingerprint, ignorePolicy: policy }; const snapshotId = stableId(base.repositoryId, side.contentFingerprint, GRAPH_IR_VERSION, JSON.stringify(analyzerVersions), analysisIdentity.configurationHash); const existing = this.storeForRepository(base.repositoryId).loadSnapshot(snapshotId); if (existing) { this.snapshotStores.set(snapshotId, this.storeForRepository(base.repositoryId)); return existing; }
     const rootNodeId = stableId(base.repositoryId, "repository-root"); const nodes: GraphNode[] = [{ id: rootNodeId, snapshotId, kind: "repository", name: base.name, qualifiedName: base.rootPath, metadata: { sourceType: "git-comparison", comparisonSide: side.kind } }]; const edges: GraphEdge[] = []; const evidence: Evidence[] = []; const failures: ProjectSnapshot["health"]["failedFiles"] = []; const moduleIds = new Map<string, string>(); const typeScriptSources: Array<{ absolutePath: string; content: string }> = []; const pythonSources: Array<{ absolutePath: string; content: string }> = [];
     for (const [index, item] of sources.entries()) { throwIfAborted(signal); progress?.(index, sources.length, item.projectPath); const fileNodeId = stableId(base.repositoryId, "file", item.projectPath); const fileEvidenceId = stableId(snapshotId, item.projectPath, "file"); const span = wholeFileSpan(item.projectPath, item.content); nodes.push({ id: fileNodeId, snapshotId, kind: "file", name: basename(item.projectPath), qualifiedName: item.projectPath, language: item.language, filePath: item.projectPath, span, evidenceId: fileEvidenceId, metadata: { bytes: Buffer.byteLength(item.content), contentHash: item.contentHash, comparisonSide: side.kind } }); evidence.push({ id: fileEvidenceId, snapshotId, analyzer: "git-side-capture", analyzerVersion: CHANGESET_VERSION, kind: "file", confidence: "verified", reason: `源码来自不可变 ${side.kind} 捕获`, span }); const moduleName = moduleNameForPath(item.projectPath); let moduleId = moduleIds.get(moduleName); if (!moduleId) { moduleId = stableId(base.repositoryId, "module", moduleName); moduleIds.set(moduleName, moduleId); nodes.push({ id: moduleId, snapshotId, kind: "module", name: moduleName, qualifiedName: moduleName, metadata: {} }); edges.push({ id: stableId(snapshotId, rootNodeId, moduleId, "CONTAINS"), snapshotId, source: rootNodeId, target: moduleId, kind: "CONTAINS", confidence: "verified", evidenceId: fileEvidenceId, reason: "目录结构定义模块分组" }); } edges.push({ id: stableId(snapshotId, moduleId, fileNodeId, "CONTAINS"), snapshotId, source: moduleId, target: fileNodeId, kind: "CONTAINS", confidence: "verified", evidenceId: fileEvidenceId, reason: "文件位于该目录模块中" }); const analyzer = this.analyzers.find((candidate) => candidate.supports(item.absolutePath)); if (analyzer instanceof TypeScriptAnalyzer) typeScriptSources.push({ absolutePath: item.absolutePath, content: item.content }); else if (analyzer instanceof PythonAnalyzer) pythonSources.push({ absolutePath: item.absolutePath, content: item.content }); }
     const context = { rootPath: base.rootPath, repositoryId: base.repositoryId, snapshotId, ...(signal ? { abortSignal: signal } : {}) }; if (typeScriptSources.length) try { const analyzer = this.analyzers.find((item): item is TypeScriptAnalyzer => item instanceof TypeScriptAnalyzer)!; const result = await analyzer.analyzeProject(typeScriptSources, context, sources.filter((item) => isAnalysisConfig(item.projectPath)).map((item) => ({ absolutePath: item.absolutePath, content: item.content }))); nodes.push(...result.nodes); edges.push(...result.edges); evidence.push(...result.evidence); failures.push(...(result.failures ?? []).map((failure) => failureFromAnalyzerResult(base.rootPath, failure, "ANALYSIS_FAILED"))); } catch (error) { if (isAbort(error)) throw error; failures.push(failureFromError(base.rootPath, "<TypeScript Program>", error, "ANALYSIS_FAILED")); }
     if (pythonSources.length) try { const analyzer = this.analyzers.find((item): item is PythonAnalyzer => item instanceof PythonAnalyzer)!; const result = await analyzer.analyzeProject(pythonSources, context); nodes.push(...result.nodes); edges.push(...result.edges); evidence.push(...result.evidence); failures.push(...(result.failures ?? []).map((failure) => failureFromAnalyzerResult(base.rootPath, failure, "PYTHON_ANALYSIS_FAILED"))); } catch (error) { if (isAbort(error)) throw error; failures.push(failureFromError(base.rootPath, "<Python Project>", error, "PYTHON_ANALYSIS_FAILED")); }
     const known = new Set(nodes.map((node) => node.id)); for (const edge of edges) if (!known.has(edge.target) && edge.unresolvedTarget) { const kind = edge.kind === "CALLS" ? "unresolved-call" as const : edge.kind === "IMPORTS" && edge.unresolvedTarget.startsWith(".") ? "module" as const : "external-dependency" as const; nodes.push({ id: edge.target, snapshotId, kind, name: edge.unresolvedTarget, qualifiedName: edge.unresolvedTarget, metadata: { unresolved: true, referenceKind: kind === "module" ? "unresolved-module" : kind } }); known.add(edge.target); }
-    const languageCounts = sources.reduce<Record<string, number>>((counts, item) => ({ ...counts, [item.language]: (counts[item.language] ?? 0) + 1 }), {}); const excludedCount = side.unsupported.length + side.ignored.length + side.secrets.length + side.binary.length + side.oversized.length + side.submodules.length; const snapshot: ProjectSnapshot = { repositoryId: base.repositoryId, snapshotId, name: base.name, rootPath: base.rootPath, sourceType: "git", ...(side.revision ? { gitHead: side.revision } : {}), createdAt: new Date().toISOString(), analysisIdentity, sourceFiles: sources.map((item) => ({ filePath: item.projectPath, contentHash: item.contentHash, bytes: Buffer.byteLength(item.content), language: item.language })), nodes: [...new Map(nodes.map((node) => [node.id, node])).values()], edges: [...new Map(edges.map((edge) => [edge.id, edge])).values()], evidence: [...new Map(evidence.map((item) => [item.id, item])).values()], health: { status: failures.length || excludedCount ? "partial" : "ready", totalFiles: sources.length + excludedCount, indexedFiles: sources.length, skippedFiles: side.ignored.length + side.secrets.length + side.oversized.length, unsupportedFiles: side.unsupported.length + side.binary.length + side.submodules.length, ignoredByRule: [], failedFiles: failures, languageCounts, limitations: ["比较侧完整分析全部允许的受支持源码，不执行仓库代码", ...side.submodules.map((path) => `子模块只保留元数据：${path}`)] } }; const store = this.storeForRepository(base.repositoryId); store.saveSnapshot(snapshot, sources.map((item) => ({ filePath: item.projectPath, contentHash: item.contentHash, language: item.language, content: item.content })), false); this.snapshotStores.set(snapshotId, store); return snapshot;
+    const languageCounts = sources.reduce<Record<string, number>>((counts, item) => ({ ...counts, [item.language]: (counts[item.language] ?? 0) + 1 }), {}); const excludedCount = side.unsupported.length + side.ignored.length + side.secrets.length + side.binary.length + side.oversized.length + side.submodules.length; const snapshot: ProjectSnapshot = { repositoryId: base.repositoryId, snapshotId, name: base.name, rootPath: base.rootPath, sourceType: "git", ...(side.revision ? { gitHead: side.revision } : {}), createdAt: new Date().toISOString(), analysisIdentity, sourceFiles: sources.map((item) => ({ filePath: item.projectPath, contentHash: item.contentHash, bytes: Buffer.byteLength(item.content), language: item.language })), nodes: [...new Map(nodes.map((node) => [node.id, node])).values()], edges: [...new Map(edges.map((edge) => [edge.id, edge])).values()], evidence: [...new Map(evidence.map((item) => [item.id, item])).values()], health: { status: failures.length || excludedCount ? "partial" : "ready", totalFiles: sources.length + excludedCount, indexedFiles: sources.length, skippedFiles: side.ignored.length + side.secrets.length + side.oversized.length, unsupportedFiles: side.unsupported.length + side.binary.length + side.submodules.length, ignoredByRule: [...DEFAULT_IGNORE, ...policy.rules], failedFiles: failures, languageCounts, limitations: ["比较侧完整分析全部允许的受支持源码，不执行仓库代码", ...side.submodules.map((path) => `子模块只保留元数据：${path}`)] } }; const store = this.storeForRepository(base.repositoryId); store.saveSnapshot(snapshot, sources.map((item) => ({ filePath: item.projectPath, contentHash: item.contentHash, language: item.language, content: item.content })), false, ignoreRevision); this.snapshotStores.set(snapshotId, store); return snapshot;
   }
 
   private async requireCurrentSnapshot(ref: SnapshotRef): Promise<ProjectSnapshot> {
     const snapshot = this.requireSnapshot(ref).snapshot; const state = await this.getSnapshotState(ref);
-    if (state.status !== "current") throw new SafeDiagnosticError("SNAPSHOT_NOT_CURRENT"); return snapshot;
+    if (state.status !== "current") throw new SafeDiagnosticError("SNAPSHOT_NOT_CURRENT"); this.assertSnapshotPolicyCurrent(snapshot); return snapshot;
+  }
+
+  private assertSnapshotPolicyCurrent(snapshot: ProjectSnapshot): void {
+    const policy = createIgnorePolicy(this.storeForRepository(snapshot.repositoryId).loadIgnoreSettings(snapshot.repositoryId).rules);
+    if (snapshot.analysisIdentity.ignorePolicy ? snapshot.analysisIdentity.ignorePolicy.hash !== policy.hash : policy.rules.length > 0) throw new SafeDiagnosticError("SNAPSHOT_NOT_CURRENT");
   }
 
   private requireStore(ref: SnapshotRef): GraphStore {
@@ -397,12 +434,12 @@ function validateCitations(snapshot: ProjectSnapshot, citations: SourceCitation[
   return [...unique.values()];
 }
 
-async function discoverAndRead(rootPath: string, signal?: AbortSignal, onRead?: (completed: number, total: number, currentFile: string) => void, existingScope?: SecureReadScope, testHooks?: SecureReadTestHooks): Promise<{ discovery: Awaited<ReturnType<typeof discoverProject>>; sources: IndexedSource[] }> {
+async function discoverAndRead(rootPath: string, signal?: AbortSignal, onRead?: (completed: number, total: number, currentFile: string) => void, existingScope?: SecureReadScope, testHooks?: SecureReadTestHooks, policy?: IgnorePolicy): Promise<{ discovery: Awaited<ReturnType<typeof discoverProject>>; sources: IndexedSource[] }> {
   const scope = existingScope ?? await createSecureReadScope(rootPath);
   const effectiveRoot = scope.rootPath;
   try {
     let discovery: Awaited<ReturnType<typeof discoverProject>>;
-    try { discovery = await discoverProject(effectiveRoot, signal); }
+    try { discovery = await discoverProject(effectiveRoot, signal, undefined, policy); }
     catch (error) { if (isAbort(error)) throw error; throw new SafeDiagnosticError(diagnosticForError(error, "FILE_DISCOVERY_FAILED").code); }
     const sources: IndexedSource[] = [];
     for (const [index, absolutePath] of discovery.files.entries()) { throwIfAborted(signal); const projectPath = normalizeProjectPath(effectiveRoot, absolutePath); try { const content = await readSecureProjectFile(scope, absolutePath, { ...(signal ? { signal } : {}), ...(testHooks ? { testHooks } : {}) }); sources.push({ absolutePath, projectPath, content, contentHash: contentFingerprint(content), language: languageFromPath(projectPath) }); } catch (error) { if (isProjectPathSecurityError(error)) throw error; discovery.failures.push({ filePath: projectPath, ...diagnosticForError(error, "FILE_READ_FAILED") }); } onRead?.(index + 1, discovery.files.length, projectPath); }

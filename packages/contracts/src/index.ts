@@ -1,12 +1,25 @@
 import { z } from "zod";
 
 export const GRAPH_IR_VERSION = "1.3.0";
-export const TASK_PROTOCOL_VERSION = "1.1.0";
+export const TASK_PROTOCOL_VERSION = "1.2.0";
 export const GRAPH_QUERY_VERSION = "1.0.0";
 export const MODULE_OVERVIEW_VERSION = "1.0.0";
 export const CHANGESET_VERSION = "1.1.0";
 export const OWNERSHIP_QUESTION_VERSION = "2.0.0";
 export const OWNERSHIP_SCORING_VERSION = "2.1.0";
+
+export const IGNORE_POLICY_VERSION = "1.0.0";
+// Exclusion-only, root-relative grammar. This schema is shared by IPC and storage.
+export const ignoreRuleSchema = z.string().trim().min(1).max(256).refine((rule) => {
+  if (/[\\\\:!\[\]{}()\x00-\x1f\x7f]/.test(rule) || rule.startsWith("/")) return false;
+  const parts = rule.replace(/\/$/, "").split("/");
+  return parts.every(part => part !== "" && part !== "." && part !== ".." && (!part.includes("**") || part === "**"));
+}, "只允许项目根目录相对排除规则，支持 *、? 和独立路径段 **").transform(rule => (rule.endsWith("/") ? `${rule}**` : rule).toLowerCase());
+export const ignoreRulesSchema = z.array(ignoreRuleSchema).max(100).transform(rules => [...new Set(rules)].sort());
+export const projectIgnoreSettingsSchema = z.object({ version: z.literal(IGNORE_POLICY_VERSION), revision: z.number().int().nonnegative(), rules: ignoreRulesSchema }).strict();
+export type ProjectIgnoreSettings = z.infer<typeof projectIgnoreSettingsSchema>;
+export const ignorePolicySchema = z.object({ version: z.literal(IGNORE_POLICY_VERSION), rules: ignoreRulesSchema, hash: z.string().min(1) }).strict();
+export type IgnorePolicy = z.infer<typeof ignorePolicySchema>;
 
 export const safeDiagnosticCodeSchema = z.enum([
   "FILE_DISCOVERY_FAILED", "FILE_READ_FAILED", "FILE_ACCESS_FAILED", "ANALYSIS_FAILED",
@@ -14,6 +27,7 @@ export const safeDiagnosticCodeSchema = z.enum([
   "SECURE_READER_UNAVAILABLE", "PROJECT_PATH_REJECTED", "SECURE_READ_FAILED", "NATIVE_MODULE_UNAVAILABLE",
   "GIT_COMPARISON_FAILED", "GIT_REPOSITORY_INVALID", "GIT_NO_COMMIT", "GIT_CONFLICT", "GIT_MISSING_BASE", "GIT_PATH_REJECTED", "GIT_WORKTREE_UNSTABLE",
   "WORKER_FAILED", "TASK_FAILED", "SNAPSHOT_NOT_CURRENT", "INDEX_SOURCE_CHANGED", "SNAPSHOT_VALIDATION_UNAVAILABLE", "LEGACY_DIAGNOSTIC_REDACTED",
+  "IGNORE_SETTINGS_INVALID", "IGNORE_SETTINGS_CONFLICT", "IGNORE_SETTINGS_BUSY",
 ]);
 export type SafeDiagnosticCode = z.infer<typeof safeDiagnosticCodeSchema>;
 export const safeDiagnosticDetailCodeSchema = z.union([
@@ -23,6 +37,9 @@ export const safeDiagnosticDetailCodeSchema = z.union([
 export type SafeDiagnosticDetailCode = z.infer<typeof safeDiagnosticDetailCodeSchema>;
 
 const SAFE_DIAGNOSTIC_MESSAGES: Record<SafeDiagnosticCode, string> = {
+  IGNORE_SETTINGS_INVALID: "项目排除配置无效或已损坏；已停止读取，请修正规则",
+  IGNORE_SETTINGS_CONFLICT: "项目排除配置已变化；请刷新后重试",
+  IGNORE_SETTINGS_BUSY: "索引或比较任务进行中；请在结束后重试保存",
   FILE_DISCOVERY_FAILED: "无法读取项目文件清单（详情已隐藏）",
   FILE_READ_FAILED: "无法读取项目文件（详情已隐藏）",
   FILE_ACCESS_FAILED: "无法访问项目文件（详情已隐藏）",
@@ -134,6 +151,11 @@ export type Confidence = z.infer<typeof confidenceSchema>;
 
 export const snapshotRefSchema = z.object({ repositoryId: z.string().min(1), snapshotId: z.string().min(1) });
 export type SnapshotRef = z.infer<typeof snapshotRefSchema>;
+export const ignoreSettingsRequestSchema = snapshotRefSchema.extend({ repositoryId: z.string().regex(/^[a-zA-Z0-9_-]{1,128}$/) }).strict();
+export const saveIgnoreSettingsRequestSchema = ignoreSettingsRequestSchema.extend({ expectedRevision: z.number().int().nonnegative(), rules: ignoreRulesSchema }).strict();
+export type SaveIgnoreSettingsRequest = z.infer<typeof saveIgnoreSettingsRequestSchema>;
+export const ignoreSettingsResponseSchema = snapshotRefSchema.extend({ settings: projectIgnoreSettingsSchema, policy: ignorePolicySchema, defaultRules: z.array(z.string()), snapshotPolicy: ignorePolicySchema.optional() });
+export type IgnoreSettingsResponse = z.infer<typeof ignoreSettingsResponseSchema>;
 
 export const sourceSpanSchema = z.object({
   filePath: z.string().min(1),
@@ -187,6 +209,7 @@ export const sourceFileIdentitySchema = z.object({ filePath: z.string(), content
 export type SourceFileIdentity = z.infer<typeof sourceFileIdentitySchema>;
 export const analysisIdentitySchema = z.object({
   graphIrVersion: z.string(), analyzerVersions: z.record(z.string(), z.string()), configurationHash: z.string(), sourceFingerprint: z.string(),
+  ignorePolicy: ignorePolicySchema.optional(),
 });
 export type AnalysisIdentity = z.infer<typeof analysisIdentitySchema>;
 
@@ -437,6 +460,8 @@ export const indexTaskEventSchema = z.discriminatedUnion("type", [
 export type IndexTaskEvent = z.infer<typeof indexTaskEventSchema>;
 
 export const workerRequestSchema = z.discriminatedUnion("operation", [
+  z.object({ requestId: z.string(), operation: z.literal("get-ignore-settings"), ref: ignoreSettingsRequestSchema }),
+  z.object({ requestId: z.string(), operation: z.literal("save-ignore-settings"), input: saveIgnoreSettingsRequestSchema }),
   z.object({ requestId: z.string(), operation: z.literal("start-index"), taskId: z.string(), rootPath: z.string(), sourceType: z.enum(["local", "git"]), branch: z.string().optional() }),
   z.object({ requestId: z.string(), operation: z.literal("cancel-index"), taskId: z.string() }),
   z.object({ requestId: z.string(), operation: z.literal("retry-index"), taskId: z.string() }),
@@ -471,6 +496,8 @@ export const workerResponseSchema = z.union([
 export type WorkerResponse = z.infer<typeof workerResponseSchema>;
 
 export interface XRayApi {
+  getIgnoreSettings(ref: SnapshotRef): Promise<IgnoreSettingsResponse>;
+  saveIgnoreSettings(input: SaveIgnoreSettingsRequest): Promise<IgnoreSettingsResponse>;
   selectLocalProject(): Promise<IndexTaskHandle | null>;
   importLocalProject(rootPath: string): Promise<IndexTaskHandle>;
   importGitProject(input: z.infer<typeof importGitInputSchema>): Promise<IndexTaskHandle>;
@@ -501,6 +528,7 @@ export interface XRayApi {
 }
 
 export const IPC_CHANNELS = {
+  getIgnoreSettings: "project:ignore-get", saveIgnoreSettings: "project:ignore-save",
   selectLocalProject: "project:select-local", importLocalProject: "project:import-local", importGitProject: "project:import-git",
   cancelIndex: "index:cancel", retryIndex: "index:retry", indexEvent: "index:event", getCurrentProject: "project:current", getSnapshotState: "snapshot:state",
   listModules: "graph:list-modules", moduleOverview: "graph:module-overview", expandModule: "graph:expand-module", moduleRelationEdges: "graph:module-relation-edges", search: "graph:search", queryGraph: "graph:query", getEvidence: "evidence:get", findEvidence: "evidence:range",

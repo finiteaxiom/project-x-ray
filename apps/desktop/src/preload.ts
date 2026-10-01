@@ -2,6 +2,8 @@ import { contextBridge, ipcRenderer } from "electron";
 import { IPC_CHANNELS, comparisonTaskEventSchema, indexTaskEventSchema, type XRayApi } from "@project-xray/contracts";
 
 const api: XRayApi = {
+  getIgnoreSettings: (ref) => ipcRenderer.invoke(IPC_CHANNELS.getIgnoreSettings, ref),
+  saveIgnoreSettings: (input) => ipcRenderer.invoke(IPC_CHANNELS.saveIgnoreSettings, input),
   selectLocalProject: () => ipcRenderer.invoke(IPC_CHANNELS.selectLocalProject),
   importLocalProject: (rootPath) => ipcRenderer.invoke(IPC_CHANNELS.importLocalProject, rootPath),
   importGitProject: (input) => ipcRenderer.invoke(IPC_CHANNELS.importGitProject, input),

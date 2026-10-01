@@ -50,6 +50,8 @@ async function handle(request: WorkerRequest): Promise<unknown> {
       const prior = retries.get(request.taskId); if (!prior) throw new Error("找不到可重试任务");
       void start({ ...prior, requestId: request.requestId, taskId: request.taskId }); return { accepted: true };
     }
+    case "get-ignore-settings": return application.getIgnoreSettings(request.ref);
+    case "save-ignore-settings": return application.saveIgnoreSettings(request.input);
     case "get-current": return application.getCurrentProject();
     case "get-state": return application.getSnapshotState(request.ref);
     case "list-modules": return application.listModules(request.input);

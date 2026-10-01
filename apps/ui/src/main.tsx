@@ -7,6 +7,8 @@ import "./styles.css";
 if (!window.xray) {
   const desktopOnly = async (): Promise<never> => { throw new Error("此操作仅在 Project X-Ray 桌面端可用"); };
   const previewApi: XRayApi = {
+    getIgnoreSettings: async () => { throw new Error("请在桌面应用中配置排除规则"); },
+    saveIgnoreSettings: async () => { throw new Error("请在桌面应用中配置排除规则"); },
     getCurrentProject: async () => null,
     selectLocalProject: desktopOnly,
     importLocalProject: desktopOnly,

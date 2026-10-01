@@ -2,6 +2,9 @@ import { createHash } from "node:crypto";
 import { realpath, stat } from "node:fs/promises";
 import { dirname, extname, relative, resolve, sep } from "node:path";
 import fg from "fast-glob";
+import { createIgnorePolicy, isCustomIgnored } from "./ignore-policy.js";
+import type { IgnorePolicy } from "@project-xray/contracts";
+export { createIgnorePolicy, matchesIgnoreRule, configurationFingerprint } from "./ignore-policy.js";
 import { diagnosticForError, type Evidence, type GraphEdge, type GraphNode, type SafeDiagnosticCode, type SafeDiagnosticDetailCode } from "@project-xray/contracts";
 import { createSecureReadScope, readSecureProjectFile } from "./secure-read.js";
 export { createSecureReadScope, isProjectPathSecurityError, ProjectPathSecurityError, readProjectFileSecure, readSecureProjectFile, readSecureProjectFileBuffer, type SecureReadScope, type SecureReadTestHooks } from "./secure-read.js";
@@ -55,9 +58,10 @@ const MANIFEST_NAMES = new Set<string>(ANALYSIS_CONFIG_NAMES);
 const HARD_DIRECTORY_IGNORE = ["**/.git/**", "**/node_modules/**", "**/.venv/**", "**/venv/**", "**/__pycache__/**", "**/dist/**", "**/build/**", "**/out/**", "**/coverage/**", "**/.next/**", "**/.turbo/**"];
 const SECRET_FILE = /(^|\/)(\.env[^/]*|[^/]+\.(pem|key|pfx|p12))$/i;
 export type ProjectPathClass = "source" | "config" | "secret" | "ignored" | "unsupported";
-export function classifyProjectPath(projectPath: string): ProjectPathClass {
+export function classifyProjectPath(projectPath: string, policy?: IgnorePolicy): ProjectPathClass {
   const normalized = projectPath.replaceAll("\\", "/");
   if (SECRET_FILE.test(normalized)) return "secret";
+  if (policy && isCustomIgnored(normalized, policy)) return "ignored";
   if (normalized.endsWith(".min.js") || normalized.endsWith(".map") || /(^|\/)(\.git|node_modules|\.venv|venv|__pycache__|dist|build|out|coverage|\.next|\.turbo)(\/|$)/i.test(normalized)) return "ignored";
   const fileName = normalized.split("/").at(-1) ?? ""; if (MANIFEST_NAMES.has(fileName)) return "config";
   return SOURCE_EXTENSIONS.has(extname(normalized).toLowerCase()) ? "source" : "unsupported";
@@ -81,7 +85,7 @@ export function throwIfAborted(signal?: AbortSignal): void {
   if (signal?.aborted) throw new DOMException("索引任务已取消", "AbortError");
 }
 
-export async function discoverProject(rootPath: string, signal?: AbortSignal, testHooks?: ProjectDiscoveryTestHooks): Promise<ProjectDiscovery> {
+export async function discoverProject(rootPath: string, signal?: AbortSignal, testHooks?: ProjectDiscoveryTestHooks, policy: IgnorePolicy = createIgnorePolicy()): Promise<ProjectDiscovery> {
   const resolvedRoot = await realpath(rootPath);
   throwIfAborted(signal);
   const entries = await fg("**/*", { cwd: resolvedRoot, absolute: true, onlyFiles: true, dot: true, followSymbolicLinks: false, ignore: HARD_DIRECTORY_IGNORE, suppressErrors: true });
@@ -96,7 +100,7 @@ export async function discoverProject(rootPath: string, signal?: AbortSignal, te
   for (const entry of entries) {
     throwIfAborted(signal);
     const projectPath = normalizeProjectPath(resolvedRoot, entry);
-    const classification = classifyProjectPath(projectPath);
+    const classification = classifyProjectPath(projectPath, policy);
     if (classification === "secret") { ignoredFiles += 1; secretPaths.push(projectPath); continue; }
     if (classification === "ignored") { ignoredFiles += 1; ignoredPaths.push(projectPath); continue; }
     if (classification === "unsupported") { unsupportedFiles += 1; unsupportedPaths.push(projectPath); continue; }
@@ -111,7 +115,7 @@ export async function discoverProject(rootPath: string, signal?: AbortSignal, te
       failures.push({ filePath: projectPath, ...diagnosticForError(error, "FILE_DISCOVERY_FAILED") });
     }
   }
-  return { files: files.sort((a, b) => a.localeCompare(b)), unsupportedFiles, ignoredFiles, unsupportedPaths: unsupportedPaths.sort(), ignoredPaths: ignoredPaths.sort(), secretPaths: secretPaths.sort(), oversizedPaths: oversizedPaths.sort(), ignoredByRule: HARD_DIRECTORY_IGNORE, failures };
+  return { files: files.sort((a, b) => a.localeCompare(b)), unsupportedFiles, ignoredFiles, unsupportedPaths: unsupportedPaths.sort(), ignoredPaths: ignoredPaths.sort(), secretPaths: secretPaths.sort(), oversizedPaths: oversizedPaths.sort(), ignoredByRule: [...DEFAULT_IGNORE, ...policy.rules], failures };
 }
 
 export async function discoverProjectFiles(rootPath: string): Promise<string[]> {
