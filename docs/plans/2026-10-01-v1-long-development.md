@@ -73,7 +73,7 @@ Sol 先测量当前全量索引/查询/内存基线，设计按语言的保守�
 | 1C-1 契约与llm证据/提供商 | 纯底层切片已验收并集成 | Sol/协调方 | 5848fe5；独立及集成后96测试通过，两包及desktop/ui类型通过，无真实网络/GUI |
 | 1C-2A graph/application策略与任务 | 后台核心已验收并集成 | Sol/协调方 | 取消修正后独立161项/三包类型通过；独立真实索引+SQL两等待点cancelled/dispatch0/result空；5665245提交，32dbae8合并，集成93项/五包类型通过；非GUI/真实网络 |
 | 1C-2B-1 生产provider桥接/desktop协议 | 独立验收并集成 | Sol/协调方 | 0cdc683提交、8e99f82合并；独立203项/五包类型，实际索引至正文摘要/同步fetch/结果与事件守卫验证；集成72项/三包类型通过；非真实网络/IPC/GUI |
-| 1C-2B-2A Windows凭据原生适配器 | 待派发实现 | Sol | 已接受ADR0007固定生产/编译期独立测试target；无环境秘密来源/任意target；开发先冻结，编译与Node/Electron运行由单协调窗口安排 |
+| 1C-2B-2A Windows凭据原生适配器 | 已派发实现 | Sol | 已接受ADR0007固定生产/编译期独立测试target；无环境秘密来源/任意target；开发先冻结，编译与Node/Electron运行由单协调窗口安排 |
 | 1C-2B-2B worker/broker/main/preload安全接线 | 待2B-2A稳定 | Sol | 权威context提交、sender/窗口/一次终态/watchdog/恢复与产物；全部稳定进入主checkout后再派UI，真实GUI仍开放 |
 | 1D 解释/授权 UI | 待契约冻结 | Luna | 后端契约进入主checkout后派发 |
 | 1E 独立测试、真实 GUI/远程与集成 | 待交付 | 协调方 | 实际代码/产物，远程密钥与项目选择未完成 |
@@ -89,7 +89,7 @@ Sol 先测量当前全量索引/查询/内存基线，设计按语言的保守�
 
 2B-1范围补充：实际生产remote-provider直接导入已有llm workspace，而desktop尚未声明该依赖；协调方核对代码后允许只追加desktop/package.json的@project-xray/llm workspace依赖及lock对应importer，可offline/ignore-scripts链接已存在依赖。不增加第三方runtime/SDK、不借跨包私有node_modules、不提前加node-gyp/native接线；其他package/scripts范围保持不变。该补充是现有生产桥接的必需依赖声明，不扩大产品能力。
 
-2B-2按风险再拆稳定边界：先实现Windows Credential Manager原生模块与窄TS适配器，再实现worker/broker/main/preload。2B-2A目标是固定自有target的状态/读/写/删除及失败关闭；生产模块固定com.projectxray.desktop/openai/api-key/v1，测试模块编译为独立固定test target，不接受用户target或环境切换，不把测试模块复制进生产产物。1–2048 UTF-8字节、Win32上限、编码/控制字符双层校验、零化/CredFree及固定错误；无SQLite/safeStorage/env回退。仅desktop新增windows-credentials.ts/test、native/windows_credentials.cc/binding.gyp、scripts/build-credentials.cjs/copy-credentials.cjs/credentials-smoke.cjs/credentials-electron-smoke.cjs、两脚本对应测试与本批记录；desktop/package及lock仅同版本node-gyp12.4.0 dev声明/本批脚本，AGENTS只合格小修。不得先改main/preload/worker/tsup/contracts/application/graph/UI。先纯测试与类型冻结，实际native编译/Node/Electron/portable验收按协调窗口分阶段，缺模块/非Windows明确unavailable且不删兼容代码。该切片不代表真实生产凭据或第一批E2E完成。
+2B-2按风险再拆稳定边界：先实现Windows Credential Manager原生模块与窄TS适配器，再实现worker/broker/main/preload。2B-2A目标是固定自有target的状态/读/写/删除及失败关闭；生产模块固定com.projectxray.desktop/openai/api-key/v1，测试模块编译为独立固定test target，不接受用户target或环境切换，不把测试模块复制进生产产物。1–2048 UTF-8字节、Win32上限、编码/控制字符双层校验、零化/CredFree及固定错误；无SQLite/safeStorage/env回退。仅desktop新增windows-credentials.ts/test、native/windows_credentials.cc/binding.gyp、scripts/build-credentials.cjs/copy-credentials.cjs/credentials-smoke.cjs/credentials-electron-smoke.cjs、windows-credentials-scripts.test.ts与本批记录；desktop/package及lock仅同版本node-gyp12.4.0 dev声明/本批脚本，AGENTS只合格小修。不得先改main/preload/worker/tsup/contracts/application/graph/UI。先纯测试与类型冻结，实际native编译/Node/Electron/portable验收按协调窗口分阶段，缺模块/非Windows明确unavailable且不删兼容代码。该切片不代表真实生产凭据或第一批E2E完成。
 
 ## 自动跟进
 
