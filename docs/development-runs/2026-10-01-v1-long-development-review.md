@@ -207,3 +207,21 @@ Luna游标`:18`idle、原4新增文件冻结；完整核对runner/child/test与�
 另一独立协议复现：复制自己正常smoke的summary，仅将canonicalFactsEqual=false，保留passed=true；自建Node child仅打印该completed/OK协议消息。runControlledChild返回exit0/closed true、protocolError null、completed/passed true/check false。父边界接受矛盾门禁，runBaseline目前可把这样的报告计为有效。纯测试协议数据，不是生产远程替身或用户项目运行。
 
 已向原Luna派原四文件内明确修正：成功/失败/取消均释放采样资源，真实child终态后可自行close；父边界校验固定必需11检查、passed/failureCodes/terminal逻辑一致，缺项/false/矛盾均拒绝并不计validPair。补实际child取消/失败及协议回归，旧7项不替代新复验；不扩展参数/依赖或修改产品，保持协调文档与原文件。工具未接受、未暂存/提交；候选经验等修正证据后评估，不因本次失败先增加规则。
+
+实际Git收尾：三个已审协调文档以`bf2ed806dadf395bb594cd269f4bba8995220864`提交；再次核对origin为deeplearner-ui/project-x-ray，普通push main exit0，ls-remote确认origin/main同SHA。该版本包含已接受后台实现5665245/集成32dbae8及审查记录，Luna四文件未提交并保留。GUI与真实提供商未执行，不因Git成功关闭相关验收。
+
+自动跟进维护：核对同一project-x-ray任务配置后，通过automation_update仅将过期阶段/固定cursor段改为读取当前计划、最新审查及实际聊天/Git；移除已接受1C-2A仍待修的旧说明。保持原任务、双线程、ACTIVE、15分钟间隔、目标审查聊天及静默通知边界，无新增定时器或授权扩展；已记录工具阻碍仅有恢复迹象才重试，不周期重复通知。工具返回update/ACTIVE，读取配置确认新队列指令生效、过期核心状态移除。这是协调维护，不是开发交付、GUI验证或AGENTS工程经验。
+
+2B-1依赖范围补充：紧凑状态指出desktop缺llm声明；只读核对Sol实际remote-provider.ts直接导入llm、desktop/package.json仅有application/contracts等，确认不能依赖传递链接作为生产依赖。已向原Sol批准只追加desktop/package的既有llm workspace依赖及lock对应importer，自己的checkout可offline/ignore-scripts链接；不增加runtime/SDK，不提前加node-gyp/native或改其他接线。没有运行正在编辑批次的回归、合并或新增验收通过；原两批仍实现/修正中。该必要依赖声明及协作决定不作为AGENTS经验。
+
+## 3B-L 修正独立复验（2026-10-02 01:09–01:11）
+
+Luna最新游标`:22`idle/原四文件冻结；实际main基线bf2ed80，只有该四新增文件与协调方三文档变化。复核measureIndex无条件finally清理RSS interval、finish幂等；父边界严格核验固定11布尔门禁、failureCodes/总passed/terminal一致性，只有正常exit0且未强停、无协议错误的completed/OK计有效样本。修改未触及产品模块、package/lock或AGENTS。
+
+独立运行`pnpm exec vitest run benchmarks/local-index-baseline.test.ts --maxWorkers=1 --no-file-parallelism`：9 passed、exit0，无skip。独立小样例`pnpm exec tsx benchmarks/local-index-baseline.ts --runs 1 --timeout-ms 60000`：runId`d813afc9-4376-46f5-ac48-6d92361d668f`，completed/validPairCount1，11门禁全true；15节点、28/28证据实际读取及cold/warm导航摘要一致。冷395.7006ms、无变化全量reindex262.4114ms仅一次三文件混合TS/Python工具smoke，不能外推性能或声称增量收益，Node RSS不含Python。
+
+另用独立stdin脚本直接spawn真实索引child、首次cold progress发送限定cancel：runId`6291dd16-9b27-4d65-82a9-5f1f5eb76176`，cancelled/CANCELLED、exit0、终态后800ms内自行close，未使用强制清理。将本轮正常报告的canonicalFactsEqual单独改false、passed仍true，通过自建Node协议child送入父边界：CHILD_PROTOCOL_INVALID、terminal未保留、isCompletedChildRun=false，closed/exit0，不计有效样本。仅测试协议/自建样例，无网络、外部项目执行、目录删除或真实GUI。
+
+接受3B-L工具切片，首个失败复现与修正门槛已关闭；规模样本/环境、重启查询、增量算法及GUI仍待后续。开发记录真实区分产品缺陷与测试/环境；本轮AGENTS 0条，资源清理、运行边界和充分回归已被既有规则覆盖，不重复新增。仅对应已验收文件可Git收尾，具体版本在实际动作后记录。
+
+Sol最新游标`:23`idle，1C-2B-1冻结11文件，仍基线32dbae8；下一步核对实际差异、协议与同步dispatch/正文摘要，并独立运行回归。开发方203测试/类型结果尚未提升为协调验收；没有提前派2B-2或UI。

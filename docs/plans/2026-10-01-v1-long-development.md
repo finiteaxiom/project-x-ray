@@ -78,13 +78,15 @@ Sol 先测量当前全量索引/查询/内存基线，设计按语言的保守�
 | 1E 独立测试、真实 GUI/远程与集成 | 待交付 | 协调方 | 实际代码/产物，远程密钥与项目选择未完成 |
 | 2 所有权语义评价 | 待设计 | 双线程 | 第一批接口稳定，真实远程阻碍分别保留 |
 | 3A-L 增量索引基线/验收设计 | 文档准备已接受 | Luna/协调方 | 两文件冻结，对照实际索引/规范化/benchmark源码复审；无性能测量或增量实现/GUI结果 |
-| 3B-L 隔离本地基线工具 | 独立审查退回修正 | Luna | 原四文件；正常7测试/smoke通过，额外实际child取消发现RSS timer泄漏、父协议接受矛盾门禁；未提交，修正后重新验收 |
+| 3B-L 隔离本地基线工具 | 修正后工具切片已验收 | Luna/协调方 | 原四文件；独立9测试、真实child取消自行退出、矛盾门禁拒绝及小样例11门禁通过；不是规模性能、增量实现或GUI验收 |
 | 4A Windows发布链/验收设计 | 修订后设计已接受 | Luna/协调方 | 隔离共存/原始签名Status/迁移阶段已复审；仅文档，不代表安装、升级、卸载或GUI已验收 |
 | 4B Windows发布实现 | 待设计审查及功能稳定 | 双线程 | 产物版本稳定，签名证书待决定，干净机器用户跳过不改写 |
 
 3B-L的实施目标为可安全运行的普通本地索引测量工具，不是增量算法：仅benchmarks中新local-index-baseline入口及child、对应最小测试和本批记录；固定仓库自建样例/生成器，唯一新目录/数据库/报告，不调用旧benchmark、不下载项目、不清理共享目录。相同样例根配对冷库/无变化reindex，规范化事实/源码/身份等价是采样门禁；公开阶段计时和Node采样RSS明确标来源，不冒充Python/整应用内存。严格限额/总超时/取消后终止子进程，报告环境/原始样本/失败状态且不含源码/凭据/私人路径。该工具实施与小样例验证可不触碰Sol共享源码；规模性能测量待共享功能稳定、单协调窗口执行，后续优化设计仍由Sol承担。
 
 1C-2B按稳定边界再拆两切片：先由Sol在已对齐32dbae8的worktree实现共享真实Responses body builder与摘要/同步dispatch桥接，及严格renderer建议/可信main内部worker协议；仅llm provider/index/test、contracts新增desktop协议/test/index追加导出、desktop新增remote-provider/test与本批记录，不改XRayApi/main/preload/native/UI/package。协议与桥接接受后再派2B-2完成凭据、worker、broker和运行产物接线；此分解不把未连接协议当可用界面。实际新目标、文件清单和边界已发原Sol聊天，反馈闭环/独立验收不变。
+
+2B-1范围补充：实际生产remote-provider直接导入已有llm workspace，而desktop尚未声明该依赖；协调方核对代码后允许只追加desktop/package.json的@project-xray/llm workspace依赖及lock对应importer，可offline/ignore-scripts链接已存在依赖。不增加第三方runtime/SDK、不借跨包私有node_modules、不提前加node-gyp/native接线；其他package/scripts范围保持不变。该补充是现有生产桥接的必需依赖声明，不扩大产品能力。
 
 ## 自动跟进
 
