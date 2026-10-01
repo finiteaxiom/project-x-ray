@@ -80,3 +80,9 @@ Sol游标`dfa67683-bad0-4c3b-90f0-e3c97f2262ab:13`、idle并明确冻结14文件
 证据片段实际hash/范围、集合裁剪、完整HTTP body预算（含第二层JSON转义）、单请求取消/deadline、失败不读服务端错误body、引用闭合和unknown门禁检查方向符合ADR。接受纯契约/llm切片；OS凭据、项目授权/context及事务、IPC/GUI接线仍待1C-2/1D，真实API兼容性/质量仍外部阻碍，第一批不关闭。
 
 本轮无新增AGENTS规则。开发反馈中第二层转义有复现证据及回归，但完整body预算预防已在ADR要求和测试中落地；其余经验已有规则覆盖。审查脚本失败仅进入本记录。
+
+集成：协调方先提交已审协调记录为`5b87ba3`；Sol idle时ff main的文档/样例，无产品源码冲突；仅14个验收文件提交`5848fe57afd43f65a70264db08341f73503bd8cf`，main ff集成。新文件逐一no-index空白检查通过；没有合并覆盖AGENTS或其他任务目录。
+
+主checkout离线ignore-scripts/frozen-lockfile连接llm workspace后，`pnpm --filter @project-xray/llm --filter @project-xray/contracts test -- --maxWorkers=1 --no-file-parallelism`退出0，两个包仍30+66项通过；此脚本形式将参数置于`--`之后，不额外声称该次运行应用了单worker限制。desktop及ui的`pnpm exec tsc -p <各自tsconfig> --noEmit`均exit0，检查共享导出对既有消费者的类型兼容。未启动Electron或调用真实服务，底层验收边界不变。
+
+下一切片拆为1C-2A graph/application的角色迁移、策略事务、preview/dispatch/publish与定向测试，再审后派1C-2B desktop/原生/IPC接线；接口与sender安全接线前不派Luna功能UI。Luna可并行做第四批现有Windows发布链的只读设计，只有新文档，不构建/安装/改包或业务源码。该设计不解除功能稳定、真实安装操作、签名和用户跳过环境等验收门槛。
