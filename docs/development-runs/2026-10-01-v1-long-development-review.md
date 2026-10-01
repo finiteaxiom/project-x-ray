@@ -360,3 +360,5 @@ Luna`:30`idle，原三文件明确重新冻结。逐例比对README、JSON及真
 附加诊断发现背景unknown选择器的短targetLabel不等于实际未解析节点完整name。协调方只修正JSON该静态字段，probe增真实完整name断言并改用新的final隔离子目录，以相同原命令再运行exit0，全部17绑定与评分/拒绝门再通过。首次patch按格式化JSON猜了行，因实际行内格式未匹配而无修改；随后读取真实行修正，属于编辑匹配错误，不是产品失败。源码/Graph IR未改，unknown未升级，没有方法运行行为证明。
 
 本批准备切片接受，精确待提交仅原三文件及本轮三个协调文档；没有UI修改、模型/production凭据/网络/GUI验收，不把静态语料当已接受rubric或第二批实现。AGENTS新增0条，已有证据类型/置信度/相同快照与语义未评估门覆盖本次经验；具体选择器诊断保留开发/独立记录。Git真实动作及SHA在执行后补记，其他开发仍在自己worktree实现，不纳入提交。
+
+实际Git收尾：核对main分支、六文件staged清单与diff/check、origin为既有用户仓库后，提交97191b4c2b5524f23032d91d563fded5a3581b61；普通push exit0，ls-remote确认origin/main同SHA，工作区干净。没有合并Sol未冻结实现、生成产物或公开二进制。已通知Luna本准备切片接受后保持idle等待1D安全接口；Sol保留455d4ad基线继续既定接线，不在active期间fast-forward。下一次以实际交付及游标为准。
