@@ -106,3 +106,62 @@ Luna新交付游标`80fae291-fe1d-4343-9b03-73b87a2fd5a5:2`、idle/两文件冻�
 接受4A设计，不执行产品测试、构建、安装、卸载、迁移、OS凭据或Electron操作，不把旧portable记录提升为本轮验收。当前实际范围为Luna两份新文档及协调方两份计划/审查记录；无AGENTS改动。本轮0条新经验，文档一致性问题按现有规则修正，不编造产品复现。
 
 Sol仍active、游标`b1ebc819-861b-4d28-af5d-5181e0e3533b:3`，在补契约/持久化失败路径，尚未冻结。其自测不作为审查方验收，本轮不并发运行该批测试或重型构建。4B安装发布实现仍等待功能稳定，Luna待后端契约/安全接线后再派UI。
+
+## 1C-2A 服务容量中断与重试（2026-10-01 22:57）
+
+最新wait_threads游标`:4`显示Sol回合failed/systemError，错误为“Selected model is at capacity. Please try a different model.”，不是产品测试失败。保留现场：实际worktree现有6修改/4新增文件，尚无冻结交付或独立验收；没有Git写入、丢弃文件、运行该批测试或并发重型构建。
+
+按用户持续开发/恢复授权给同一聊天以原GPT-6.1 Sol/medium重试一次，要求从剩余契约与持久化失败检查续接，不重做实现、不用旧自测代替交付、不擅换模型。随后wait_threads游标`b1ebc819-861b-4d28-af5d-5181e0e3533b:5`确认新回合active；当前尚无本轮冻结结果。容量原因归类环境问题，只进过程记录，不新增AGENTS规则或降低测试门槛。自动任务保持启用，有具体任务进行中，不标完成。
+
+## 1C-2A 持久化失败边界中途审查（2026-10-01 23:12）
+
+wait_threads最新游标`b1ebc819-861b-4d28-af5d-5181e0e3533b:7`仍active。Sol报告其回归复现项目结果提交后权威任务terminal提交失败的未发布记录遗留，正补精确身份清理；这是开发方复现，协调方尚未独立运行该回归或接受本批。
+
+只读检查application start/result/recover与graph事务/补偿代码和故障注入测试：发布路径跨独立连接顺序提交；当前新增catch补偿只在异常能进入catch且finish成功时运行，不能作为异常退出下跨库原子性证明。已向原Sol聊天派发同批边界检查：提交间worker退出、finish/cleanup本身BUSY或失败、固定错误及terminal事件不被finally掩盖、重启不重发且未发布结果读取失败关闭；精确身份清理不得删除completed历史或旧源码。可采用有明确门禁与恢复责任的安全保留策略，不要求扫描其他项目目录，也不扩大桌面/IPC范围。
+
+本轮未修改Sol源码、未并发运行测试/构建/Electron、未合并或提交未验收实现。主checkout只维护计划与审查记录。图事实、远程生产接线、真实GUI及服务调用均未新增验收证据。本轮0条AGENTS规则：已读现有门槛，当前新增异常退出风险仅为代码审查依据，等待复现与修正验证后再判断沉淀。
+
+## 四批后的自主规划与开发授权（2026-10-01晚）
+
+用户澄清四批结束后仍由协调方自行规划与开发，工作流不变。已修改原automation为ACTIVE、保留原15分钟间隔及目标，移除四批完成即暂停条件；后续须基于实际代码/验收/复现/实测形成范围内可审查计划，再派原双线程。主checkout的AGENTS协作约定、计划及晨间交接同步记录该用户授权，不视为产品范围或敏感动作的额外许可。
+
+紧凑状态检查Sol仍在1C-2A修正、Luna正在3A-L只读准备，无冻结新交付；本轮只调整调度/文档，未运行产品测试、GUI或Git收尾。本轮新增工程经验0条；AGENTS增加的是有直接用户请求依据的工作流约定。
+
+## 1C-2B 接线验收准备（2026-10-01 23:29）
+
+Sol游标`:9`仍active，已回应提交间退出、finish/补偿失败检查；Luna游标`:6`仍在追踪索引并核对现有benchmark副作用。均未冻结。本轮读取主checkout实际desktop main/preload/package/tsup以及ADR0007，为下一切片准备验收入口；不修改两条开发聊天的源码、不并发运行其测试或重型检查。
+
+主checkout当前main只创建analysis/query worker，preload只有既有窄API，tsup入口只有main/preload/analysis-worker，build复制Python worker和secure reader。新增解释worker/凭据生产接线尚不存在；不从ADR草案或Sol底层代码推断接线完成。首次文件搜索包含不存在的worker-client路径，已改用实际main中的broker定位；属于审查搜索输入问题，无产品失败结论。
+
+冻结后1C-2B独立验收按以下顺序，最终命令须随实际交付文件确定：
+
+| 边界 | 需要的具体检查 | 当前状态 |
+| --- | --- | --- |
+| worker/生产组装 | 独立解释worker启动/退出/重启，正常生产仅OS凭据port与固定官方provider；ordinary analysis envelope不增加可注入provider/任意endpoint；输出仅strict协议 | 准备，未实施/验证 |
+| sender/owner | 实际顶层本地页面可用；子frame、相似URL/外部来源、其他窗口context/task被拒绝；事件只给owner，关闭窗口阻断迟到结果；不能只用可伪造的renderer字段判归属 | 准备，未实施/验证 |
+| context事务顺序 | 既有select/import/retry/cancel/ignore/current路径中，需失效时先关闭main门禁并提交authority，再推进操作；busy/提交失败保持关闭并安全终止解释worker；A→B→A不复活 | 准备，未实施/验证 |
+| 凭据双系统失败 | 固定自有测试target和非秘密值验证写/读/删及重启；revision先进入不可调用，OS失败/进程退出不沿用旧configured；不列举或读取生产target；不向renderer、worker消息或日志返回key | 准备，未实施/验证 |
+| native/打包 | 同一协调窗口验证Node/Electron目标ABI、worker dist入口与native复制/asar解包，portable只使用本轮当前产物；重用历史路径/截图不算当前证明 | 准备，未实施/验证 |
+| 非安全GUI | UI切片接线后真实操作未配置预览/本地解释/证据导航、取消与重试、项目切换和过期状态；授权/凭据敏感操作留用户，不能后台改DB伪造GUI选择 | 准备，未实施/验证 |
+
+后续差异审查须核对main持有global-context控制连接的角色、application读写策略的实际配置、provider同步dispatch与事务边界及凭据只在解释worker短暂读取。跨库提交或OS存储均不能因串行调用就宣称原子；1C-2A当前异常恢复责任须带入接线。
+
+本轮无产品回归、native、安装或真实Electron操作，不新增任何验收通过项。0条新增AGENTS经验，均是已接受设计/已有规则转成执行门槛。1C-2B仍等待1C-2A冻结并接受后另行精确派发。
+
+## 1C-2A 冻结后独立审查退回（2026-10-01 23:44）
+
+Sol游标`b1ebc819-861b-4d28-af5d-5181e0e3533b:11`idle/明确冻结12文件，实际HEAD00651a5；核对7修改/5新增，契约、角色、迁移、事务、应用核心、反馈记录及1条AGENTS经验在授权范围内，无desktop/ui/native/llm/分析器或普通IPC修改。主checkout已有4份协调变更未混入Sol交付。
+
+在Sol实际worktree独立执行记录中的三条exec vitest定向命令（各maxWorkers=1/no-file-parallelism），contracts36、graph30、application83，合计149 passed，均exit0；三包tsc --noEmit也exit0。application本轮46.34秒不外推产品性能。未运行生命周期pretest、native、build、Electron或真实远程。
+
+额外独立stdin Node/tsx脚本，以临时自建TS文件实际indexProject、正常global/project SQLite与策略端口生成context/preview；仅注入非秘密credentials.read挂起Promise和本地provider计数器。start已进入凭据读取但尚未dispatch时，用同owner/context/taskId调用cancel，再解除凭据等待。实际exit0输出：cancelDuringCredentialRead=CONTEXT_CHANGED、dispatchesAfterCancel=1、terminal=completed、productionNetworkCalls=0。根因有代码支持：start已登记running，但cancel只查尚未生成的SQLtask，提前拒绝，没有abort controller。这是后台产品取消缺陷，不是GUI或真实服务验收；脚本初次误用不存在的indexLocalProject导致TypeError，核对实际indexProject后重跑，该初次错误是审查脚本问题。
+
+已向原Sol聊天派发明确修正：凭据与dispatch前workspace检查等待期间均可被合法owner取消，迟到解挂后dispatch0/无结果/无completed，返回与terminal语义一致且至多一次；跨owner/旧handle/未知task保持拒绝，不提前登记许可或伪造dispatched，不扩展desktop/UI。需要修正后新回归/类型/记录及冻结，不以149通过覆盖这个失败。本批不接受、不提交或集成，1C-2B仍待审。
+
+交付的跨库经验有延迟约束/真实SQLite及故障注入依据，适用动作与既有锁规则不同；等待整个切片修正验收后逐条集成，不直接覆盖主checkout AGENTS。当前取消新缺陷尚未修正验证，暂不新增经验规则。真实Electron、OS凭据、生产body适配与实际服务仍未验收。
+
+## 3A-L 只读设计独立复审（2026-10-01晚）
+
+Luna游标`80fae291-fe1d-4343-9b03-73b87a2fd5a5:9`idle并交付两文件。完整读取设计/过程记录，对照主checkout实际indexProject、main/preload/worker/build、Python子进程、canonicalSnapshotResult/Content、Git HEAD读取及benchmarks/run.ts；确认当前每次全量分析与持久快照复用有区别，冷库不等于OS缓存清空，Git双方和真实GUI另列门槛。现有benchmark确有共享清理/外部克隆/报告覆盖，不运行它验证性能。规范化不忽略稳定节点身份、语义边原因/置信度/范围/健康配置；独立冷库对照需固定同根和样例内容。
+
+逐一对新增两文件运行no-index空白诊断，无错误（exit1表示新文件差异，仅CRLF提示），tracked diff检查通过。工具记录中的部分rg非0不作为产品失败；未运行产品测试/基准/GUI或触碰Sol工作区。接受文档准备，性能收益及增量实现仍未验收；本批0条AGENTS工程经验。下一步可派Luna独立隔离基线工具，普通小样例仅验证工具行为，规模测量及优化仍需共享实现稳定和协调窗口。
