@@ -239,3 +239,62 @@ Sol最新游标`:23`idle，1C-2B-1冻结11文件，仍基线32dbae8；下一步�
 下一切片按接受ADR拆为2B-2A窄原生凭据模块/适配器，2B-2B随后安全接线，范围与门槛见计划；先将干净Sol worktree对齐实际集成基线，再派发。没有把未接线协议交给Luna做空控件，Luna待该门禁稳定；当前具体队列仍可推进，不暂停自动跟进。
 
 实际Git/派发收尾：三个协调文档提交`a50d7ab2e13dd463ed9e1c0b8348dc1c9925b589`后普通push成功，ls-remote确认origin/main同SHA；main干净，Sol已从0cdc683干净ff对齐a50d7ab。已派原Sol聊天2B-2A精确12文件与门槛，纯TS/脚本先冻结，重型原生及真实运行由协调方统一安排；最新紧凑游标`b1ebc819-861b-4d28-af5d-5181e0e3533b:24`active，已确认开始核对/实现。Luna收到工具验收反馈，游标`80fae291-fe1d-4343-9b03-73b87a2fd5a5:23`idle，等待安全接线后的UI具体任务，不并行修改Sol共享范围。未因等待UI制造无依据任务；自动跟进继续处理真实队列。
+
+## 2B-2A 独立验收运行时准备（2026-10-02 03:45）
+
+先读当前队列/审查/交接和AGENTS相关安全、原生生命周期、经验门槛，再紧凑检查Sol`:25`active、Luna`:23`idle；尚无新冻结交付，不并发跑该批测试/native/build/Electron。main实际HEAD`2852b7d2e56eb3f4a51ae2a0937e04a7b8d15ea5`且本轮开始干净；旧接受结果未重复测试或通知。
+
+只读核对既有analyzer-core构建/binding与desktop package/tsup：已有secure_reader保持独立文件职责和NAPI_VERSION=8；desktop现有build先tsup(clean)，再copy Python/secure reader，因此未来凭据产物copy也须在clean之后核验，不能用旧dist文件作成功证据。当前待实现2B-2A不改tsup/main，完整生产打包接线和portable仍归2B-2B/发布验收。
+
+独立Node只读运行时检查：实际Node v24.17.0、modules ABI137、NAPI10、win32/x64；从desktop既有直接依赖读取Electron package44.4.3，从analyzer-core既有声明读取node-gyp12.4.0。固定header cache位置只检查node_api.h存在：Node头文件有缓存、该Electron版本头文件未见缓存；vswhere限定VC工具查询返回安装版本18.9.12120.119。没有编译、安装或下载，也未读取敏感环境/凭据；Electron package版本不是本轮运行中Electron版本，头文件缓存状态也不是兼容性/阻碍结论。
+
+冻结后独立门：核对双编译target固定且测试variant不进入生产copy；TS/native UTF-8与控制字符双层拒绝，native buffer/CredFree全路径清理，缺模块固定unavailable；先纯回归再在单协调窗口编译，Node与实际Electron分别只对独立固定test target执行持久重开/读写删除与失败检查，产物记录摘要/版本而无秘密。不访问生产target、不用测试替身代替OS、不把运行时smoke当真实GUI或真实提供商验收。当前无产品变更、新测试/GUI结果或AGENTS新增；已记录computer-use初始化阻碍没有恢复迹象，本轮不重复尝试或通知。
+
+## 1D UI 接线前独立验收准备（2026-10-02 04:00）
+
+Sol`:26`仍active，未冻结；开发方自行指出误重跑上批provider/真实索引测试超出本批纯TS/脚本窗口，已停止扩跑并准备在本批记录单列。协调方不将此自测当凭据/native验收，也不并发运行该批检查。Luna`:23`仍idle，保持UI依赖门。只读主checkout的App、实际FeatureExplanationWorkspace/测试及ownership-sessions，无业务改动。
+
+代码依据：现有FeatureExplanationWorkspace的离线generation通过runWorkspaceRequest存于App级页面会话，按设计跨页面保留；卸载只失效挂起的源码导航。App.navigateTo现在同步更改页面并清空活动source；installProject使用repository/snapshot和本地generation，workspace stale/重新激活也只管理离线页面数据。它们尚无远程context或task接线；这是现有离线行为，不作为当前产品缺陷。新增远程流程不能直接套用这种跨页持续生成语义，ADR0007要求离开解释context/切换/索引/配置操作经main权威提交失效旧远程任务。
+
+后续1D需验证以下不同于现有离线测试的路径，精确文件清单待2B-2B安全API冻结后再派发：
+
+| 路径 | 预期与验证边界 |
+| --- | --- |
+| 页面首次进入、输入/修改查询、prepare预览 | 不发模型请求；无current校验、未配置或未授权时状态明确。预览包含六类外发数据、实际片段/范围、摘要、遗漏/unknown、预算和供应商状态；修改问题不能误发送旧预览。 |
+| 用户显式start、挂起期间重复start/cancel | 使用已返回main句柄及context，先登记再接事件；一个明确请求一次派发，不自动重试。取消preparing与dispatched分别展示真实状态，不保证退款/服务端停止。 |
+| explain→其他页面、项目A→B→A、同snapshot重新激活 | 本地阅读/离线结果可按既有规则保留；远程新start与旧事件先封闭，main权威epoch提交结果决定能否重开。不能因为ref或旧页面会话相同而接收旧context结果。失效提交失败保持不可调用，不假报切换成功。 |
+| 源码/排除配置/授权/provider/凭据修订变化，迟到结果 | 任务和预览身份失效，旧结果不能以current显示；校验不可用区别于stale。新增远程数据不复用旧generation channel或用页卸载作为权威取消屏障。 |
+| 已完成叙述及引用源码 | 明示remote来源，叙述只inferred/unknown，引用证据本身的verified语义保留；准确repository/snapshot/evidence/span导航，迟到source读取不能覆盖当前选择。保留旧快照阅读限制，不假称真实运行路径。 |
+| 无密钥、供应商失败及恢复 | 离线追踪保持可用，状态/错误固定且无响应正文/秘密；密钥不进入页面会话、存储或重试数据，提交后清空输入。真实安全/隐私授权和密钥录入由用户操作，协调方不能绕过控件伪造GUI验收。 |
+
+现有八类组件测试覆盖离线重复提交、查询对应、失败重试、unknown位置、错快照、精确导航、禁用状态与跨页恢复，但不是以上远程矩阵的通过证据。本轮未跑它们、未建静态UI控件/测试替身生产入口，也没有电脑操作恢复迹象。第一次读取时猜错组件/类型文件名，随即按rg实际文件定位；这是检索错误，非产品缺陷或规则沉淀依据。准备记录与当前队列相符，本轮无新AGENTS规则，无重复通知。
+
+## 2B-2A 原生独立审查与退回（2026-10-02 04:15–04:26）
+
+Sol冻结于a50d7ab基线，紧凑游标`:27`idle；Luna`:23`idle。逐个核对12文件、AGENTS、native C++/binding、适配器、四工具与39个纯回归；main HEAD2852b7d，只有前两节协调记录未提交。production/test是两个编译期固定target，模块初始化不调用凭据，禁止枚举/任意target/环境秘密/SQLite回退；Win32分配与临时字节有清零/CredFree，状态仅configured。锁文件与已有test值保护、精确匹配清理已审。开发方报告的误跑旧provider范围偏差未计为本批原生验收。
+
+协调方独立命令与实际结果（worktree执行，纯测试在apps/desktop）：
+
+```text
+node ../../node_modules/vitest/vitest.mjs run src/windows-credentials.test.ts src/windows-credentials-scripts.test.ts --maxWorkers=1 --no-file-parallelism
+node node_modules/typescript/bin/tsc -p apps/desktop/tsconfig.json --noEmit
+node node_modules/typescript/bin/tsc -p packages/contracts/tsconfig.json --noEmit
+node apps/desktop/scripts/build-credentials.cjs
+node apps/desktop/scripts/credentials-smoke.cjs
+node apps/desktop/scripts/credentials-electron-smoke.cjs
+node apps/desktop/scripts/copy-credentials.cjs
+```
+
+39项/2文件通过无skip，两包类型exit0；确认native目录非联接后实际编译exit0。Node v24.17.0的真实Windows固定test target：ASCII、中文/emoji、2048字节三种写读及各自重启子进程、非法编码/控制字符/超长拒绝、删除/重复删除全部exit0。额外直接native验证status/read/remove带额外参数、非Buffer和多参数write返回invalid，target最终missing、锁文件不存在。未调用production target任何凭据操作。
+
+copy exit0，只加载production模块初始化元数据；production源/目标SHA256均96c8ee0afce3c7baa5e6aeeeee0b14e34bf843690566fc9ca4a185ad49488505，test为7d16d5a2d9cbd1056393304ca479a16287743d54ffa40b10e67eee05589cfe8e。dist/native含既有secure_reader与新production模块，无test模块。不是完整desktop/portable打包验证。
+
+退回三项已确认工具问题：
+
+- `git ls-files --others --exclude-standard apps/desktop/native`实际暴露build中的sln/config.gypi/vcxproj/filters生成文件。允许第13文件根.gitignore精准追加新native/build与必要自有lock条目，不删除构建目录、不提交生成文件。
+- 原Electron launcher调用require("electron")，package index在缺binary时实际输出Downloading Electron binary并用无超时spawnSync运行install.js，120秒只覆盖后面的Electron。运行时随后下载就绪，未发送项目/凭据；工具应改为固定声明package安装目录的已存在版本/边界/exe校验，缺失固定失败，不隐式下载、不接受环境覆盖。
+- 原Electron命令进入后120秒超时exit1；固定本地exe直接同脚本--run的独立20秒调用也ETIMEDOUT、stdout仅空行、stderr空。通用.cjs在app.whenReady后退出成功，实测Electron44.4.3/Node24.21.0/NAPI10。仅main分支等待ready的隔离包装仍失败，因为verify子分支仍提前执行/退出；main和全部verify均在ready后调用原credentialSmoke，实际3次重启/全部OS检查exit0（ALL_READY_TEST_TARGET_OK，<1秒）。因此当前根因是入口生命周期，非未确认的native ABI推测。独立包装只在ignored .benchmarks，未替换交付脚本；试验性.js探针因仓库ESM规则require不可用失败，属于诊断探针错误，不是产品缺陷，未作为通过证据。
+
+已向原Sol派三项复现、预期、13文件边界与对照结果，开发方只修改/纯回归，不并发native/OS/Electron；根协调窗口已结束。最新Sol`:28`active修正，Luna`:23`idle；2B-2B与UI门仍未打开。不提交本批实现。Electron原工具修正版尚待冻结后原命令复验；本轮独立Electron技术smoke不是电脑操作/GUI，真实服务/生产凭据/IPC/UI仍未验收。现有电脑操作阻碍无恢复迹象，不重复通知。
+
+AGENTS目前0条改动：编码、固定诊断、原生运行时验证已有规则；新生命周期问题已实际对照，可在修复与复验闭环后再评估适用/查重/具体动作，不能以退回状态提前写完成。队列与晨间交接同步保留通过和失败边界。
