@@ -8,6 +8,10 @@
     "dev": "tsup --watch --onSuccess \"node scripts/copy-python-worker.cjs && node scripts/copy-secure-reader.cjs && electron .\"",
     "build": "tsup && node scripts/copy-python-worker.cjs && node scripts/copy-secure-reader.cjs",
     "smoke:worker": "node scripts/worker-smoke.cjs",
+    "credentials:build": "node scripts/build-credentials.cjs",
+    "credentials:copy": "node scripts/copy-credentials.cjs",
+    "credentials:smoke": "node scripts/credentials-smoke.cjs",
+    "credentials:electron-smoke": "node scripts/credentials-electron-smoke.cjs",
     "test:e2e": "node scripts/electron-e2e.cjs",
     "test:e2e:file-source": "node scripts/file-source-e2e.cjs",
     "test:e2e:ui": "node scripts/ui-workspace-e2e.cjs",
@@ -27,6 +31,7 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
+    "node-gyp": "12.4.0",
     "tsup": "^8.5.0"
   }
 }

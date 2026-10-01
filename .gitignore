@@ -2,6 +2,8 @@
 node_modules/
 dist/
 packages/analyzer-core/native/build/
+/apps/desktop/native/build/
+/apps/desktop/native/.credentials-smoke.lock
 .turbo/
 .vite/
 coverage/
