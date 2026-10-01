@@ -71,17 +71,20 @@ Sol 先测量当前全量索引/查询/内存基线，设计按语言的保守�
 | 1A 提供商、证据与安全任务设计 | 已接受并集成 | Sol/协调方 | A–E已复审，ADR0007；设计不等于运行安全证明 |
 | 1B 金标/对抗样例与交互矩阵 | 准备切片已验收 | Luna/协调方 | 8文件冻结；4源码实际分析，SQLite导入/GUI/远程仍未验收 |
 | 1C-1 契约与llm证据/提供商 | 纯底层切片已验收并集成 | Sol/协调方 | 5848fe5；独立及集成后96测试通过，两包及desktop/ui类型通过，无真实网络/GUI |
-| 1C-2A graph/application策略与任务 | 独立审查退回取消修正 | Sol | 冻结12文件独立149项/三包类型通过；额外实际索引+SQL复现等待凭据时cancel拒绝、随后仍dispatch=1；修正前不接受/集成，1C-2B待审 |
-| 1C-2B desktop/原生凭据/IPC | 待1C-2A交付审查 | Sol | 独立worker/sender/凭据addon/产物接线，重型验证协调窗口 |
+| 1C-2A graph/application策略与任务 | 后台核心已验收并集成 | Sol/协调方 | 取消修正后独立161项/三包类型通过；独立真实索引+SQL两等待点cancelled/dispatch0/result空；5665245提交，32dbae8合并，集成93项/五包类型通过；非GUI/真实网络 |
+| 1C-2B-1 生产provider桥接/desktop协议 | 已派发实现 | Sol | 32dbae8干净worktree基线；实际完整body共享builder/digest、严格内外命令及worker协议，不接main/preload/native/UI |
+| 1C-2B-2 desktop/原生凭据/IPC接线 | 待2B-1契约审查 | Sol | 独立worker/sender/凭据addon/产物接线，重型验证协调窗口；真实GUI仍受工具阻碍 |
 | 1D 解释/授权 UI | 待契约冻结 | Luna | 后端契约进入主checkout后派发 |
 | 1E 独立测试、真实 GUI/远程与集成 | 待交付 | 协调方 | 实际代码/产物，远程密钥与项目选择未完成 |
 | 2 所有权语义评价 | 待设计 | 双线程 | 第一批接口稳定，真实远程阻碍分别保留 |
 | 3A-L 增量索引基线/验收设计 | 文档准备已接受 | Luna/协调方 | 两文件冻结，对照实际索引/规范化/benchmark源码复审；无性能测量或增量实现/GUI结果 |
-| 3B-L 隔离本地基线工具 | 待派发实现 | Luna | 独立新增runner/child/test/记录，不改共享产品源码；仅小样例工具自检，规模测量由协调窗口后续安排 |
+| 3B-L 隔离本地基线工具 | 独立审查退回修正 | Luna | 原四文件；正常7测试/smoke通过，额外实际child取消发现RSS timer泄漏、父协议接受矛盾门禁；未提交，修正后重新验收 |
 | 4A Windows发布链/验收设计 | 修订后设计已接受 | Luna/协调方 | 隔离共存/原始签名Status/迁移阶段已复审；仅文档，不代表安装、升级、卸载或GUI已验收 |
 | 4B Windows发布实现 | 待设计审查及功能稳定 | 双线程 | 产物版本稳定，签名证书待决定，干净机器用户跳过不改写 |
 
 3B-L的实施目标为可安全运行的普通本地索引测量工具，不是增量算法：仅benchmarks中新local-index-baseline入口及child、对应最小测试和本批记录；固定仓库自建样例/生成器，唯一新目录/数据库/报告，不调用旧benchmark、不下载项目、不清理共享目录。相同样例根配对冷库/无变化reindex，规范化事实/源码/身份等价是采样门禁；公开阶段计时和Node采样RSS明确标来源，不冒充Python/整应用内存。严格限额/总超时/取消后终止子进程，报告环境/原始样本/失败状态且不含源码/凭据/私人路径。该工具实施与小样例验证可不触碰Sol共享源码；规模性能测量待共享功能稳定、单协调窗口执行，后续优化设计仍由Sol承担。
+
+1C-2B按稳定边界再拆两切片：先由Sol在已对齐32dbae8的worktree实现共享真实Responses body builder与摘要/同步dispatch桥接，及严格renderer建议/可信main内部worker协议；仅llm provider/index/test、contracts新增desktop协议/test/index追加导出、desktop新增remote-provider/test与本批记录，不改XRayApi/main/preload/native/UI/package。协议与桥接接受后再派2B-2完成凭据、worker、broker和运行产物接线；此分解不把未连接协议当可用界面。实际新目标、文件清单和边界已发原Sol聊天，反馈闭环/独立验收不变。
 
 ## 自动跟进
 

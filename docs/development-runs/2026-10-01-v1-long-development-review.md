@@ -165,3 +165,45 @@ Sol游标`b1ebc819-861b-4d28-af5d-5181e0e3533b:11`idle/明确冻结12文件，�
 Luna游标`80fae291-fe1d-4343-9b03-73b87a2fd5a5:9`idle并交付两文件。完整读取设计/过程记录，对照主checkout实际indexProject、main/preload/worker/build、Python子进程、canonicalSnapshotResult/Content、Git HEAD读取及benchmarks/run.ts；确认当前每次全量分析与持久快照复用有区别，冷库不等于OS缓存清空，Git双方和真实GUI另列门槛。现有benchmark确有共享清理/外部克隆/报告覆盖，不运行它验证性能。规范化不忽略稳定节点身份、语义边原因/置信度/范围/健康配置；独立冷库对照需固定同根和样例内容。
 
 逐一对新增两文件运行no-index空白诊断，无错误（exit1表示新文件差异，仅CRLF提示），tracked diff检查通过。工具记录中的部分rg非0不作为产品失败；未运行产品测试/基准/GUI或触碰Sol工作区。接受文档准备，性能收益及增量实现仍未验收；本批0条AGENTS工程经验。下一步可派Luna独立隔离基线工具，普通小样例仅验证工具行为，规模测量及优化仍需共享实现稳定和协调窗口。
+
+Git收尾仅主checkout的6份已审文档/用户授权约定：commit `e3b870337dfe28b2730d92ab1cd7bc26ddedf2cf`，origin/main普通push成功，ls-remote确认同SHA；没有提交或合并Sol未验收实现。无业务源码变化，不运行GUI来替代文档复审。
+
+按接受设计已派Luna 3B-L四个独立新增文件：local-index-baseline入口/child/test与记录；严格参数/唯一输出/owned目录边界、超时取消终止子进程、事实和源码等价门禁、有来源的阶段/NodeRSS数据，零网络/外部仓库执行/新增依赖，不修改共享产品或跑规模heavy。Sol已进入取消修正新回合，最新已检查cursor`:12`active；已告知main文档基线，暂不合并到其正在编辑的worktree。
+
+## 第二批所有权评价只读验收准备（2026-10-02凌晨）
+
+本轮Sol取消修正与Luna基线工具均active，最新紧凑游标分别`:14`与`:12`，无新冻结交付。未运行两批正在修改的回归、构建或Electron。只读核对主checkout现有ownership/contracts/application/graph、analysis-worker与OwnershipWorkspace及会话状态，未派发第二批实现，原接口稳定前置继续成立。
+
+实际现状：Question版本2.0.0、Scoring版本2.1.0；grade契约只允许semantic.status=not-evaluated。gradeAnswer分别检查确定性定位与结构并明确不评自由文本；application核验当前快照、保存源码引用与排除配置修订，在事务门禁后追加ownership_attempts，通过后移除内存题，失败可重试。概念当前通过依赖当前快照非legacy尝试的passed；跨快照历史保留而需重新验证。worker下发题面时去掉evidenceIds/expectedNodeIds/deterministicChecks；现有UI在提交后才显示评分和揭示证据，并硬编码“自由文本语义未评估”。这些是本轮代码阅读结果，不是重新执行的回归或GUI验收。
+
+后续ADR/切片需先明确独立语义状态、rubric/评分/任务/尝试身份和追加关系，不能仅给现有semantic字面量增值便将旧确定性passed升级为语义掌握。已落库的本地结构尝试与异步评价的取消、失败、重试、迟到结果必须有明确关联和幂等终态；模型不可用仍保持原离线答题路径。准备的验收矩阵：定位/结构分数在相同答案下不受模型改变；错误结构或缺有效引用不能被流畅解释补偿；历史与legacy不自动升级；新题提交前不泄漏内部答案；提交后证据可导航；A→B→A、源码/配置/授权/凭据修订变化拒绝旧任务结果；取消及重试不重复追加；无密钥时语义未评估且可继续本地训练。rubric金标、测试替身、真实Electron和真实远程分别登记，不能互相替代。
+
+本轮仅补充代码依据与验收准备，无产品修改、测试/性能/GUI新结果，无新增AGENTS经验。首次查找不存在的OwnershipPage文件是审查检索路径错误，已用rg --files定位实际components/OwnershipWorkspace，不作为产品缺陷记录或派发。
+
+## 电脑操作预检阻碍（2026-10-02凌晨）
+
+本轮重新核对computer-use技能及guidance/api/confirmations，再按技能规定通过node_repl初始化@oai/sky。首次js调用返回failed to write kernel assets: 系统找不到指定的路径。(os error 3)。js_reset返回kernel reset，随后相同初始化仍返回同错误。未获得窗口状态、未操作真实Electron，不能据此判断锁屏或产品故障；这是当前操作工具初始化失败。没有改系统/安全配置、安装工具、执行自制helper或其他UI自动化替代。
+
+新阻碍已通知一次，晨间交接保留GUI未验收。两开发批次继续；独立代码、回归及纯工具验收仍可推进，界面实现不以通过测试冒充完成。当前没有新的已冻结交付，无新增AGENTS规则；临时且尚无稳定解决方式的环境错误只保留过程记录。
+
+## 1C-2A 取消修正独立复验与集成（2026-10-02 00:30–00:35）
+
+Sol最新游标`:18`idle/原12文件重新冻结，实际00651a5基线。核对身份、角色迁移、preparing仅瞬态、取消事务与abort、迟到拒绝观察、补偿门禁及记录；取消时先校验同owner/context/epoch/完整身份，合法取消先中断本地controller再记无许可无占用的cancelled，重复调用返回同终态。未加入desktop/UI/网络默认端口或秘密持久化。
+
+在该worktree重新运行前次三条完整exec vitest定向命令，contracts37、graph30、application94，11文件共161 passed/exit0/无skip；contracts/graph/application三包tsc均exit0。独立stdin Node/tsx脚本分别使用新的自建单文件项目、实际indexProject、真实全局/项目SQLite及正常策略端口，阻塞凭据或第二次getSnapshotState；在preparing时取消并在解除等待前等待start终态，解除等待后核对迟到效果。两点都cancelled/terminal cancelled、重复cancel稳定、dispatches0、结果null、真实网络0。临时目录仅在解析绝对路径并确认自己新建ostmp边界后清理；不操作用户项目或真实凭据。此脚本未复制开发断言文件，也不是GUI授权或OS存储验证。
+
+仅对应12文件暂存核对后协调方在Sol提交`56652454f5216502bc0b0e4b4f6cbc1b35d73c06`，main以普通非快进合并为`32dbae85f926faa302ff74186120d253cc0a4890`。AGENTS三方合并逐条核对：新增1条已有真实双库延迟约束/补偿/恢复证据的经验，保留main已有用户自主规划约定与其余规则；取消问题已被现有任务取消要求覆盖，本次不另添规则。三个协调文档及Luna四个工具文件均保留，未混入实现提交。
+
+main缺少新application→llm内部workspace链接，执行`pnpm install --offline --ignore-scripts --frozen-lockfile --filter @project-xray/application...`exit0，仅链接既有依赖，不联网、不运行生命周期/native。集成后remote定向contracts24、graph14、application55，共93 passed/exit0；contracts/graph/application/desktop/ui五包tsc均exit0。未运行build/native/dist/真实Electron/提供商调用。接受的是后台核心，第一批端到端仍开放。
+
+Sol干净worktree由协调方ff对齐main 32dbae8后，已派1C-2B-1生产body桥接与strict desktop/worker协议，精确范围见计划与原聊天消息；1C-2B-2及Luna UI仍按接口稳定顺序。尚未推送时不把本节版本当远程版本；实际Git收尾另记。
+
+## 3B-L 基线工具独立审查退回（2026-10-02 00:39–00:42）
+
+Luna游标`:18`idle、原4新增文件冻结；完整核对runner/child/test与反馈记录。独立exec vitest该工具7 passed/exit0，实际一次小样例smoke completed/validPairCount1，runId`4e59a3a0-5592-4ba4-9ca4-31e1c6b4d4ae`，11门禁true，冷392.0603ms/warm284.9392ms。这只是集成后小样例普通索引API自检，不是增量收益或GUI。
+
+额外真实child取消复现：正常新建owned invocation/run目录，spawn固定child，在首次cold progress之后发送限定stdin取消消息；runId`134c6777-5f14-49b0-aec6-2940c37597de`，收到cancelled/CANCELLED，但终态后800ms仍未close，需对本脚本创建的PID用taskkill /T /F才关闭。已确认根因：measureIndex启动RSS setInterval，仅成功返回时finish清理，indexProject抛错/取消路径遗漏；普通成功smoke与玩具进程取消测试未覆盖真实采样生命周期。只终止自建进程树，无目录删除。
+
+另一独立协议复现：复制自己正常smoke的summary，仅将canonicalFactsEqual=false，保留passed=true；自建Node child仅打印该completed/OK协议消息。runControlledChild返回exit0/closed true、protocolError null、completed/passed true/check false。父边界接受矛盾门禁，runBaseline目前可把这样的报告计为有效。纯测试协议数据，不是生产远程替身或用户项目运行。
+
+已向原Luna派原四文件内明确修正：成功/失败/取消均释放采样资源，真实child终态后可自行close；父边界校验固定必需11检查、passed/failureCodes/terminal逻辑一致，缺项/false/矛盾均拒绝并不计validPair。补实际child取消/失败及协议回归，旧7项不替代新复验；不扩展参数/依赖或修改产品，保持协调文档与原文件。工具未接受、未暂存/提交；候选经验等修正证据后评估，不因本次失败先增加规则。
