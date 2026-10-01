@@ -225,3 +225,15 @@ Luna最新游标`:22`idle/原四文件冻结；实际main基线bf2ed80，只有�
 接受3B-L工具切片，首个失败复现与修正门槛已关闭；规模样本/环境、重启查询、增量算法及GUI仍待后续。开发记录真实区分产品缺陷与测试/环境；本轮AGENTS 0条，资源清理、运行边界和充分回归已被既有规则覆盖，不重复新增。仅对应已验收文件可Git收尾，具体版本在实际动作后记录。
 
 Sol最新游标`:23`idle，1C-2B-1冻结11文件，仍基线32dbae8；下一步核对实际差异、协议与同步dispatch/正文摘要，并独立运行回归。开发方203测试/类型结果尚未提升为协调验收；没有提前派2B-2或UI。
+
+## 1C-2B-1 独立验收与集成（2026-10-02 03:31–03:36）
+
+读取实际11文件清单、共享builder/provider与strict协议、对应回归及反馈记录，核对AGENTS/接受ADR0007。生产body含instructions、input、store:false、stream:false、text.format/schema和输出上限，摘要为完整UTF-8正文SHA256，prepare零凭据/零网络，dispatch到平台fetch前无await。factory不接配置、endpoint固定HTTPS且redirect:error；返回已验证narrative给application，异常重新构造固定枚举错误。独立内外协议不等于IPC接线；纯事件守卫必须由未来broker传入已登记句柄和实际前一事件，不能以有效DTO替代窗口授权。
+
+在冻结worktree逐条运行记录内四个vitest命令：llm76、contracts55、desktop17、application55，共203 passed/exit0、无skip。五包llm/contracts/application/desktop/ui逐条tsc --noEmit均exit0。独立stdin脚本以新自建两函数TS项目、实际indexProject/SQLite和生产factory，明确替换平台fetch而非真实调用：prepare calls0，许可dispatch→fetch→return顺序同步，一次dispatch，完整正文摘要等于实际预览，预算/store:false/官方端点与redirect门槛通过；结果可读、claim inferred；实际事件dispatched→completed可接收，重复terminal/不同owner/错query回包均拒绝。真实网络/OS凭据0，临时自建目录保留，不执行用户项目代码。
+
+11文件单独暂存/check后协调方提交`0cdc68355cd211ad0da932c7493eb48ea8051eb4`，main普通无冲突合并`8e99f82e9b9e5628a18f63b9287ff95afb4dd4f4`。仅已有desktop→llm workspace新增声明与lock三行；main offline/ignore-scripts/frozen-lockfile只链接既有依赖。集成后desktop17+contracts18+llm37共72项、contracts/desktop/ui三包类型全部通过。未构建native/Electron/UI，真实服务兼容与质量未验收。接受的是桥接/协议切片，不关闭第一批端到端门。
+
+本轮AGENTS 0条：依赖、边界校验与安全异常已有规则；不同库写入时间不属于任务身份的具体协议兼容性已有精确回归和记录，不加重复通用条目。Luna工具及三份协调文档已提交`a4c688626c3cea76993e87dff0a2ce0e11d6cd2b`并普通推送，ls-remote同SHA；该Git事实独立于Sol本节尚待推送版本。
+
+下一切片按接受ADR拆为2B-2A窄原生凭据模块/适配器，2B-2B随后安全接线，范围与门槛见计划；先将干净Sol worktree对齐实际集成基线，再派发。没有把未接线协议交给Luna做空控件，Luna待该门禁稳定；当前具体队列仍可推进，不暂停自动跟进。
