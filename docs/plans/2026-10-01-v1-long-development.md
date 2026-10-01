@@ -73,11 +73,12 @@ Sol 先测量当前全量索引/查询/内存基线，设计按语言的保守�
 | 1C-1 契约与llm证据/提供商 | 纯底层切片已验收并集成 | Sol/协调方 | 5848fe5；独立及集成后96测试通过，两包及desktop/ui类型通过，无真实网络/GUI |
 | 1C-2A graph/application策略与任务 | 后台核心已验收并集成 | Sol/协调方 | 取消修正后独立161项/三包类型通过；独立真实索引+SQL两等待点cancelled/dispatch0/result空；5665245提交，32dbae8合并，集成93项/五包类型通过；非GUI/真实网络 |
 | 1C-2B-1 生产provider桥接/desktop协议 | 独立验收并集成 | Sol/协调方 | 0cdc683提交、8e99f82合并；独立203项/五包类型，实际索引至正文摘要/同步fetch/结果与事件守卫验证；集成72项/三包类型通过；非真实网络/IPC/GUI |
-| 1C-2B-2A Windows凭据原生适配器 | 独立审查后修正中 | Sol/协调方 | 39纯测试/两包类型、实际编译、Node固定test target及production copy通过；Electron原入口超时，ready前执行/退出已独立对照定位，补生成目录忽略与禁止隐式下载；修正版冻结后再验，未提交实现/GUI |
+| 1C-2B-2A Windows凭据原生适配器 | 第二轮独立审查后修正中 | Sol/协调方 | 修正版53纯测试/两包类型/精准ignore通过；原Electron入口仍挂起，实测DefaultApp的require.main不等于module，CLI未执行；显式入口wrapper通过，但原命令仍待复验；前轮单独归因ready的推断已纠正，未提交实现/GUI |
 | 1C-2B-2B worker/broker/main/preload安全接线 | 待2B-2A稳定 | Sol | 权威context提交、sender/窗口/一次终态/watchdog/恢复与产物；全部稳定进入主checkout后再派UI，真实GUI仍开放 |
 | 1D 解释/授权 UI | 待契约冻结 | Luna | 后端契约进入主checkout后派发 |
 | 1E 独立测试、真实 GUI/远程与集成 | 待交付 | 协调方 | 实际代码/产物，远程密钥与项目选择未完成 |
 | 2 所有权语义评价 | 待设计 | 双线程 | 第一批接口稳定，真实远程阻碍分别保留 |
+| 2A-L 源码约束语义验收语料准备 | 待派发准备 | Luna | 只新增三份静态样例/记录，复用ownership-training；不实现评分或契约，不依赖尚待接线的IPC，不改变离线未评估语义 |
 | 3A-L 增量索引基线/验收设计 | 文档准备已接受 | Luna/协调方 | 两文件冻结，对照实际索引/规范化/benchmark源码复审；无性能测量或增量实现/GUI结果 |
 | 3B-L 隔离本地基线工具 | 修正后工具切片已验收 | Luna/协调方 | 原四文件；独立9测试、真实child取消自行退出、矛盾门禁拒绝及小样例11门禁通过；不是规模性能、增量实现或GUI验收 |
 | 4A Windows发布链/验收设计 | 修订后设计已接受 | Luna/协调方 | 隔离共存/原始签名Status/迁移阶段已复审；仅文档，不代表安装、升级、卸载或GUI已验收 |
@@ -92,6 +93,10 @@ Sol 先测量当前全量索引/查询/内存基线，设计按语言的保守�
 2B-2按风险再拆稳定边界：先实现Windows Credential Manager原生模块与窄TS适配器，再实现worker/broker/main/preload。2B-2A目标是固定自有target的状态/读/写/删除及失败关闭；生产模块固定com.projectxray.desktop/openai/api-key/v1，测试模块编译为独立固定test target，不接受用户target或环境切换，不把测试模块复制进生产产物。1–2048 UTF-8字节、Win32上限、编码/控制字符双层校验、零化/CredFree及固定错误；无SQLite/safeStorage/env回退。仅desktop新增windows-credentials.ts/test、native/windows_credentials.cc/binding.gyp、scripts/build-credentials.cjs/copy-credentials.cjs/credentials-smoke.cjs/credentials-electron-smoke.cjs、windows-credentials-scripts.test.ts与本批记录；desktop/package及lock仅同版本node-gyp12.4.0 dev声明/本批脚本，AGENTS只合格小修。不得先改main/preload/worker/tsup/contracts/application/graph/UI。先纯测试与类型冻结，实际native编译/Node/Electron/portable验收按协调窗口分阶段，缺模块/非Windows明确unavailable且不删兼容代码。该切片不代表真实生产凭据或第一批E2E完成。
 
 ## 自动跟进
+
+2A-L是不依赖第一批IPC/凭据接线的第二批验收准备，非语义评分实现。代码依据是packages/ownership/src/index.ts当前只核定位/结构、自由文本始终not-evaluated，ADR0006及contracts也明确此边界；既有test-fixtures/ownership-training含TS调用与Python相对导入别名、调用链/变量证据，可复用而无需修改分析器或另造产品能力。目标为后续ADR/rubric提供能够逐项核对源码的正反例，区分引用正确与解释正确，不能把此准备标为模型质量通过。
+
+精确范围仅新增test-fixtures/ownership-semantic/README.md、golden-cases.json、docs/development-runs/2026-10-02-ownership-semantic-fixtures.md。语料使用既有ownership-training项目相对文件/符号/行列范围，导入后动态取repository/snapshot/evidence ID，不硬编码身份、不改源码。至少覆盖正确结构/引用但解释错误、正确解释但引用缺失或错位置、不同措辞但同义、反向调用、静态路径夸大运行时、变量角色误解、跨快照/重复引用、答案提示注入，以及取消/无模型/无效输出保持未评估的验收预期。预期必须分别标当前离线行为与未来语义要求，未来rubric/等级仅设计建议，不建立已接受契约或靠关键词评分。只读JSON/源码范围核验，不执行样例/真实网络/native/build/GUI，不修改packages/UI/共享规则或其他开发记录；记录反馈闭环及0–3条规则评估，允许0。独立审查需逐条比对实际源码、合法范围/反例是否成立及去重，语料接受不打开第二批生产或远程验收门。
 
 用户于2026-10-01晚再次明确今晚持续规划与开发，明早检查成果，并授权四批结束后自主规划与开发后续批次，双线程和独立验收流程不变。复用已启用的自动任务，保持原间隔与通知策略；不设旧夜间截止，后续仍遵守当前V1六项能力和Windows范围。优先收敛1C-2A持久化修正，冻结后独立审查再派1C-2B；Luna并行完成3A-L只读基线/验收设计，安全契约稳定后转UI。持续维护[晨间交接](../development-runs/2026-10-01-overnight-handoff.md)，区分实际实现、独立回归、真实GUI、版本和外部阻碍；用户早晨验收不替代协调方应执行的检查。
 

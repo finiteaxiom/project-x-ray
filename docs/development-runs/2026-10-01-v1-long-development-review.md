@@ -298,3 +298,21 @@ copy exit0，只加载production模块初始化元数据；production源/目标S
 已向原Sol派三项复现、预期、13文件边界与对照结果，开发方只修改/纯回归，不并发native/OS/Electron；根协调窗口已结束。最新Sol`:28`active修正，Luna`:23`idle；2B-2B与UI门仍未打开。不提交本批实现。Electron原工具修正版尚待冻结后原命令复验；本轮独立Electron技术smoke不是电脑操作/GUI，真实服务/生产凭据/IPC/UI仍未验收。现有电脑操作阻碍无恢复迹象，不重复通知。
 
 AGENTS目前0条改动：编码、固定诊断、原生运行时验证已有规则；新生命周期问题已实际对照，可在修复与复验闭环后再评估适用/查重/具体动作，不能以退回状态提前写完成。队列与晨间交接同步保留通过和失败边界。
+
+## 2B-2A 第二轮复验与入口诊断纠正（2026-10-02 04:45–04:49）
+
+main为f72f58cdbe7bc90b5fa17f9251d5fd0fa279cf55、干净；上轮三个协调文档普通push成功且ls-remote同SHA，不含未验收实现。Sol`:33`idle、13文件统一冻结，HEAD仍a50d7ab；逐个核对新的.gitignore、localElectron固定安装元数据/版本/路径检查、异步ready与异常退出、测试及反馈记录，无AGENTS改动。没有改普通build/main/UI。
+
+同两文件vitest独立53 passed、无skip，两包tsc均exit0；真实check-ignore四路径命中精准新规则，native未跟踪只剩binding.gyp和cc。原`node apps/desktop/scripts/credentials-electron-smoke.cjs`仍挂起且没有测试lock。copy原命令exit0。为避免继续等无效窗口，核对本轮launcher/子Electron的PID父子关系和命令归属后停止仅本轮Electron及其子进程，launcher固定失败exit1；未终止用户其他应用。
+
+新的实际入口探针：在ignored .benchmarks自建.cjs打印布尔与运行时，不触碰凭据；Electron44.4.3返回`mainEqualsModule:false,hasMain:true`，whenReady后exit0。因此交付脚本末尾`if (require.main === module)`被DefaultApp加载方式跳过，main和verify都没有调用runElectronSmoke。不能将没有执行检查的120秒挂起当native或OS失败。
+
+纠正上一节的因果判断：早先成功wrapper同时无条件调用入口和等待ready，失败的子分支仍沿用旧main guard，未独立隔离ready变量；“只包主ready仍失败故子ready是根因”过强。保留这个历史判断及本节更正，不把它当已证明的单一根因，也不新增相应AGENTS经验。当前已独立确认的是CLI guard不兼容实际Electron入口，共用whenReady仍是修正版的时序设计与纯回归。
+
+进一步对照：独立.cjs无条件调用修正版导出runElectronSmoke，传入原credentialSmoke并仅将固定verify childScript指向同wrapper。实际44.4.3主流程和三个verify完整通过exit0、CREDENTIAL_ELECTRON_SMOKE_OK，约1秒；测试target最终missing、lock不存在。没有production target操作/真实网络。此验证证明导出流程与native可运行，不能替代最终原CLI命令，不能声称UI已验收。
+
+已退回原Sol相同13文件：以可信process.argv[1]与脚本自身规范化身份明确识别Electron CLI，Node可保留main guard；不得仅凭process.versions.electron自动运行，因为其他Electron应用require时必须零OS操作。增加DefaultApp/main不等、显式main及verify入口、被其他app/Node导入不运行回归；保留固定本地exe、无下载/环境覆盖、ready/timeout/固定诊断。纯回归后重新冻结，实际运行继续只有根协调窗口。Luna仍待安全接线，不下发空UI。
+
+本轮无AGENTS新增，具体入口兼容性先完成原命令复验再评估通用性/查重。队列与交接保留未验收；未提交或合并该实现，已有GUI工具阻碍无恢复迹象，不重复通知。
+
+并行准备依据：只读核对ADR0006、现有ownership生成/评分、contracts的semantic not-evaluated与ownership-training真实TS/Python源码。第二批语义实现仍等接口/隐私稳定；其静态语料验收准备不依赖远程IPC，可由Luna只新增三个文件，范围/门槛写入计划2A-L。不改分析器、源码、评分或已接受ADR，不以词语相似度或未来建议等级改写当前离线行为。检索时一次Windows rg literal glob失败后改用确切ADR路径，是检索问题，不是产品缺陷/AGENTS依据。此安排有明确代码依据，不用空UI填充等待。
