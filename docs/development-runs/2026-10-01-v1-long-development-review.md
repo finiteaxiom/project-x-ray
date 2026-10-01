@@ -53,3 +53,30 @@ Sol当前独立branch为codex/llm-explanations，1C-1已获具体实现派发；
 ## 本轮规则判断
 
 本轮为协调设计启动；记录实际任务派发恢复，不编造产品失败或测试闭环。当前无新增AGENTS工程规则：权限协作和验收已有规则覆盖，设计尚无产品复现证据。
+
+## 1C-2 源码对照与验收准备（2026-10-01 18:30）
+
+主checkout HEAD `cfac10dd80dba858fec50e4f43bbd0141fc6acb6`，检查前工作区干净。Sol 1C-1仍在实现，最新游标`dfa67683-bad0-4c3b-90f0-e3c97f2262ab:11`；尚未冻结，不执行其定向测试或并发构建。以下是后续切片准备，不是1C-1代码审查通过或产品缺陷复现。
+
+已对照当前application、graph、desktop源码，确定下一切片的接线与检查点：
+
+- `XRayApplication`构造时加载各库并缓存`current/currentActivation`；现有`getSnapshotState`校验该快照源码与排除策略，不能单独证明另一连接或另一项目未更新激活。新的持久解释worker不得以这两个缓存或单次源码检查作为dispatch/publish许可，须按ADR0007重读权威context及实际数据库激活身份。
+- `GraphStore`当前无连接角色参数，迁移到9；`withIgnoreRevision`已用IMMEDIATE事务覆盖兼容库同步写入。后续迁移10须显式区分global/project，复用受锁保护的同步发布思路，不能把await放在事务内或只核对一个库后释放锁再写另一个库。
+- desktop当前只有分析queryworker及独立索引/比较worker，构建入口为main/preload/analysis-worker。新增解释worker必须进入实际tsup入口和产物；凭据addon另行声明desktop编译依赖与拷贝路径，不能只在开发Node下验证却遗漏Electron/portable部署。
+- 新敏感IPC应校验拥有窗口的顶层sender及本地页面；不能照抄现有只校验payload的普通查询handler。主进程提交context失败时须保持远程关闭，不把旧本地epoch视为权威提交成功。
+
+后续定向验收将使用独立临时数据库和最小自建证据，明确区分注入的网络计数器与真实提供商。必须覆盖：默认denied/unconfigured时fetch计数0；在dispatch前暂停worker后提交context/授权/配置/provider修订，旧请求dispatch计数0；反向顺序的已许可请求报告取消边界；网络等待不持锁；响应后、发布前第二连接改修订或快照激活导致无结果写入；legacy跨库发布锁；A→B→A同源码重激活及worker重启；取消/重复响应至多一次terminal和结果；busy或损坏设置失败关闭；project库无global策略表且旧历史源码不改写；unfinished任务重启只中断不重发。
+
+这组条件等待1C-1契约审查后才派发1C-2，不提前开放跨层修改。当前没有运行产品回归、原生编译或Electron新交互；远程调用、OS凭据和GUI授权仍未验收。此次准备只修改本审查记录与计划的前置说明，不新增AGENTS规则：现有规则及已接受ADR已覆盖，尚无新复现实验支持经验沉淀。
+
+## 1C-1 独立验收（2026-10-01 19:00）
+
+Sol游标`dfa67683-bad0-4c3b-90f0-e3c97f2262ab:13`、idle并明确冻结14文件，HEAD仍fde7b95。独立读取契约、3个实现模块、导出/依赖/锁文件和反馈记录；实际范围与授权一致，index仅重导出、lock仅workspace importer；AGENTS未改动。工作区中主checkout的两份协调文档是审查方上一轮准备，不混入开发成果。
+
+在Sol实际worktree独立运行其最终4条定向验证命令：llm三个测试文件66项通过、contracts三个文件30项通过；两包tsc均exit0。使用单worker及禁止文件并行的Vitest参数，没有native/fullTurbo/build/dist/Electron或实际服务调用。
+
+额外以stdin Node/tsx脚本只解析主checkout的自建Alpha TS样例，调用实际TypeScriptAnalyzer，再传入llm包。首次脚本缺少application通常补充的文件节点，引用闭合检查失败；补充文件节点后，全图54proof触发24proof预算，断言指定动态调用必留失败。独立检查确认省略数量/原因正确，这是审查输入及断言范围问题，不是产品回归失败；没有改变产品或降低其预算/断言。改为当前设计要求的有界CALLS查询，得到5节点/5边/5proof，四条verified调用和15:17–15:27的`selected()` unknown均保持。后续未知引用claim被提升为inferred时整包INVALID_RESPONSE；合法unknown叙述经显式注入Response的协议port校验成功。只有1次本地注入transport调用，实际网络0。身份和source port在内存显式构造，不冒充实际SQLite快照身份或应用端到端验收。
+
+证据片段实际hash/范围、集合裁剪、完整HTTP body预算（含第二层JSON转义）、单请求取消/deadline、失败不读服务端错误body、引用闭合和unknown门禁检查方向符合ADR。接受纯契约/llm切片；OS凭据、项目授权/context及事务、IPC/GUI接线仍待1C-2/1D，真实API兼容性/质量仍外部阻碍，第一批不关闭。
+
+本轮无新增AGENTS规则。开发反馈中第二层转义有复现证据及回归，但完整body预算预防已在ADR要求和测试中落地；其余经验已有规则覆盖。审查脚本失败仅进入本记录。
