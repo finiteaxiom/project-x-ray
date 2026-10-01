@@ -86,3 +86,23 @@ Sol游标`dfa67683-bad0-4c3b-90f0-e3c97f2262ab:13`、idle并明确冻结14文件
 主checkout离线ignore-scripts/frozen-lockfile连接llm workspace后，`pnpm --filter @project-xray/llm --filter @project-xray/contracts test -- --maxWorkers=1 --no-file-parallelism`退出0，两个包仍30+66项通过；此脚本形式将参数置于`--`之后，不额外声称该次运行应用了单worker限制。desktop及ui的`pnpm exec tsc -p <各自tsconfig> --noEmit`均exit0，检查共享导出对既有消费者的类型兼容。未启动Electron或调用真实服务，底层验收边界不变。
 
 下一切片拆为1C-2A graph/application的角色迁移、策略事务、preview/dispatch/publish与定向测试，再审后派1C-2B desktop/原生/IPC接线；接口与sender安全接线前不派Luna功能UI。Luna可并行做第四批现有Windows发布链的只读设计，只有新文档，不构建/安装/改包或业务源码。该设计不解除功能稳定、真实安装操作、签名和用户跳过环境等验收门槛。
+
+## 用户限额暂停后的恢复（2026-10-01）
+
+用户明确此前因五小时限额暂停定时任务和Sol，现在要求重新启动、继续开发验收。实际检查`project-x-ray`为PAUSED，Sol上一回合interrupted/idle、仍HEAD00651a5且保留5个修改/3个新增业务文件；主checkout同HEAD，只有Luna两份新设计文档。没有删除、覆盖或重复实现未完成改动。
+
+通过automation_update更新原任务为ACTIVE，保持15分钟间隔、目标审查聊天及原通知/范围约束；再次读取配置确认ACTIVE。给同一Sol聊天派发原1C-2A续接任务，模型/强度保持GPT-6.1 Sol/medium，要求补第二连接竞态回归、反馈记录并重新实际定向验证，不沿用中断前报告作为交付。wait_threads确认新回合active、已回应从保留改动继续；游标重置后为`b1ebc819-861b-4d28-af5d-5181e0e3533b:2`。
+
+Luna 4A已完整交付且只新增两文档。独立对照package/main与文档，发现设计一致性问题并派回原两文件修订：共存验收写入正式用户数据与隔离约束冲突；所有非Valid签名不能都记为NotSigned，应保留真实枚举Status；后续角色迁移属于1C-2A，主checkout实际仍9，不能写成正在实施1C-2B。此为文档/设计问题，不是产品运行复现。设计尚未接受，未提交该两文件或执行安装/GUI。
+
+此次恢复不扩大范围，不请求/扫描API密钥，不重跑旧GUI宣称新成功；第一批端到端、OS凭据、远程调用仍未验收。没有新增AGENTS规则：恢复是用户调度决定，设计问题按已有数据保护/证据规则修订，无新产品复现经验。
+
+## 4A 修订后独立复审（2026-10-01 22:42）
+
+Luna新交付游标`80fae291-fe1d-4343-9b03-73b87a2fd5a5:2`、idle/两文件冻结。独立读取修订方案与反馈记录并对照主checkout package/main/graph及AGENTS；确认portable与NSIS测试使用同一隔离身份/测试库，正式数据库不作为运行验收输入；签名保留实际Status和单独发布者策略，缺工具/不支持状态未验收；1C-2A计划迁移10与主checkout实际9及1C-2B凭据待接线已区分。
+
+独立只读`[Enum]::GetNames([System.Management.Automation.SignatureStatus])`返回Valid、UnknownError、NotSigned、HashMismatch、NotTrusted、NotSupportedFileFormat、Incompatible；没有访问任何文件签名、证书或凭据。复核[electron-builder v26 NSIS官方参数](https://www.electron.build/v26/docs/nsis/)中oneClick/perMachine配置含义，方向与方案一致；Microsoft枚举网页本轮工具无法打开，枚举存在性使用本机PowerShell类型核对，不声称本轮已联网核验其全部信任语义。
+
+接受4A设计，不执行产品测试、构建、安装、卸载、迁移、OS凭据或Electron操作，不把旧portable记录提升为本轮验收。当前实际范围为Luna两份新文档及协调方两份计划/审查记录；无AGENTS改动。本轮0条新经验，文档一致性问题按现有规则修正，不编造产品复现。
+
+Sol仍active、游标`b1ebc819-861b-4d28-af5d-5181e0e3533b:3`，在补契约/持久化失败路径，尚未冻结。其自测不作为审查方验收，本轮不并发运行该批测试或重型构建。4B安装发布实现仍等待功能稳定，Luna待后端契约/安全接线后再派UI。
