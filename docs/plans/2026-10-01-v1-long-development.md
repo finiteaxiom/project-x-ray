@@ -73,12 +73,12 @@ Sol 先测量当前全量索引/查询/内存基线，设计按语言的保守�
 | 1C-1 契约与llm证据/提供商 | 纯底层切片已验收并集成 | Sol/协调方 | 5848fe5；独立及集成后96测试通过，两包及desktop/ui类型通过，无真实网络/GUI |
 | 1C-2A graph/application策略与任务 | 后台核心已验收并集成 | Sol/协调方 | 取消修正后独立161项/三包类型通过；独立真实索引+SQL两等待点cancelled/dispatch0/result空；5665245提交，32dbae8合并，集成93项/五包类型通过；非GUI/真实网络 |
 | 1C-2B-1 生产provider桥接/desktop协议 | 独立验收并集成 | Sol/协调方 | 0cdc683提交、8e99f82合并；独立203项/五包类型，实际索引至正文摘要/同步fetch/结果与事件守卫验证；集成72项/三包类型通过；非真实网络/IPC/GUI |
-| 1C-2B-2A Windows凭据原生适配器 | 第二轮独立审查后修正中 | Sol/协调方 | 修正版53纯测试/两包类型/精准ignore通过；原Electron入口仍挂起，实测DefaultApp的require.main不等于module，CLI未执行；显式入口wrapper通过，但原命令仍待复验；前轮单独归因ready的推断已纠正，未提交实现/GUI |
-| 1C-2B-2B worker/broker/main/preload安全接线 | 待2B-2A稳定 | Sol | 权威context提交、sender/窗口/一次终态/watchdog/恢复与产物；全部稳定进入主checkout后再派UI，真实GUI仍开放 |
+| 1C-2B-2A Windows凭据原生适配器 | 底层独立验收并集成 | Sol/协调方 | 61项/两包类型、最终原Electron CLI完整通过；556e9f2提交/a09be86合并；main再编译与61项/desktop+ui类型、Node/Electron原命令/copy及test清理通过；无production凭据/GUI/远程/portable |
+| 1C-2B-2B worker/broker/main/preload安全接线 | 待对齐新基线派发 | Sol | 已接受ADR0007实施，先冻结精确文件/验证顺序，权威context提交、sender/窗口/一次终态/watchdog/恢复与产物；全部稳定进入主checkout后再派UI，真实GUI仍开放 |
 | 1D 解释/授权 UI | 待契约冻结 | Luna | 后端契约进入主checkout后派发 |
 | 1E 独立测试、真实 GUI/远程与集成 | 待交付 | 协调方 | 实际代码/产物，远程密钥与项目选择未完成 |
 | 2 所有权语义评价 | 待设计 | 双线程 | 第一批接口稳定，真实远程阻碍分别保留 |
-| 2A-L 源码约束语义验收语料准备 | 待派发准备 | Luna | 只新增三份静态样例/记录，复用ownership-training；不实现评分或契约，不依赖尚待接线的IPC，不改变离线未评估语义 |
+| 2A-L 源码约束语义验收语料准备 | 已派发准备 | Luna | 只新增三份静态样例/记录，复用ownership-training；不实现评分或契约，不依赖尚待接线的IPC，不改变离线未评估语义 |
 | 3A-L 增量索引基线/验收设计 | 文档准备已接受 | Luna/协调方 | 两文件冻结，对照实际索引/规范化/benchmark源码复审；无性能测量或增量实现/GUI结果 |
 | 3B-L 隔离本地基线工具 | 修正后工具切片已验收 | Luna/协调方 | 原四文件；独立9测试、真实child取消自行退出、矛盾门禁拒绝及小样例11门禁通过；不是规模性能、增量实现或GUI验收 |
 | 4A Windows发布链/验收设计 | 修订后设计已接受 | Luna/协调方 | 隔离共存/原始签名Status/迁移阶段已复审；仅文档，不代表安装、升级、卸载或GUI已验收 |

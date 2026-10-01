@@ -30,6 +30,8 @@
 
 ## 仍开放的边界
 
+04:54–04:56第三轮已接受2B-2A底层：最终原Electron CLI、独立61项/两包类型通过；556e9f2提交、a09be86合并。main再次实际编译、61项/desktop+ui类型、原Node/Electron smoke/copy与test清理全部通过。只有固定非秘密test target，不访问production凭据；没有真实GUI/远程/portable，不关闭第一批E2E。AGENTS无新增，原因见审查记录。Luna已接第二批三文件静态语料准备，Sol下步安全worker/broker/main接线；推送实际版本随后核对。
+
 04:45–04:49第二轮独立复验：修正版53项/两包类型与精准ignore通过，但原Electron命令仍挂起，退回同13文件。新实际探针确认DefaultApp加载.cjs时require.main不等于module，入口guard跳过检查；此前单独归因ready的对照同时改变入口变量，已在审查记录纠正。无条件显式入口调用修正版导出流程、三个verify及真实test target完整通过，但最终原CLI仍需修复后复验。无生产凭据/远程/GUI验收，本批仍未提交；已有审查文档f72f58c已普通推送并核对远程一致。
 
 2026-10-02凌晨新的电脑操作预检阻碍：按computer-use技能使用node_repl初始化@oai/sky，调用报failed to write kernel assets / 系统找不到指定的路径（os error 3）；执行js_reset后相同初始化再次失败。未获得窗口列表或输入操作能力，不能判断是否锁屏，也不能宣称真实Electron已经验收。保留代码/回归及不依赖GUI的准备；之后工具恢复时需实际操作最新产物补验，当前不以测试或旧截图替代。不修改安全设置、不自行安装工具或实现替代UI自动化。该新阻碍已通知一次。

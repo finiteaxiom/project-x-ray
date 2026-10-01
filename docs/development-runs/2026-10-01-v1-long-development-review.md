@@ -316,3 +316,13 @@ main为f72f58cdbe7bc90b5fa17f9251d5fd0fa279cf55、干净；上轮三个协调文
 本轮无AGENTS新增，具体入口兼容性先完成原命令复验再评估通用性/查重。队列与交接保留未验收；未提交或合并该实现，已有GUI工具阻碍无恢复迹象，不重复通知。
 
 并行准备依据：只读核对ADR0006、现有ownership生成/评分、contracts的semantic not-evaluated与ownership-training真实TS/Python源码。第二批语义实现仍等接口/隐私稳定；其静态语料验收准备不依赖远程IPC，可由Luna只新增三个文件，范围/门槛写入计划2A-L。不改分析器、源码、评分或已接受ADR，不以词语相似度或未来建议等级改写当前离线行为。检索时一次Windows rg literal glob失败后改用确切ADR路径，是检索问题，不是产品缺陷/AGENTS依据。此安排有明确代码依据，不用空UI填充等待。
+
+## 2B-2A 第三轮接受及集成复验（2026-10-02 04:54–04:56）
+
+Sol`:37`idle、13文件重新冻结。核对真实Electron入口规范化argv[1]/realpath/Windows大小写判断，被其他应用require不触发；真实cjs顶层VM回归保留main不等、四子分支/Node import与无效路径，开发记录已纠正ready因果。独立61项两文件无skip、desktop/contracts类型exit0；最终原`node apps/desktop/scripts/credentials-electron-smoke.cjs`exit0，CREDENTIAL_ELECTRON_SMOKE_OK，约1秒，test target missing/锁不存在。此轮接受原CLI，不借wrapper/历史成功。
+
+仅显式暂存13文件，staged diff/check/清单通过，协调方在Sol worktree提交556e9f214a7bcd163dd353471e0c0d8abb795802；main无冲突合并a09be86a5ee30f2a63fadc82eea411fb45b636b7。未将生成目录或其他文件提交，Luna新静态语料与共享范围分离且保留。无AGENTS改动，既有安全/运行时要求与当前具体回归已覆盖；不沉淀未隔离的ready归因。
+
+main集成窗口执行pnpm install --offline --ignore-scripts --frozen-lockfile，仅链接既有声明；新native实际编译exit0。独立同61项/desktop与ui类型exit0；main原Node smoke、Electron smoke、production copy均exit0。test target missing/锁不存在，dist无test模块，production源/目标字节一致，main新构建SHA256 c1363945e0060aa7fbbbdf9ade1247e2e524639f1a1db325a6f9f2d099c112fe；不同checkout独立构建的hash不要求相同，不冒称可重复构建。全程没有production凭据操作/真实网络，没有GUI。普通desktop完整build/portable与1E仍开放。
+
+2A-L已发原Luna，只新增计划三文件；下一步Sol在干净worktree对齐实际main后实施已接受ADR0007的2B-2B，先说明具体文件/验证顺序，不自行Git或运行未经协调的native/build/Electron。新增XRayApi必需字段需要保持实际apps/ui/src/main.tsx preview与App.test.tsx桩类型兼容，只能窄声明补齐，不能提前实现1D或创建生产mock；该兼容边界来自真实rg用例。全部生产接口稳定进入main后才能派远程UI。实际推送及对齐状态在完成后登记，不能提前写成功。
