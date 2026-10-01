@@ -74,7 +74,7 @@ Sol 先测量当前全量索引/查询/内存基线，设计按语言的保守�
 | 1C-2A graph/application策略与任务 | 后台核心已验收并集成 | Sol/协调方 | 取消修正后独立161项/三包类型通过；独立真实索引+SQL两等待点cancelled/dispatch0/result空；5665245提交，32dbae8合并，集成93项/五包类型通过；非GUI/真实网络 |
 | 1C-2B-1 生产provider桥接/desktop协议 | 独立验收并集成 | Sol/协调方 | 0cdc683提交、8e99f82合并；独立203项/五包类型，实际索引至正文摘要/同步fetch/结果与事件守卫验证；集成72项/三包类型通过；非真实网络/IPC/GUI |
 | 1C-2B-2A Windows凭据原生适配器 | 底层独立验收并集成 | Sol/协调方 | 61项/两包类型、最终原Electron CLI完整通过；556e9f2提交/a09be86合并；main再编译与61项/desktop+ui类型、Node/Electron原命令/copy及test清理通过；无production凭据/GUI/远程/portable |
-| 1C-2B-2B worker/broker/main/preload安全接线 | 待对齐新基线派发 | Sol | 已接受ADR0007实施，先冻结精确文件/验证顺序，权威context提交、sender/窗口/一次终态/watchdog/恢复与产物；全部稳定进入主checkout后再派UI，真实GUI仍开放 |
+| 1C-2B-2B worker/broker/main/preload安全接线 | 已派发实施 | Sol | worktree干净ff对齐455d4ad，按已接受ADR0007先冻结精确文件/验证顺序，权威context提交、sender/窗口/一次终态/watchdog/恢复与产物；全部稳定进入主checkout后再派UI，真实GUI仍开放 |
 | 1D 解释/授权 UI | 待契约冻结 | Luna | 后端契约进入主checkout后派发 |
 | 1E 独立测试、真实 GUI/远程与集成 | 待交付 | 协调方 | 实际代码/产物，远程密钥与项目选择未完成 |
 | 2 所有权语义评价 | 待设计 | 双线程 | 第一批接口稳定，真实远程阻碍分别保留 |

@@ -207,6 +207,8 @@ LLM 输出永远不是一级证据。LLM 可以对分析器返回的证据进行
 
 只按“执行反馈与规则沉淀”的门槛维护；详细过程保存在对应开发记录中。
 
+- 编写由 Node 或 Electron 启动的验收 CLI 时，不能仅用 `require.main === module` 判断 Electron 入口；以实际 argv 入口与当前脚本的规范化身份匹配，并保持其他应用导入时无副作用。回归覆盖真实脚本顶层、主/verify 子入口及其他应用 require；最终必须执行原 CLI，隔离 wrapper 成功不能替代入口验收。[Windows 凭据入口记录](docs/development-runs/2026-10-02-windows-credentials-adapter.md) · [独立复验](docs/development-runs/2026-10-01-v1-long-development-review.md)
+
 - 跨SQLite库发布解释，以权威任务completed和精确身份作为成功门禁；项目结果先提交而权威terminal提交失败时，只补偿非成功terminal同身份的未发布行。finish、补偿或释放失败不得掩盖原固定错误或提前解除占用；异常退出恢复不得重发，遗留结果在按身份清理前保持不可读。用两个库的延迟约束、退出切点和cleanup BUSY回归，确认completed历史与旧源码不变；持锁不等于跨库原子提交。[策略与发布记录](docs/development-runs/2026-10-01-llm-policy-application.md)
 
 - 分析器不可用或失败会改变图事实时，快照身份必须包含规范化的分析结果与完整性，不能只依赖源码/版本/配置。同 ID 不同事实或源码须在事务中拒绝覆盖；复用旧结果时通过独立 current 晋升元数据选择当前快照，不改历史创建时间。回归覆盖 partial→complete→partial、旧证据/源码重开、同结果稳定复用、冲突失败关闭及跨项目 A→B→A 后重启。[分析结果身份记录](docs/development-runs/2026-10-01-analysis-result-snapshot-identity.md)

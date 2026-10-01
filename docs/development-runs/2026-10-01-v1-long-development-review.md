@@ -326,3 +326,7 @@ Sol`:37`idle、13文件重新冻结。核对真实Electron入口规范化argv[1]
 main集成窗口执行pnpm install --offline --ignore-scripts --frozen-lockfile，仅链接既有声明；新native实际编译exit0。独立同61项/desktop与ui类型exit0；main原Node smoke、Electron smoke、production copy均exit0。test target missing/锁不存在，dist无test模块，production源/目标字节一致，main新构建SHA256 c1363945e0060aa7fbbbdf9ade1247e2e524639f1a1db325a6f9f2d099c112fe；不同checkout独立构建的hash不要求相同，不冒称可重复构建。全程没有production凭据操作/真实网络，没有GUI。普通desktop完整build/portable与1E仍开放。
 
 2A-L已发原Luna，只新增计划三文件；下一步Sol在干净worktree对齐实际main后实施已接受ADR0007的2B-2B，先说明具体文件/验证顺序，不自行Git或运行未经协调的native/build/Electron。新增XRayApi必需字段需要保持实际apps/ui/src/main.tsx preview与App.test.tsx桩类型兼容，只能窄声明补齐，不能提前实现1D或创建生产mock；该兼容边界来自真实rg用例。全部生产接口稳定进入main后才能派远程UI。实际推送及对齐状态在完成后登记，不能提前写成功。
+
+实际Git/调度收尾：协调文档455d4ad50830ee2495b70927e51caf830a4efbb8普通push成功，ls-remote同SHA；包含已验收native与上述记录，无公开二进制。Sol干净worktree从556e9f2 ff对齐455d4ad后已派2B-2B完整门槛与文件边界，`:38`active；Luna`:24`active仅语料准备，main在其只读期间进展到455d4ad，已明确告知差异不涉及其源码/目标并授权新基线继续。两开发任务无共享写文件，heavy窗口当前已结束。后续最近状态以实际队列/交付为准；当前仍无远程UI和GUI接受证据。
+
+最终公共规则评估：开发方本轮0条提议保留为其交付判断；协调方在原CLI最终通过后新增1条Node/Electron验收CLI入口经验。依据是实际DefaultApp main不等、原命令被跳过、explicit argv匹配修复/真实顶层回归和最终原命令通过；适用于后续双运行时验收工具，动作是入口身份匹配、导入无副作用及原命令/verify验收。现有native运行时规则没有覆盖CLI自动执行身份，也不能由wrapper证明，因此不重复；只收录已确认guard，不把未隔离ready推断转成规则，附本批及独立记录链接。未改变用户授权/产品范围/门禁。
