@@ -330,3 +330,33 @@ main集成窗口执行pnpm install --offline --ignore-scripts --frozen-lockfile�
 实际Git/调度收尾：协调文档455d4ad50830ee2495b70927e51caf830a4efbb8普通push成功，ls-remote同SHA；包含已验收native与上述记录，无公开二进制。Sol干净worktree从556e9f2 ff对齐455d4ad后已派2B-2B完整门槛与文件边界，`:38`active；Luna`:24`active仅语料准备，main在其只读期间进展到455d4ad，已明确告知差异不涉及其源码/目标并授权新基线继续。两开发任务无共享写文件，heavy窗口当前已结束。后续最近状态以实际队列/交付为准；当前仍无远程UI和GUI接受证据。
 
 最终公共规则评估：开发方本轮0条提议保留为其交付判断；协调方在原CLI最终通过后新增1条Node/Electron验收CLI入口经验。依据是实际DefaultApp main不等、原命令被跳过、explicit argv匹配修复/真实顶层回归和最终原命令通过；适用于后续双运行时验收工具，动作是入口身份匹配、导入无副作用及原命令/verify验收。现有native运行时规则没有覆盖CLI自动执行身份，也不能由wrapper证明，因此不重复；只收录已确认guard，不把未隔离ready推断转成规则，附本批及独立记录链接。未改变用户授权/产品范围/门禁。
+
+## 2A-L 首轮独立语料审查（2026-10-02 05:03–05:11）
+
+main HEAD为0b72c7a477b8f5a0dfd2e474aeb852d2aaeda8ed，初始无tracked差异，未跟踪仅Luna的原三文件。Luna游标`:27`明确冻结交付；Sol`:41`继续2B-2B实现，已先在自己worktree记录精确文件与验证顺序，尚无稳定交付，不在其同批运行检查。首次跨目录读取Luna记录用错worktree，及检索猜错contracts/测试文件名，立即按真实路径更正；均为审查检索错误，不是产品缺陷或工程经验。
+
+独立只读JSON/源码核对：11个case ID唯一、14个半开源码范围与摘录全部匹配，3个操作场景明确仅未来未评估要求。逐例核对ADR0006、当前contracts及ownership/application，不把未来rubric建议当已接受契约。随后在ignored `.benchmarks/ownership-semantic-review-20261002-0503`创建协调方独有项目副本、SQLite与probe，执行：
+
+```text
+node_modules/.bin/tsx.CMD .benchmarks/ownership-semantic-review-20261002-0503/probe.ts
+```
+
+exit0；真实indexProject为ready，持久化5个sourceFiles，未执行导入项目代码、未改既有fixture。按当前真实节点、角色相关边及证据动态物化，10个有效答题变体（含同义2个）经application完整评分与语料离线预期相符，所有semantic均not-evaluated；无引用经真实schema拒绝，没有伪造合法grade输入；duplicate经application去重为1。仅在协调方副本新增标记文件生成实际第二快照，将其真实snapshotId代入旧题提交，gradeAnswer在评分前拒绝快照不匹配。此项是直接grader身份门，不冒称跨快照GUI或完整worker流程。
+
+发现并退回原三文件内的物化说明问题：写入锚点同时存在DEFINES/WRITES，返回锚点同时存在READS/RETURNS，按范围盲取唯一evidence不成立；需要按角色及相关边绑定，read/return同范围展开不同evidenceId/citationIndex。变量题必需证据是角色边，不能把背景调用/导入描述成确定性评分必需项；实际只用3项角色引用即可location/structure100。10个有精确证据的锚点中9个相关事实verified，方法调用锚点为unknown；未来解释不能把方法解析、参数字符串类型或总与原值不同当静态证明。4个定义名/函数体背景锚点没有精确同范围证据，应按用途区分背景/合法相交引用：错位置例用真实handleLogin的DEFINES证据关联合法相交范围，实际引用有效但call-direction location0/structure100；不能用任意相交证据替代CALLS。没有修改图事实或降级分析器。
+
+已向Luna派明确定向修订、复现、预期及原三文件边界，完成只读再验证后重新冻结；本批尚未接受/提交。probe按题目角色筛选真实证据以验证离线行为，不是新增产品loader，其成功不能掩盖交付物绑定说明缺口。未调用模型、production凭据或GUI；3个取消/无模型/无效语义输出场景仍仅建议，模型质量门未打开。AGENTS本轮无新增：相关证据种类、静态unknown和语义未评估已在现有规则覆盖，语料修正记录由开发方维护。队列及交接同步为修正中。
+
+## 2B-2B 最小页面撤销边界（2026-10-02 05:18）
+
+紧凑状态Sol`:42`提出实际接线缺口：主进程无法观察React内部切页，原UI文件范围只能类型兼容。独立查看App现有navigateTo、installProject的transition/项目generation及卸载，确有必要传递页面离开通知。协调方明确允许在原worktree追加App.tsx最小撤销及已允许App.test.tsx定向回归，先记录清单；无需用户再次规划许可。无控件、授权、凭据或1D状态，不以通知替代权威数据库线性化。要求快速explain→other→explain不能被批处理/被动effect略过，项目A→B→A及同snapshot新激活关闭旧context，普通轮询无重复，失败关闭与迟到回复不得破坏新代际，卸载清理；新契约缺口须先说明最小边界。尚未运行其修改/测试/GUI，不宣称缺口已修复。Luna`:29`仅原三语料文件修订，文件并行边界不冲突。
+
+## 2A-L 修订独立复验与接受（2026-10-02 05:20–05:24）
+
+Luna`:30`idle，原三文件明确重新冻结。逐例比对README、JSON及真实contracts/ownership规则；开发记录明确将实际application执行归属协调方，没有伪造自测。新的绑定区分exact/受关系过滤的overlap、CALLS端点、变量WRITES/READS/RETURNS角色及背景范围，同位置不同证据保持独立citationIndex，unknown方法调用不参与确定性变量评分，未来建议仍proposal-only。
+
+独立probe位于ignored `.benchmarks/ownership-semantic-recheck-20261002-0518/probe.ts`，重新复制自建既有fixture到新的隔离路径、使用唯一SQLite；按交付JSON本身的17个评分选择器（含variant内部绑定）动态选择当前真实边与证据，而非沿用手写期望映射。原命令`node_modules/.bin/tsx.CMD .benchmarks/ownership-semantic-recheck-20261002-0518/probe.ts`exit0：14范围摘录匹配，17选择器均唯一命中，10有效变体通过实际application完整评分预期，变量3项角色citation保留，普通duplicate去重为1，无引用schema拒绝、实际第二快照在直接grader身份门拒绝；所有有效grade的semantic仍not-evaluated。
+
+附加诊断发现背景unknown选择器的短targetLabel不等于实际未解析节点完整name。协调方只修正JSON该静态字段，probe增真实完整name断言并改用新的final隔离子目录，以相同原命令再运行exit0，全部17绑定与评分/拒绝门再通过。首次patch按格式化JSON猜了行，因实际行内格式未匹配而无修改；随后读取真实行修正，属于编辑匹配错误，不是产品失败。源码/Graph IR未改，unknown未升级，没有方法运行行为证明。
+
+本批准备切片接受，精确待提交仅原三文件及本轮三个协调文档；没有UI修改、模型/production凭据/网络/GUI验收，不把静态语料当已接受rubric或第二批实现。AGENTS新增0条，已有证据类型/置信度/相同快照与语义未评估门覆盖本次经验；具体选择器诊断保留开发/独立记录。Git真实动作及SHA在执行后补记，其他开发仍在自己worktree实现，不纳入提交。

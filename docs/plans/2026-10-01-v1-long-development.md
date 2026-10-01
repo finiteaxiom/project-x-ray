@@ -78,7 +78,7 @@ Sol 先测量当前全量索引/查询/内存基线，设计按语言的保守�
 | 1D 解释/授权 UI | 待契约冻结 | Luna | 后端契约进入主checkout后派发 |
 | 1E 独立测试、真实 GUI/远程与集成 | 待交付 | 协调方 | 实际代码/产物，远程密钥与项目选择未完成 |
 | 2 所有权语义评价 | 待设计 | 双线程 | 第一批接口稳定，真实远程阻碍分别保留 |
-| 2A-L 源码约束语义验收语料准备 | 已派发准备 | Luna | 只新增三份静态样例/记录，复用ownership-training；不实现评分或契约，不依赖尚待接线的IPC，不改变离线未评估语义 |
+| 2A-L 源码约束语义验收语料准备 | 修正后准备切片已验收 | Luna/协调方 | 原三文件；14范围匹配，17评分选择器实际唯一绑定，10有效变体经真实application评分、无引用/错快照拒绝；角色/背景/unknown边界明确，非语义模型/GUI验收 |
 | 3A-L 增量索引基线/验收设计 | 文档准备已接受 | Luna/协调方 | 两文件冻结，对照实际索引/规范化/benchmark源码复审；无性能测量或增量实现/GUI结果 |
 | 3B-L 隔离本地基线工具 | 修正后工具切片已验收 | Luna/协调方 | 原四文件；独立9测试、真实child取消自行退出、矛盾门禁拒绝及小样例11门禁通过；不是规模性能、增量实现或GUI验收 |
 | 4A Windows发布链/验收设计 | 修订后设计已接受 | Luna/协调方 | 隔离共存/原始签名Status/迁移阶段已复审；仅文档，不代表安装、升级、卸载或GUI已验收 |
@@ -93,6 +93,8 @@ Sol 先测量当前全量索引/查询/内存基线，设计按语言的保守�
 2B-2按风险再拆稳定边界：先实现Windows Credential Manager原生模块与窄TS适配器，再实现worker/broker/main/preload。2B-2A目标是固定自有target的状态/读/写/删除及失败关闭；生产模块固定com.projectxray.desktop/openai/api-key/v1，测试模块编译为独立固定test target，不接受用户target或环境切换，不把测试模块复制进生产产物。1–2048 UTF-8字节、Win32上限、编码/控制字符双层校验、零化/CredFree及固定错误；无SQLite/safeStorage/env回退。仅desktop新增windows-credentials.ts/test、native/windows_credentials.cc/binding.gyp、scripts/build-credentials.cjs/copy-credentials.cjs/credentials-smoke.cjs/credentials-electron-smoke.cjs、windows-credentials-scripts.test.ts与本批记录；desktop/package及lock仅同版本node-gyp12.4.0 dev声明/本批脚本，AGENTS只合格小修。不得先改main/preload/worker/tsup/contracts/application/graph/UI。先纯测试与类型冻结，实际native编译/Node/Electron/portable验收按协调窗口分阶段，缺模块/非Windows明确unavailable且不删兼容代码。该切片不代表真实生产凭据或第一批E2E完成。
 
 ## 自动跟进
+
+2B-2B范围补充（2026-10-02）：协调方核对App现有navigateTo/installProject转换与卸载，主进程无法观察React内部页面变化。允许Sol在自身worktree仅追加apps/ui/src/App.tsx的最小撤销接线及原App.test.tsx回归，先记录触发/排序边界；离开explain、项目/快照/显式新generation变化和卸载关闭上下文，无变化轮询不重复。不能只靠被动effect遗漏快速批处理切页；旧清理及迟到回复不得影响新context，撤销失败仍关闭权限。没有控件、项目授权、凭据或1D业务状态；权威仍为broker与数据库提交，实际GUI门保持开放。Luna当前仅语料三文件，无同文件并行。
 
 2A-L是不依赖第一批IPC/凭据接线的第二批验收准备，非语义评分实现。代码依据是packages/ownership/src/index.ts当前只核定位/结构、自由文本始终not-evaluated，ADR0006及contracts也明确此边界；既有test-fixtures/ownership-training含TS调用与Python相对导入别名、调用链/变量证据，可复用而无需修改分析器或另造产品能力。目标为后续ADR/rubric提供能够逐项核对源码的正反例，区分引用正确与解释正确，不能把此准备标为模型质量通过。
 
