@@ -21,6 +21,7 @@
   "dependencies": {
     "@project-xray/application": "workspace:*",
     "@project-xray/contracts": "workspace:*",
+    "@project-xray/llm": "workspace:*",
     "better-sqlite3": "^13.0.3",
     "electron": "^44.4.3",
     "zod": "^4.1.12"
