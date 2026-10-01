@@ -203,6 +203,12 @@ importers:
         specifier: ^7.6.13
         version: 7.6.13
 
+  packages/llm:
+    dependencies:
+      '@project-xray/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+
   packages/ownership:
     dependencies:
       '@project-xray/analyzer-core':
