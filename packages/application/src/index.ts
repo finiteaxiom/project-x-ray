@@ -17,6 +17,8 @@ import { PythonAnalyzer } from "@project-xray/analyzer-python";
 import { captureComparison, cloneRepository, comparisonStateFingerprint, getGitHead, type CapturedSide } from "@project-xray/git";
 import { GraphStore, overviewFromSnapshot, queryFlow, searchNodes } from "@project-xray/graph";
 import { createQuestions, gradeAnswer } from "@project-xray/ownership";
+import { RemoteExplanationApplication, type RemoteProviderPort, type RemoteCredentialPort } from "./remote-explanation.js";
+export { RemoteExplanationApplication, type RemoteApplicationPorts, type RemoteProviderPort, type RemoteCredentialPort } from "./remote-explanation.js";
 
 export interface XRayApplicationOptions {
   databasePath?: string;
@@ -42,7 +44,7 @@ export class XRayApplication {
   private readonly questions = new Map<string, OwnershipQuestion>();
 
   constructor(options: XRayApplicationOptions) {
-    this.legacyStore = new GraphStore(options.databasePath);
+    this.legacyStore = new GraphStore(options.databasePath, "global");
     this.cacheRoot = options.cacheRoot;
     this.projectDatabaseRoot = options.projectDatabaseRoot;
     this.onProgress = options.onProgress;
@@ -56,7 +58,7 @@ export class XRayApplication {
     mkdirSync(root, { recursive: true });
     for (const name of readdirSync(root).filter((item) => item.endsWith(".sqlite"))) {
       try {
-        const repositoryId = name.slice(0, -7); const store = new GraphStore(join(root, name)); const latest = store.getLatestOverview();
+        const repositoryId = name.slice(0, -7); const store = new GraphStore(join(root, name), "project"); const latest = store.getLatestOverview();
         this.stores.set(repositoryId, store);
         if (latest) {
           this.snapshotStores.set(latest.snapshotId, store);
@@ -68,6 +70,29 @@ export class XRayApplication {
   }
 
   getCurrentProject(): ProjectOverview | null { return this.current; }
+
+  /** Trusted worker wiring only. No provider or credential reader is configured by default. */
+  createRemoteExplanations(ports: { provider?: RemoteProviderPort; credentials?: RemoteCredentialPort; onTask?: (task: import("@project-xray/contracts").RemoteTaskRecord) => void } = {}): RemoteExplanationApplication {
+    return new RemoteExplanationApplication({
+      authority: this.legacyStore,
+      ...(ports.provider ? { provider: ports.provider } : {}), ...(ports.credentials ? { credentials: ports.credentials } : {}), ...(ports.onTask ? { onTask: ports.onTask } : {}),
+      stores: ref => {
+        // Use fresh DB identities, including legacy snapshots with per-project settings.
+        const settings = this.stores.get(ref.repositoryId) ?? this.legacyStore;
+        let source = settings;
+        try { source.remoteSnapshotMetadata(ref.repositoryId, ref.snapshotId); }
+        catch { source = this.legacyStore; source.remoteSnapshotMetadata(ref.repositoryId, ref.snapshotId); }
+        return { settings, source };
+      },
+      currentReference: () => {
+        if (this.projectDatabaseRoot) for (const name of readdirSync(this.projectDatabaseRoot).filter(item => item.endsWith(".sqlite"))) {
+          const id = name.slice(0, -7); if (!this.stores.has(id)) this.stores.set(id, new GraphStore(join(this.projectDatabaseRoot, name), "project"));
+        }
+        return [this.legacyStore, ...this.stores.values()].map(store => store.getActiveReference()).filter((item): item is NonNullable<typeof item> => item !== null).sort((a, b) => b.activation.localeCompare(a.activation))[0] ?? null;
+      },
+      checkWorkspace: async (ref, signal) => { throwIfAborted(signal); const state = await this.getSnapshotState(ref); throwIfAborted(signal); return state; },
+    });
+  }
 
   getIgnoreSettings(ref: SnapshotRef): IgnoreSettingsResponse {
     if (!ignoreSettingsRequestSchema.safeParse({ repositoryId: ref.repositoryId, snapshotId: ref.snapshotId }).success) throw new SafeDiagnosticError("IGNORE_SETTINGS_INVALID");
@@ -187,14 +212,14 @@ export class XRayApplication {
   private storeForRepository(repositoryId: string): GraphStore {
     if (!this.projectDatabaseRoot) return this.legacyStore;
     const existing = this.stores.get(repositoryId); if (existing) return existing;
-    const store = new GraphStore(join(this.projectDatabaseRoot, `${repositoryId}.sqlite`)); this.stores.set(repositoryId, store); return store;
+    const store = new GraphStore(join(this.projectDatabaseRoot, `${repositoryId}.sqlite`), "project"); this.stores.set(repositoryId, store); return store;
   }
 
   private requireSnapshot(ref: SnapshotRef): { snapshot: ProjectSnapshot; store: GraphStore } {
     const known = this.snapshotStores.get(ref.snapshotId);
     if (!known && this.projectDatabaseRoot && !this.stores.has(ref.repositoryId)) {
       const databasePath = join(this.projectDatabaseRoot, `${ref.repositoryId}.sqlite`);
-      if (existsSync(databasePath)) this.stores.set(ref.repositoryId, new GraphStore(databasePath));
+      if (existsSync(databasePath)) this.stores.set(ref.repositoryId, new GraphStore(databasePath, "project"));
     }
     const snapshot = known?.loadSnapshot(ref.snapshotId)
       ?? this.stores.get(ref.repositoryId)?.loadSnapshot(ref.snapshotId)
@@ -362,7 +387,7 @@ export class XRayApplication {
 
   private requireStore(ref: SnapshotRef): GraphStore {
     const known = this.snapshotStores.get(ref.snapshotId); if (known?.getOverview(ref.snapshotId)?.repositoryId === ref.repositoryId) return known;
-    if (this.projectDatabaseRoot && !this.stores.has(ref.repositoryId)) { const databasePath = join(this.projectDatabaseRoot, `${ref.repositoryId}.sqlite`); if (existsSync(databasePath)) this.stores.set(ref.repositoryId, new GraphStore(databasePath)); }
+    if (this.projectDatabaseRoot && !this.stores.has(ref.repositoryId)) { const databasePath = join(this.projectDatabaseRoot, `${ref.repositoryId}.sqlite`); if (existsSync(databasePath)) this.stores.set(ref.repositoryId, new GraphStore(databasePath, "project")); }
     for (const store of [this.stores.get(ref.repositoryId), this.legacyStore]) { if (store?.getOverview(ref.snapshotId)?.repositoryId === ref.repositoryId) { this.snapshotStores.set(ref.snapshotId, store); return store; } }
     throw new Error("项目或快照不存在");
   }

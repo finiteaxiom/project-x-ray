@@ -171,6 +171,9 @@ importers:
       '@project-xray/graph':
         specifier: workspace:*
         version: link:../graph
+      '@project-xray/llm':
+        specifier: workspace:*
+        version: link:../llm
       '@project-xray/ownership':
         specifier: workspace:*
         version: link:../ownership

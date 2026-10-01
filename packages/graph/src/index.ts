@@ -1,7 +1,10 @@
 import Database from "better-sqlite3";
 import { createHash } from "node:crypto";
+import { RemoteExplanationStore, type GraphStoreRole } from "./remote-explanation-store.js";
+export { RemoteExplanationStore, remoteStoreFailure, type GraphStoreRole } from "./remote-explanation-store.js";
 import {
   canonicalJson, canonicalSnapshotContent, canonicalSnapshotResult, IGNORE_POLICY_VERSION, projectIgnoreSettingsSchema, ignoreRulesSchema, SafeDiagnosticError, type ProjectIgnoreSettings,
+  analysisIdentitySchema, indexHealthSchema, sourceFileIdentitySchema, graphNodeSchema, RemoteExplanationError,
   GRAPH_QUERY_VERSION, MODULE_OVERVIEW_VERSION, parseChangeReport, graphQueryRequestSchema, projectOverviewSchema, projectSnapshotSchema,
   type ChangeReport, type EvidenceRangeResponse,
   type Evidence, type FlowResult, type GraphEdge, type GraphNode, type GraphQueryRequest, type GraphQueryResponse, type MasteryRecord, type OwnershipAttempt,
@@ -34,11 +37,62 @@ function parseStoredSnapshot(payload: string): ProjectSnapshot {
 
 export class GraphStore {
   private readonly database: Database.Database;
+  readonly remote: RemoteExplanationStore;
 
-  constructor(databasePath = ":memory:") {
+  constructor(databasePath = ":memory:", role: GraphStoreRole = "project") {
+    if (role !== "global" && role !== "project") throw new RemoteExplanationError("POLICY_INVALID");
     this.database = new Database(databasePath);
-    this.database.pragma("journal_mode = WAL");
-    this.migrate();
+    this.remote = new RemoteExplanationStore(this.database, role);
+    try {
+      this.database.pragma("busy_timeout = 250");
+      this.database.pragma("journal_mode = WAL");
+      this.migrate(); this.remote.migrate();
+    } catch (error) { this.database.close(); throw error; }
+  }
+
+  getActiveReference(): { repositoryId: string; snapshotId: string; activation: string } | null {
+    return this.database.prepare("SELECT repository_id repositoryId,snapshot_id snapshotId,activated_at activation FROM snapshot_overviews WHERE is_current=1 ORDER BY activated_at DESC,snapshot_id LIMIT 1").get() as { repositoryId: string; snapshotId: string; activation: string } | undefined ?? null;
+  }
+
+  remoteSnapshotMetadata(repositoryId: string, snapshotId: string): { analysisIdentity: ProjectSnapshot["analysisIdentity"]; health: ProjectSnapshot["health"] } {
+    const row = this.database.prepare("SELECT repository_id repositoryId,json_extract(payload,'$.analysisIdentity') identity,json_extract(payload,'$.health') health FROM snapshots WHERE snapshot_id=?").get(snapshotId) as { repositoryId: string; identity: string; health: string } | undefined;
+    if (!row || row.repositoryId !== repositoryId) throw new RemoteExplanationError("SNAPSHOT_NOT_CURRENT");
+    return { analysisIdentity: analysisIdentitySchema.parse(JSON.parse(row.identity)), health: indexHealthSchema.parse(JSON.parse(row.health)) };
+  }
+
+  remoteSourceManifest(snapshotId: string, filePaths: readonly string[]): ProjectSnapshot["sourceFiles"] {
+    if (filePaths.length > 80) throw new RemoteExplanationError("LIMIT_EXCEEDED");
+    return filePaths.map(filePath => {
+      const row = this.database.prepare("SELECT file_path filePath,content_hash contentHash,length(CAST(content AS BLOB)) bytes,language FROM source_snapshots WHERE snapshot_id=? AND file_path=?").get(snapshotId, filePath);
+      if (!row) throw new RemoteExplanationError("EVIDENCE_INSUFFICIENT"); return sourceFileIdentitySchema.parse(row);
+    });
+  }
+
+  remoteNodeEvidence(snapshotId: string, node: GraphNode): Evidence[] {
+    const parsed = graphNodeSchema.parse(node);
+    if (parsed.evidenceId) { const proof = this.getEvidence(snapshotId, parsed.evidenceId); return proof ? [proof] : []; }
+    if (!parsed.span) return [];
+    const range = parsed.span;
+    const rows = this.database.prepare("SELECT payload FROM evidence WHERE snapshot_id=? AND file_path=? AND start_line=? AND start_column=? AND end_line=? AND end_column=? ORDER BY evidence_id LIMIT 8").all(snapshotId, range.filePath, range.startLine, range.startColumn, range.endLine, range.endColumn) as PayloadRow[];
+    return rows.map(row => JSON.parse(row.payload) as Evidence);
+  }
+
+  withExplanationRevisions<T>(identity: import("@project-xray/contracts").RemoteCapturedIdentity, settings: GraphStore, source: GraphStore, work: () => T): T {
+    if (this.remote.role !== "global") throw new RemoteExplanationError("POLICY_INVALID");
+    // Fixed order: authority -> project settings -> legacy/source/result. No async work here.
+    return this.remote.immediate(() => settings.withIgnoreRevision(identity.repositoryId, identity.ignoreRevision, () => source.remote.immediate(() => {
+      this.remote.assertIdentity(identity, settings, source.remote); return work();
+    })));
+  }
+
+  discardFailedExplanation(identity: import("@project-xray/contracts").RemoteCapturedIdentity, settings: GraphStore, source: GraphStore): void {
+    if (this.remote.role !== "global") throw new RemoteExplanationError("POLICY_INVALID");
+    this.remote.immediate(() => {
+      const task = this.remote.task(identity.taskId);
+      if (!task || task.phase === "dispatched" || canonicalJson(task.identity) !== canonicalJson(identity)) throw new RemoteExplanationError("POLICY_INVALID");
+      if (task.phase === "completed") return; // Successful append-only history is never compensated.
+      settings.remote.immediate(() => source.remote.immediate(() => source.remote.discardUnpublishedResult(identity)));
+    });
   }
 
   private migrate(): void {

@@ -18,6 +18,7 @@
     "@project-xray/contracts": "workspace:*",
     "@project-xray/git": "workspace:*",
     "@project-xray/graph": "workspace:*",
+    "@project-xray/llm": "workspace:*",
     "@project-xray/ownership": "workspace:*"
   }
 }
