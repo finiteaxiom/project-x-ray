@@ -5,6 +5,7 @@ import fg from "fast-glob";
 import { createIgnorePolicy, isCustomIgnored } from "./ignore-policy.js";
 import type { IgnorePolicy } from "@project-xray/contracts";
 export { createIgnorePolicy, matchesIgnoreRule, configurationFingerprint } from "./ignore-policy.js";
+export { finalizeAnalysisSnapshot } from "./snapshot-identity.js";
 import { diagnosticForError, type Evidence, type GraphEdge, type GraphNode, type SafeDiagnosticCode, type SafeDiagnosticDetailCode } from "@project-xray/contracts";
 import { createSecureReadScope, readSecureProjectFile } from "./secure-read.js";
 export { createSecureReadScope, isProjectPathSecurityError, ProjectPathSecurityError, readProjectFileSecure, readSecureProjectFile, readSecureProjectFileBuffer, type SecureReadScope, type SecureReadTestHooks } from "./secure-read.js";

@@ -1,7 +1,7 @@
 import Database from "better-sqlite3";
 import { createHash } from "node:crypto";
 import {
-  IGNORE_POLICY_VERSION, projectIgnoreSettingsSchema, ignoreRulesSchema, SafeDiagnosticError, type ProjectIgnoreSettings,
+  canonicalJson, canonicalSnapshotContent, canonicalSnapshotResult, IGNORE_POLICY_VERSION, projectIgnoreSettingsSchema, ignoreRulesSchema, SafeDiagnosticError, type ProjectIgnoreSettings,
   GRAPH_QUERY_VERSION, MODULE_OVERVIEW_VERSION, parseChangeReport, graphQueryRequestSchema, projectOverviewSchema, projectSnapshotSchema,
   type ChangeReport, type EvidenceRangeResponse,
   type Evidence, type FlowResult, type GraphEdge, type GraphNode, type GraphQueryRequest, type GraphQueryResponse, type MasteryRecord, type OwnershipAttempt,
@@ -147,6 +147,9 @@ export class GraphStore {
     this.database.prepare("INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES(6, ?)").run(new Date().toISOString());
     this.database.prepare("INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES(7, ?)").run(new Date().toISOString());
     this.database.transaction(() => {
+      const columns = new Set((this.database.prepare("PRAGMA table_info(snapshot_overviews)").all() as Array<{ name: string }>).map(item => item.name));
+      if (!columns.has("activated_at")) this.database.exec("ALTER TABLE snapshot_overviews ADD COLUMN activated_at TEXT NOT NULL DEFAULT ''");
+      this.database.prepare("INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES(9, ?)").run(new Date().toISOString());
       this.database.exec("CREATE TABLE IF NOT EXISTS project_ignore_settings(repository_id TEXT PRIMARY KEY, payload TEXT NOT NULL)");
       this.database.prepare("INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES(8, ?)").run(new Date().toISOString());
     })();
@@ -191,19 +194,28 @@ export class GraphStore {
     if (!columns.has("is_current")) this.database.exec("ALTER TABLE snapshot_overviews ADD COLUMN is_current INTEGER NOT NULL DEFAULT 1");
   }
 
-  saveSnapshot(snapshot: ProjectSnapshot, sources: Array<{ filePath: string; contentHash: string; language: string; content: string }> = [], makeCurrent = true, ignoreRevision?: number): void {
+  saveSnapshot(snapshot: ProjectSnapshot, sources: Array<{ filePath: string; contentHash: string; language: string; content: string }> = [], makeCurrent = true, ignoreRevision?: number, activationAfter?: string): ProjectSnapshot {
     snapshot = projectSnapshotSchema.parse(snapshot);
     const save = this.database.transaction(() => {
       if (ignoreRevision !== undefined) this.assertIgnoreRevision(snapshot.repositoryId, ignoreRevision);
-      const existing = this.database.prepare("SELECT is_current FROM snapshot_overviews WHERE snapshot_id = ?").get(snapshot.snapshotId) as { is_current: number } | undefined;
-      const isCurrent = makeCurrent || existing?.is_current === 1 ? 1 : 0;
-      this.database.prepare("DELETE FROM nodes WHERE snapshot_id = ?").run(snapshot.snapshotId);
-      this.database.prepare("DELETE FROM edges WHERE snapshot_id = ?").run(snapshot.snapshotId);
-      this.database.prepare("DELETE FROM evidence WHERE snapshot_id = ?").run(snapshot.snapshotId);
-      this.database.prepare("DELETE FROM source_snapshots WHERE snapshot_id = ?").run(snapshot.snapshotId);
-      this.database.prepare("DELETE FROM snapshot_overviews WHERE snapshot_id = ?").run(snapshot.snapshotId);
+      if (snapshot.analysisIdentity.analysisResult && createHash("sha256").update(canonicalSnapshotResult(snapshot)).digest("hex") !== snapshot.analysisIdentity.analysisResult.fingerprint) throw new SafeDiagnosticError("SNAPSHOT_CONTENT_CONFLICT");
+      if (snapshot.analysisIdentity.analysisResult) {
+        const sortFiles = <T extends { filePath: string }>(items: T[]): T[] => [...items].sort((a, b) => a.filePath < b.filePath ? -1 : a.filePath > b.filePath ? 1 : 0);
+        const actualFiles = sources.map(source => ({ filePath: source.filePath, contentHash: createHash("sha256").update(source.content).digest("hex"), bytes: Buffer.byteLength(source.content), language: source.language }));
+        if (sources.some((source, index) => source.contentHash !== actualFiles[index]!.contentHash) || canonicalJson(sortFiles(actualFiles)) !== canonicalJson(sortFiles(snapshot.sourceFiles))) throw new SafeDiagnosticError("SNAPSHOT_CONTENT_CONFLICT");
+      }
+      if ([...snapshot.nodes, ...snapshot.edges, ...snapshot.evidence].some(item => item.snapshotId !== snapshot.snapshotId)) throw new SafeDiagnosticError("SNAPSHOT_CONTENT_CONFLICT");
+      const existing = this.database.prepare("SELECT payload FROM snapshots WHERE snapshot_id=?").get(snapshot.snapshotId) as PayloadRow | undefined;
+      if (existing) {
+        const saved = parseStoredSnapshot(existing.payload);
+        const savedSources = this.database.prepare("SELECT file_path AS filePath, content_hash AS contentHash, language, content FROM source_snapshots WHERE snapshot_id=? ORDER BY file_path").all(snapshot.snapshotId);
+        const sortSources = (items: unknown[]): unknown[] => [...items].sort((x, y) => canonicalJson(x) < canonicalJson(y) ? -1 : canonicalJson(x) > canonicalJson(y) ? 1 : 0);
+        if (canonicalSnapshotContent(saved) !== canonicalSnapshotContent(snapshot) || canonicalJson(sortSources(savedSources)) !== canonicalJson(sortSources(sources))) throw new SafeDiagnosticError("SNAPSHOT_CONTENT_CONFLICT");
+        if (makeCurrent) this.activateSnapshot(saved, activationAfter);
+        return saved;
+      }
       this.database.prepare(`
-        INSERT OR REPLACE INTO snapshots(snapshot_id, repository_id, root_path, created_at, payload)
+        INSERT INTO snapshots(snapshot_id, repository_id, root_path, created_at, payload)
         VALUES(@snapshotId, @repositoryId, @rootPath, @createdAt, @payload)
       `).run({ snapshotId: snapshot.snapshotId, repositoryId: snapshot.repositoryId, rootPath: snapshot.rootPath, createdAt: snapshot.createdAt, payload: JSON.stringify(snapshot) });
 
@@ -231,9 +243,24 @@ export class GraphStore {
       `);
       for (const source of sources) insertSource.run({ snapshotId: snapshot.snapshotId, ...source });
       const overview = overviewFromSnapshot(snapshot);
-      this.database.prepare("INSERT INTO snapshot_overviews(snapshot_id, repository_id, created_at, is_current, payload) VALUES(?, ?, ?, ?, ?)").run(snapshot.snapshotId, snapshot.repositoryId, snapshot.createdAt, isCurrent, JSON.stringify(overview));
+      this.database.prepare("INSERT INTO snapshot_overviews(snapshot_id, repository_id, created_at, is_current, payload) VALUES(?, ?, ?, ?, ?)").run(snapshot.snapshotId, snapshot.repositoryId, snapshot.createdAt, 0, JSON.stringify(overview));
+      if (makeCurrent) this.activateSnapshot(snapshot, activationAfter);
+      return snapshot;
     });
-    save();
+    return save.immediate();
+  }
+
+  private activateSnapshot(snapshot: ProjectSnapshot, activationAfter = ""): void {
+    const row = this.database.prepare("SELECT snapshot_id FROM snapshot_overviews WHERE snapshot_id=?").get(snapshot.snapshotId);
+    if (!row) this.database.prepare("INSERT INTO snapshot_overviews(snapshot_id,repository_id,created_at,is_current,payload) VALUES(?,?,?,0,?)").run(snapshot.snapshotId, snapshot.repositoryId, snapshot.createdAt, JSON.stringify(overviewFromSnapshot(snapshot)));
+    this.database.prepare("UPDATE snapshot_overviews SET is_current=0 WHERE repository_id=? AND snapshot_id<>?").run(snapshot.repositoryId, snapshot.snapshotId);
+    const prior = Math.max(Date.parse(this.getCurrentActivation()) || 0, Date.parse(activationAfter) || 0);
+    this.database.prepare("UPDATE snapshot_overviews SET is_current=1,activated_at=? WHERE snapshot_id=?").run(new Date(Math.max(Date.now(), prior + 1)).toISOString(), snapshot.snapshotId);
+  }
+
+  getCurrentActivation(): string {
+    const row = this.database.prepare("SELECT CASE WHEN activated_at='' THEN created_at ELSE activated_at END AS activatedAt FROM snapshot_overviews WHERE is_current=1 ORDER BY activatedAt DESC,created_at DESC LIMIT 1").get() as { activatedAt: string } | undefined;
+    return row?.activatedAt ?? this.getLatestSnapshot()?.createdAt ?? "";
   }
 
   loadSnapshot(snapshotId: string): ProjectSnapshot | null {
@@ -256,7 +283,7 @@ export class GraphStore {
   }
 
   getLatestOverview(): ProjectOverview | null {
-    const row = this.database.prepare("SELECT payload FROM snapshot_overviews WHERE is_current=1 ORDER BY created_at DESC LIMIT 1").get() as PayloadRow | undefined;
+    const row = this.database.prepare("SELECT payload FROM snapshot_overviews WHERE is_current=1 ORDER BY CASE WHEN activated_at='' THEN created_at ELSE activated_at END DESC,created_at DESC LIMIT 1").get() as PayloadRow | undefined;
     if (row) return projectOverviewSchema.parse(JSON.parse(row.payload));
     const snapshot = this.getLatestSnapshot(); return snapshot ? this.getOverview(snapshot.snapshotId) : null;
   }

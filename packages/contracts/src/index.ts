@@ -7,6 +7,8 @@ export const MODULE_OVERVIEW_VERSION = "1.0.0";
 export const CHANGESET_VERSION = "1.1.0";
 export const OWNERSHIP_QUESTION_VERSION = "2.0.0";
 export const OWNERSHIP_SCORING_VERSION = "2.1.0";
+export const ANALYSIS_RESULT_IDENTITY_VERSION = "1.0.0";
+export { canonicalJson, canonicalSnapshotResult, canonicalSnapshotContent } from "./snapshot-content.js";
 
 export const IGNORE_POLICY_VERSION = "1.0.0";
 // Exclusion-only, root-relative grammar. This schema is shared by IPC and storage.
@@ -28,6 +30,7 @@ export const safeDiagnosticCodeSchema = z.enum([
   "GIT_COMPARISON_FAILED", "GIT_REPOSITORY_INVALID", "GIT_NO_COMMIT", "GIT_CONFLICT", "GIT_MISSING_BASE", "GIT_PATH_REJECTED", "GIT_WORKTREE_UNSTABLE",
   "WORKER_FAILED", "TASK_FAILED", "SNAPSHOT_NOT_CURRENT", "INDEX_SOURCE_CHANGED", "SNAPSHOT_VALIDATION_UNAVAILABLE", "LEGACY_DIAGNOSTIC_REDACTED",
   "IGNORE_SETTINGS_INVALID", "IGNORE_SETTINGS_CONFLICT", "IGNORE_SETTINGS_BUSY",
+  "SNAPSHOT_CONTENT_CONFLICT",
 ]);
 export type SafeDiagnosticCode = z.infer<typeof safeDiagnosticCodeSchema>;
 export const safeDiagnosticDetailCodeSchema = z.union([
@@ -37,6 +40,7 @@ export const safeDiagnosticDetailCodeSchema = z.union([
 export type SafeDiagnosticDetailCode = z.infer<typeof safeDiagnosticDetailCodeSchema>;
 
 const SAFE_DIAGNOSTIC_MESSAGES: Record<SafeDiagnosticCode, string> = {
+  SNAPSHOT_CONTENT_CONFLICT: "快照身份与已保存内容冲突；已拒绝覆盖历史证据",
   IGNORE_SETTINGS_INVALID: "项目排除配置无效或已损坏；已停止读取，请修正规则",
   IGNORE_SETTINGS_CONFLICT: "项目排除配置已变化；请刷新后重试",
   IGNORE_SETTINGS_BUSY: "索引或比较任务进行中；请在结束后重试保存",
@@ -210,6 +214,7 @@ export type SourceFileIdentity = z.infer<typeof sourceFileIdentitySchema>;
 export const analysisIdentitySchema = z.object({
   graphIrVersion: z.string(), analyzerVersions: z.record(z.string(), z.string()), configurationHash: z.string(), sourceFingerprint: z.string(),
   ignorePolicy: ignorePolicySchema.optional(),
+  analysisResult: z.object({ version: z.literal(ANALYSIS_RESULT_IDENTITY_VERSION), fingerprint: z.string().regex(/^[0-9a-f]{64}$/) }).strict().optional(),
 });
 export type AnalysisIdentity = z.infer<typeof analysisIdentitySchema>;
 
