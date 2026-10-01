@@ -31,6 +31,25 @@ computer-use 已完整读取 SKILL、guidance/api/confirmations；初始化及�
 
 启动审查监控游标：Luna `6b95ab3f-37a6-4ff7-8a6f-d52b190d59ef:8`，Sol `dfa67683-bad0-4c3b-90f0-e3c97f2262ab:6`。后续以新wait_threads结果覆盖，不能反复审查旧冻结/旧报告。
 
-## 反馈与规则评估
+## 1A 复审与1C-1启动
+
+已独立重读Sol A–E修订全文相关段落：2048UTF-8 byte应用上限/原生常量验证、不截断；main在权威policy事务提交context后才放行，worker同锁dispatch核验；全字段预算和unknown引用强制unknown；desktop显式node-gyp同版本dev声明；按global/project角色迁移。方向接受，运行证明仍须实际回归，未把设计推演变成AGENTS经验。
+
+Sol idle/只有两份文档未跟踪时，协调方将ADR状态标已接受，切独立任务分支`codex/llm-explanations`、ff最新main文档，再仅提交该ADR与设计记录为`fde7b95184fc3425b95a75c1f730d13084cc762c`，主checkout ff集成；Luna未跟踪样例保持。随后派发1C-1：只contracts新独立remote schema/re-export、新llm包/定向测试/内部workspace lock及其记录；不接现有XRayApi、不改app/graph/desktop/ui或native，不真实联网模型。1C-2后端/凭据与1D UI等待契约交付审查。
+
+## 1B 独立静态验证
+
+已独立读4源码、README、gold和Electron矩阵。以`node --import tsx --input-type=module`从stdin运行审查脚本，只调用已有TypeScriptAnalyzer.analyzeProject/analyze和PythonAnalyzer.analyze解析样例，不执行/导入样例。使用node:assert核验7处调用范围、置信度、词法目标与跨项目ID；全部通过，退出0：
+
+- Alpha TS四条verified CALLS分别11:11–11:31、16:9–16:30、20:16–20:36、21:21–21:59；两describeState节点及绑定独立。
+- 动态selected调用15:17–15:27保持unknown；JS调用6:9–6:28为verified。
+- Beta调用6:9–6:29，项目ID不同不复用Alpha符号；Python仅format_summary函数，注释不产生CALLS/权限。
+- 来源SHA256：alpha/dashboard.ts `113be8fa70444c6a0362f191321426cf065521c3f9c1786983ccfc993a060585`，alpha/legacy.js `0a8d42f3a4481dffb51bffb44e325cc493e82a0ee5abead4748a51cec8da8ecf`，alpha/summary.py `9e789b6e4c6986252789eea9150821fceb0c7a61390b3cc333ce9eb46d71907d`，beta/dashboard.ts `2183439bd57a60960cb6017f0ad5e2c84a1f6d23d5fa54ac096defcbeeb22de5`。
+
+没有native/full build/SQLite导入/GUI/remote新验收，矩阵仍是准备程序；静态金标通过只接纳准备切片，不代表功能解释产品切片完成。原beta金标列终点差异由Luna修正并按样例预期问题记记录，非产品缺陷。Luna已完成并冻结8文件，协调方已复核最终记录/范围，接纳准备切片。只有上述静态分析是本轮新验证，历史产品GUI结果不外推本批。
+
+Sol当前独立branch为codex/llm-explanations，1C-1已获具体实现派发；Luna待契约稳定后UI任务，非持续空跑。当前监控游标更新：Luna `6b95ab3f-37a6-4ff7-8a6f-d52b190d59ef:15`，Sol在新1C-1回合启动，后续wait_threads取得新cursor。自动任务保持ACTIVE，按实际计划继续。
+
+## 本轮规则判断
 
 本轮为协调设计启动；记录实际任务派发恢复，不编造产品失败或测试闭环。当前无新增AGENTS工程规则：权限协作和验收已有规则覆盖，设计尚无产品复现证据。
