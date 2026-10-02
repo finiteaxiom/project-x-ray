@@ -65,3 +65,13 @@ Luna仅新增docs/plans/2026-10-02-navigation-performance-diagnostic.md及docs/d
 负责人Sol，先完成并冻结2B-S1，协调方再明确派发本批。候选最小边界仅desktop main启动顺序、独立启动所有权策略/测试与本批记录；现有broker/graph恢复算法只有证据证明必要时再明确扩范围。所有权门必须先于数据库打开及worker创建；不靠发布文档要求用户手动串行作为实现保证。不改其他worktree、全局协议、UI控件或生产凭据。
 
 验收：纯启动排序/失败关闭/错误退出回归；协调窗口内以两个真实Electron技术进程、同一全新userData确认第二拒绝且无DB/worker初始化，用不同自建userData确认独立运行；关闭首实例后重开确认恢复且零自动派发。回归保留取消、补偿、completed历史及旧源码保护。当前不使用电脑操作，GUI前台/窗口行为另列未验收；未通过前不提交接线实现。
+
+## 2026-10-02 14:53 恢复后的当前派发
+
+startup 批已通过 root 最新普通 desktop build、4个真实 Electron 技术进程与47项定向回归。同 userData 第二进程 exit0、DB/worker/window 初始化计数为0；首实例保持alive。首session之后按公开存储方法在全新隔离SQL建立人工 dispatched/inflight/context 和 completed/result 历史；第二实例拒绝时状态不变。直接终止自有首进程再启动，遗留任务 interrupted/INTERRUPTED、lease=0、旧context拒绝、completed结果/时间及旧源码不变；重启后实际worker start命令0。不同自建userData独立启动。不是实际provider正在请求、真实HTTP或GUI证明，旧接线和main仍不提交。核心双broker绕过入口失败probe保留原断言。
+
+3D-L两文档设计已冻结并经源码复审接受。下一批3E-L（P2）由Luna仅新增 benchmarks/local-index-navigation-diagnostic.ts、local-index-navigation-diagnostic-child.ts、local-index-navigation-diagnostic.test.ts 与 docs/development-runs/2026-10-02-navigation-performance-diagnostic-tool.md。按已接受3D设计，固定medium128、原11门/两轮1177证据全部导航；公开store方法计时按cold/warm及调用来源分组，inclusive嵌套不能叠加，单独安全读回放不称产品内部计时。固定空间聚合、受限协议/计数/字节/时间、唯一自有目录、取消等待close并失败关闭；所有wrapper正常/异常/取消均恢复。默认1对、最多3对、总时限最多180秒；不改3C工具/产品/缓存/SQL/依赖/AGENTS。可纯测试/类型，真实索引采样仅由协调窗口执行。若三份源码无法满足范围先报告具体依赖，不静默扩大文件。完成门是工具行为与真实门禁独立验证，非性能优化或GUI。
+
+2B-S2（P1）由Sol先设计实际本地rubric/提交胶囊最小切片，依据 ownership.generateQuestions/gradeAnswer、application.gradeOwnershipAnswer passed后删题及GraphStore.saveOwnershipAttempt普通INSERT，以及已经接受的ownership-semantics纯契约缺少question/attempt权威绑定。只新增 docs/plans/2026-10-02-ownership-rubric-capsule.md 与 docs/development-runs/2026-10-02-ownership-rubric-capsule-design.md。明确entry/call-direction/call-path/variable-flow从实际题目/快照/合法引用生成有限criteria/limitations，完整用户所选合法edge路径、无语义关键词评分、预算不裁剪；先纯构造器，再同本地attempt事务保存/冲突/旧attempt不回填。须定义题型规则充分性、胶囊版本/hash/有限不可评估原因、迁移/角色/配置事务与精确未来文件/回归门。不得提前实现SQL、purpose授权、provider/IPC/UI或修改冻结接线/契约/barrel/AGENTS，不占迁移11。计划接受后再派精确实现；缺密钥不妨碍本地准备，不伪称远程质量已验收。
+
+两线程继续各自目录；Sol只读准备已完成，旧所有改动保留，不ff/reset。定时任务复用project-x-ray，PAUSED经工具恢复ACTIVE/原15分钟与静默规则。无新增GUI或生产凭据操作。

@@ -4,6 +4,10 @@
 
 ## 当前实际状态
 
+2026-10-02 14:45–14:56 用户再次授权恢复后，project-x-ray从PAUSED恢复ACTIVE，保持原15分钟静默跟进。两原聊天重新启用，保留所有未提交内容；Luna完成3D-L设计，独立源码复审接受后接3E-L诊断工具实施；Sol完成恢复fixture只读准备后接2B-S2本地rubric/提交胶囊设计。文件/依赖与验收门见non-gui-continuation最新节。
+
+本轮新验证：Sol冻结启动门最新普通desktop build通过；Electron44.4.3/Node24.21.0四进程技术检查与47项定向回归通过。同userData第二进程exit0且DB/worker/窗口初始化0，首实例alive；独立目录可并行；自建SQL的人工dispatched/lease/context保持，首进程直接终止再重开恢复interrupted/lease0/旧context拒绝，已完成记录及人工结果/时间/旧源码不变，实际worker start命令0。无电脑操作/真实provider任务或HTTP结论；GUI/整接线/正式发送取消仍未验，不提交其实现。新公共经验1条为共享userData恢复的入口持锁与真实双进程门，具体证据见审查记录。当前业务main仍1fa81b1，检查前HEAD1d7d66c；本轮协调文档Git结果另记。
+
 实际Git收尾11:13–11:14：工具/纯契约及协调证据14文件提交1fa81b1ab7451abe0a97cde47c87e5e448421688，ls-remote确认origin/main同SHA；首次push exit1报远端ref已在本SHA而expected旧ab8bfc2，再普通push exit0 Everything up-to-date。只声明实际远端一致，不把第一次失败改写成功；没有force、旧接线提交或公开二进制。随后Sol启动门已冻结，root实际9项/desktop+contracts类型通过，真实双Electron及GUI仍未验；Luna导航诊断设计active。新增AGENTS0条。
 
 补充 2026-10-02 11:08：3C-L工具已独立验收，14项/严格类型、默认small、medium128文件三对冷暖11项门禁及1177证据API读取通过；medium第16读取点取消正常退出。三对index约2.0–2.6秒/轮，完整child42–49秒，分项尚未归因，不声称增量加速。2B-S1纯契约在Sol61项定向/118回归通过；root只复制三文件到main并追加公开导出，集成116回归、contracts/desktop/ui类型与实际公共导入通过。语义SQL/模型/界面仍未实现，旧接线GUI仍未验。Sol已接启动所有权门与旧两行测试类型修正；Luna接有实际测量依据的两文档导航诊断设计。两纯切片Git收尾版本随后核对，未提交未验收接线。

@@ -502,3 +502,19 @@ Sol新增三文件冻结，独立读取完整模块/ADR与关键61样例：stric
 Sol启动批冻结idle后继续推进实际审查：读取startup-ownership.ts/test、main末段和record。有效userData选择后同步requestSingleInstanceLock，拒绝exit0、异常/缺所有权exit1且不调用ready/init，ready后复核；锁不提前release。main唯一初始化回调含Policy/Broker/Analysis/IPC/窗口，旧callbacks保留。旧协议测试只在command字段追加1.0.0字面量类型，未改使用点/断言；base总diff还含早先未接受接线两新增测试，不能全部作为新类型修正提交。
 
 独立startup9项及Sol desktop/contracts类型exit0。纯port模型/实际入口AST能证明该源码排序与模型逻辑；**尚未运行新build/两个真实Electron进程/首SQL任务保持/退出重开/隔离userData并行**，不把启动批或整接线标完成。底层双连接probe绕过入口仍展示全局recover假设，新方案需实际入口门证明阻止第二owner才关门。此批继续冻结，root下一协调窗口执行技术验收；原GUI延期、无凭据/HTTP操作不变。实际游标Sol582f17aa-f30f-4365-a7b1-0dbecc3b2b9d:20 idle、Luna768020f8-a63c-4530-81b6-8232542daca8:20 active，本轮无新增AGENTS。
+
+## 2026-10-02 14:45–14:56 恢复自动跟进与真实启动门技术复验
+
+本轮用户再次明确恢复定时任务/双开发线程。读取当前AGENTS、执行队列/最新审查/交接、实际Git和原automation.toml；main HEAD1d7d66c7e4d8accd6f3c23c840256b41dcb87271、开始干净，Sol仍455d4ad并保留全部未验收接线/启动/纯契约改动。定时器实际PAUSED，通过automation_update原id完整字段恢复ACTIVE/原15分钟，不新建。紧凑状态显示Luna原3D设计因额度中断且两目标未创建，Sol冻结交付idle。分别恢复原设计和只读恢复fixture准备；没有重置、重新开发已接受切片或并行重型检查。CODEX_HOME本轮未设置，首次读取该变量路径失败后用已知本机自动任务路径核对，未扫描敏感环境/凭据。
+
+root单窗口在Sol冻结目录执行 pnpm --filter @project-xray/desktop build，exit0，tsup四入口/现有安全读取与凭据模块复制成功；没有重新native编译、生产凭据配置或HTTP请求。新main.js SHA256=190A1487666855BC4B7DD57ED91951273E57A2CA1AADBF4B71A8E5B6297522DB，explanation-worker.js=EA93B8EB826F1B261B5CF44EDC4EE3EF68F63653BCB7970A1BBA9BA694BA81EF（worker未变）。在真实Electron44.4.3/Node24.21.0运行自有ignored owner-process.cjs/owners-runtime.cjs；实际require新dist/main.js，隐藏smoke窗口不操作控件，Module._load包装只计真实SQL/Worker构造与worker start命令，不替换provider或worker。四个独立进程分别为首owner、同目录第二owner、隔离目录owner、首异常退出后的重启owner。只写mkdtemp新自有目录，全部子进程退出后核对tmp根边界再清理。
+
+命令 node --import tsx .benchmarks/remote-desktop-review-20261002/owners-runtime.cjs 最终exit0。同有效userData第二exit0，workers/databases/windows/starts均0、ready=false，首仍alive；另一独立userData正常创建DB/worker/隐藏窗口。首session初始化之后经公开GraphStore保存合法snapshot/source、activation/context与人工provider/authorization元数据，再registerDispatch/appendResult/finish/release构造人工completed历史，另注册dispatched/inflight=1。无真实apikey/网络派发，这些记录不代表首生产provider正在运行。第二拒绝后完整任务/结果/时间、lease=1和active context不变。终止自有首进程而不走before-quit，确认SQL仍dispatched，再实际重启：interrupted/INTERRUPTED、inflight=0、旧context拒绝、task数量2、completed task/result完整不变、旧源码不变。重启退出时真实worker start命令计数0，workers2/databases1/windows1；没有据此宣称实际全系统零HTTP或零凭据调用。GUI仍未操作，不能作为第一批可操作界面/发送取消/模型质量通过。
+
+probe第一次失败是计数hook只接受node:worker_threads，而tsup产物规范化为worker_threads；检查产物后计数两种名称并重跑通过。扩充SQL实验时人为改fixture.rootPath但未重算analysisResult指纹，被正确SNAPSHOT_CONTENT_CONFLICT拒绝；改用原完整不可变snapshot后通过。两个是验证脚本缺陷，非产品缺陷；断言未移除或降低。公开合法结果按真实proof范围建立，finish(null)与已发布result分别比对。新增lease/结果断言后再次运行原入口exit0。apply_patch一次误猜计划文件标题整体校验拒绝，修正实际上下文后成功，仅编辑错误。
+
+独立定向命令 node_modules/.bin/vitest.CMD run apps/desktop/src/startup-ownership.test.ts apps/desktop/src/explanation-broker.test.ts packages/graph/src/remote-explanation-store.test.ts --reporter=dot：47项/3文件exit0。覆盖启动9项和broker/store恢复、取消/时序/身份及历史保护。源码/产物/OS启动门技术切片接受；底层绕过main的双broker原失败断言不改，仍说明全局recover依赖单写入口。整旧接线和main GUI/正式发送取消门继续开放，未提交实现。
+
+Luna两文档3D-L冻结后读全文/记录，对照requireSnapshot/readSource/GraphStore/安全读边界，接受inclusive分组及独立安全读取回放；不能把差值算导航瓶颈或把SQL+parse拆成私有实测。root补设计接受状态，派3E-L三新增benchmark文件+开发记录，仅纯测试/类型，由root随后实际执行CLI/取消/medium门。Sol恢复fixture只读准备完成，指出appendResult/finish/release及等待session/崩溃切点边界；root实验独立构造与执行，不以其报告代替验收。已派2B-S2两新文档设计实际rubric与本地attempt事务胶囊，先核对真实题型/路径/预算/角色/版本/冲突与精确后续文件，不占迁移、不实现SQL/模型/UI。具体可审查目标及门槛先写non-gui-continuation。
+
+本轮公共AGENTS新增1条：全局恢复依赖共享userData单写时的入口持锁/零初始化/异常退出真实进程回归。已有规则涉及跨库发布、任务消息与状态门，未覆盖OS活跃写实例的排他入口；新条有核心原失败、启动修正及本轮真实产物实验支持，适用/动作/记录链接完整，不放当前数值或改变GUI/安全/授权门。开发各自记录0新增合理。只对已接受两设计与协调记录/公共规则做Git收尾，保留Luna新实施文件和Sol全部未验收实现。
