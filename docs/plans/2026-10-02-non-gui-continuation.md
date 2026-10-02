@@ -103,3 +103,9 @@ S3公开接缝补充：Sol核对contracts只exports index，正常ownership消�
 16:24：Luna3F首版设计已冻结并经root实际源码审查，因跨连接改写/删除/损坏payload可被无有效性检查缓存遮蔽，退回原两文档修订。要求选择可观察外部变更且处理本实例写/首次构建/事务/close的最小方案或窄SQL查询；不得宣布只支持受控写入来降低现有失败关闭行为。root隔离双连接WAL实测data_version变化/回滚/读事务延后/关闭门通过，已提供准确结果，仍不是缓存实现验收。Luna不改产品或启动索引；Sol保持原S3纯实现范围、未冻结。重型窗口空闲，不因无冻结实现重复运行既有回归；GUI暂缓与远程未验边界保持。
 
 22:57用户额度恢复后已续派原两批，旧回合均usage-limit失败而非交付。Sol保留三新文件/两导出，继续补第四合同测试、类型及纯回归/记录；Luna只修订3F两文档。main23f6d7a与Sol455d4ad保留，旧接线不集成。定时器ACTIVE/15分钟明确核对，无电脑操作或重型并发，S4/S5未派；阶段只以冻结交付及独立实际证据晋升。
+
+23:06 root按Sol给定两源hash审阅并以独立纯contract probe复现validator缺口：not-evaluated跨记录题号/项目/快照仍接受，首await之后换attempt目标仍接受。已在原S3契约/test/记录内退回统一身份校验与首await前完整捕获，不扩SQL/评分/模型/UI；修正交付后再独立检查，S4/S5仍未派。Luna3F未冻结继续原两文档。既有开发22项测试报告不替代root复验或掩盖新负例，本轮AGENTS0。
+
+## 2026-10-02 23:27 精确后续队列
+
+S3已独立接受并集成1da4d81（纯准备），原validator两缺陷独立探针修正通过；main159/Sol161纯回归与类型通过，AGENTS1条经验。3F修订设计接受，缓存/性能收益未验收。Sol下一批仅S4 GraphStore四文件：新ownership-capsule-store.ts/test、本批run与graph/index窄接缝；核对迁移7/10后用11，private一次receipt、异步准备/同步权威事务、双INSERT全回滚/旧attempt不回填及持久数据损坏拒绝，S5应用集成未派。Luna下一批只读3F-T两文档：新snapshot-navigation-measurement-protocol.md与同名design-run；原3E baseline和全部1177/11门不降，定义有版本的新计数、失效/资源/取消与独立验收范围；无产品/工具实现、索引或重型检查。原两聊天目录、旧改动、GUI/远程/发布门均保持。

@@ -99,3 +99,9 @@ Sol修订后的胶囊两分支与async准备/sync事务设计接受并复制；�
 16:24当前审查：main实际HEAD23f6d7a（此前公开接缝协调文档已推送）。Luna3F首版两文档冻结后root实际读源码复审，因无失效观察的缓存会遮蔽另一连接改写/删除或损坏快照，退回原两文档修订；不接受通过缩小支持范围规避该门。root自有SQLite双连接WAL机制实验exit0：data_version可观察其他连接提交/删除，本连接提交与另一连接回滚不变，持读事务会延后观察，关闭后读取拒绝。机制结果已转Luna，非产品缓存/性能/GUI验收。Sol继续S3纯构造器未冻结，S4/S5仍未派。本轮无新增AGENTS规则，不改安全设置或导入项目，不运行同批重型检查；后续按稳定交付推进。
 
 22:57用户明确额度恢复，实际检查两开发聊天上轮均usage-limit失败、非完成。已恢复原Sol S3纯构造器与Luna3F原两文档修订，保留全部文件与旧worktree HEAD、不重置或自行Git。Sol三新文件已落、capsule测试和反馈记录待补；Luna首版设计未接受实施。原定时器ACTIVE/15分钟已核对，不新建重复。GUI仍暂缓、真实模型/旧接线未验收；本轮无新增规则，恢复状态不当验收成果。
+
+恢复后已确认两聊天均active。四份协调记录精确提交80dff409393680a47ca0ff998bcdaec525eaca88，普通push exit0，ls-remote origin/main精确同SHA；未纳入Luna两候选设计或Sol任何进行中实现。暂无新独立实现验收，原完成/未验收界限保持。
+
+23:06新增独立缺陷：Sol提供稳定源码hash后，root纯契约探针确认not-evaluated validator会接受跨题号/项目/快照的question-非对应attempt组合；调用后首await期间替换attempt对象也能改变验证目标，正常matching控制通过、前后源hash相同。已退回同S3契约/test/记录修正，两个分支统一身份门与首await前完整捕获，待独立复验；未进入SQL/集成/GUI。Luna仍修订3F设计。main80dff40不含此开发中实现，本轮无新增规则，复现exit0不是修复验收成功。
+
+23:27新增可复验成果：S3纯rubric/capsule准备独立接受，实际main提交1da4d8191265e741096278b37b2eeb1f8577f323。两公开validator身份缺陷修正后，独立7错配/受控await/匹配捕获/getter门在Sol/main各通过；main159纯回归与contracts/ownership/graph类型通过。新增AGENTS工程经验1条，未包含旧接线或GUI相关实现。此成果仍无SQL提交、用户界面或自然语言质量判断。3F带有效性标记的导航缓存设计已接受，优化未实现/收益未测。续派Sol S4本地事务端口与Luna3F-T新计量协议只读设计，文件分离、S5未派。GUI/真实远程、签名与干净Windows边界未变化；暂缓电脑操作继续有效。实际push与远端SHA随后核实。

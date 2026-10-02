@@ -127,7 +127,7 @@ wait_threads最新游标`b1ebc819-861b-4d28-af5d-5181e0e3533b:7`仍active。Sol�
 
 紧凑状态检查Sol仍在1C-2A修正、Luna正在3A-L只读准备，无冻结新交付；本轮只调整调度/文档，未运行产品测试、GUI或Git收尾。本轮新增工程经验0条；AGENTS增加的是有直接用户请求依据的工作流约定。
 
-## 1C-2B 接线验收准备（2026-10-01 23:29）
+## 1C-2B 接线验收准备（2026-10-01 23:27）
 
 Sol游标`:9`仍active，已回应提交间退出、finish/补偿失败检查；Luna游标`:6`仍在追踪索引并核对现有benchmark副作用。均未冻结。本轮读取主checkout实际desktop main/preload/package/tsup以及ADR0007，为下一切片准备验收入口；不修改两条开发聊天的源码、不并发运行其测试或重型检查。
 
@@ -598,3 +598,28 @@ Sol实际新增ownership-capsule.ts、semantic-rubric.ts及其测试已经落文
 原automation_update view和明确automation.toml的非敏感id/kind/status/rrule核对为ACTIVE、15分钟、原协调聊天，无需创建重复或反复修改。没有GUI/生产凭据/远程/索引或重型检查。本轮无新增AGENTS规则：恢复授权及进行中开发状态不属于工程经验。四协调文档只记录实际证据与未验收边界，开发两文档仍待修订验收。
 
 续派后紧凑快照已确认原双聊天均active，游标各为上述新epoch后缀:2。Sol报告18项纯builder通过、正在补合同golden/总包预算和记录；这是开发自测报告，root尚未核对冻结源码或独立运行，不标验收通过。Luna恢复设计修订，未冻结。本轮只核对/提交协调记录，不纳入开发中的两设计或任何未验收实现。
+
+## 2026-10-02 23:01–23:06：S3稳定源码审阅与公开validator身份缺陷复现
+
+先读当前四材料/实际Git，main80dff409393680a47ca0ff998bcdaec525eaca88，旧交接补记及Luna两候选文档保留。原双聊天active，Luna3F仍改原两设计；Sol补纯测试/记录。root请求按源码稳定切片审阅，Sol提供ownership-capsule.ts SHA256 `123EB525463E982110D7E2E5711218F74BA67C0F23418B0F68F50526154AFE85`、semantic-rubric.ts `BD96CC66FAEF1F0373F213B112BA6CC45CA140255EB76DD85F4A898F19C59165`；仍补测试，未跑同批整回归或重型构建。
+
+完整读取两源，核对strict分支/有限字段/唯一canonical preimage、四题型选边和精确proof、原→规范引用索引/重复role、完整输入捕获、manifest/源hash与span、预算fallback及固定错误。builder捕获并重算本地grade、记录不变；公开validateOwnershipCapsule目前not-evaluated只核三个摘要，题目-尝试字段关联放在ready内，并在首await之后继续读取调用方question/attempt对象。发现候选问题后用自有纯fixture独立运行，不凭源码猜测派产品修正。
+
+命令 `node --import tsx .benchmarks/remote-desktop-review-20261002/ownership-capsule-binding-probe.ts` exit0，明确是未修正缺陷复现，不是验收绿灯。脚本前后验证上述源hash相同，正常matching控制通过；另三组保持合法attempt原q/r/s，分别把question.id、repositoryId、snapshotId改另一值并重新计算完整questionFingerprint/attemptHash/capsuleHash，validator全部接受。第四组capsule绑定other-attempt，而调用validator瞬间传attempt对象，Promise返回后立即将对象换other-attempt，也被接受。未执行SQL、索引、模型、GUI或导入项目代码，没有改测试文件。
+
+根因已由源码与实测确认：不可评估只是语义/预算降级，不能放松题目与答题关联；摘要自身匹配不能代替关联核验。异步多次读取可变记录可改变验证目标，builder自身capture不涵盖另一个公开validator。已向Sol退回一个原切片内的小修正：仅capsule契约/test/本批记录，必要捕获共享仍在原两源内说明；两个分支统一身份关联，首await前捕获完整输入并后续只消费同一私有数据，不裁剪旧合法字段，不执行getter，不改评分/历史或SQL。加入各身份负例/控制及明确迟到对象替换与匹配捕获不被污染回归，修订hash后独立复验。S4/S5未派，任何S3实现未集成/提交。
+
+当前实际cursor：Sol85467c24-1155-49cc-b7f0-696158c3ee5b:7，Luna49eda2c0-f29f-4f35-a52a-f21ffcad8c23:4。本轮AGENTS新增0：修正尚未再验证，先保留缺陷记录；不把当前进度或假想缓存经验写成规则。GUI/真实远程/旧接线仍未验收。
+
+## 2026-10-02 23:20–23:27：S3独立修正复验、集成与3F设计接受
+
+原双聊天冻结交付：Luna49eda2c0-f29f-4f35-a52a-f21ffcad8c23:6；Sol85467c24-1155-49cc-b7f0-696158c3ee5b:9。实际main审查起点80dff409、Sol455d4ad且旧接线保留。原修正前探针不变；新独立ownership-capsule-binding-fixed.ts在Sol与main各exit0：7组完整重算摘要的题目/尝试身份错配均拒绝，匹配控制通过；受控首摘要暂停时迟到目标替换被拒绝，原匹配三个输入后改不污染私有捕获；getterCalls=0、源码hash前后相同。
+
+读取冻结六文件、开发红绿记录和actual barrel diff，完整核对四型边/来源、完整paired路径、角色规范映射、UTF-8/代理对、预算不裁剪、有限fallback与摘要语义。root Sol原纯回归8文件161项通过及两包类型exit0。复制四新增源/测试与记录逐字节一致，main只追加capsule export不复制旧barrel：main纯回归8文件159项通过，contracts/ownership/graph noEmit全部exit0。两checkout已有测试分母不同，分别报告，不以自测代独立检查。记录详见ownership-rubric-builder.md追加root节。
+
+纯准备切片独立接受。精确7文件暂存检查通过并实际commit1da4d8191265e741096278b37b2eeb1f8577f323；AGENTS逐条查重后新增1条公开异步摘要私有捕获与降级身份关联的预防/回归规则。未包含任何SQL/应用/桌面接线，不代表模型、真实索引或GUI完成。推送结果随后按实际SHA核对登记。
+
+3F两设计完整复审，重新核对main requireSnapshot/readSource/close、GraphStore写入与事务生命周期，以及SQLite官方同连接data_version和better-sqlite3官方API。接受修订候选：外部提交token、本连接save代数、事务外before/after取样、私有有界单槽、失效回原load校验、当前性/配置/源码不缓存；legacy/错误/容量/跨实例/close/变异门保持。root更正close为所有legacy/project stores去重关闭，注明23f6d7a为作者历史基线；补token类型、代数不可复用、异步请求持有自身上下文及多表非原子限制。原4,708完整加载基线保留，目标≤2尚未实现/测量；无缓存产品或GUI验收，无新增性能经验。
+
+后续精确派发：Sol仅2B-S4新增ownership-capsule-store.ts/test与记录、graph index窄迁移/prepare/save/read接缝；核对迁移7/10后本批用11，不改旧结构或普通save历史；异步准备私有一次receipt→同步settings/source锁内权威检查与两INSERT原子保存，禁止事务await/FS。application/S5、provider/IPC/UI和性能cache仍未派。Luna仅3F-T新测量协议plan/run两文档，依据已接受3F与原3E门，定义原baseline不可变、新版本计数/语义门/资源/取消与未来最小文件范围；不实现/跑新工具或修改产品。依赖顺序避免graph/application同文件写冲突，重型窗口继续仅root。
+续派后紧凑快照实际确认两原聊天均active，Sol新turn01a0fd3a-b051-7133-88e4-491afe88e188、cursor85467c24-1155-49cc-b7f0-696158c3ee5b:10；Luna新turn01a0fd3a-b1c3-7240-8a4b-3086f1a4b8f9、cursor49eda2c0-f29f-4f35-a52a-f21ffcad8c23:7。定时器安全字段核对仍ACTIVE/原15分钟与目标，无需重复恢复。接受的新设计两文档去除行末空白后纳入文档收尾；新任务实现仍按冻结切片复验。
