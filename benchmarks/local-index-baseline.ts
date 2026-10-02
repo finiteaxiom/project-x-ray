@@ -7,10 +7,10 @@ import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
 import { canonicalJson, canonicalSnapshotContent, canonicalSnapshotResult } from "../packages/contracts/src/snapshot-content.ts";
 import type { ProjectSnapshot } from "../packages/contracts/src/index.ts";
+import { computeSampleManifestSha256, getBaselineSample, getSampleLanguageCounts, type BaselineSampleKind } from "./local-index-baseline-samples.ts";
 
 const PROTOCOL_PREFIX = "XRAY_LOCAL_INDEX_BASELINE:";
 const RUNS_DIRECTORY = "project-xray-local-index-baseline-runs";
-const SAMPLE_ID = "e2e-project-small-v1";
 const MAX_RUNS = 5;
 const DEFAULT_RUNS = 1;
 const MIN_TIMEOUT_MS = 5_000;
@@ -18,7 +18,7 @@ const DEFAULT_TIMEOUT_MS = 60_000;
 const MAX_TIMEOUT_MS = 180_000;
 const CHILD_STOP_GRACE_MS = 1_000;
 const MAX_PROTOCOL_LINES = 2_000;
-const MAX_PROTOCOL_LINE_LENGTH = 32_768;
+export const MAX_PROTOCOL_LINE_LENGTH = 128 * 1_024;
 const PHASES = new Set(["queued", "discovering", "reading", "analyzing", "verifying", "persisting"]);
 const PAIR_GATE_CHECKS = [
   "sourceFilesEqual",
@@ -44,16 +44,11 @@ const NAVIGATION_FAILURE_CODES = new Set([
   "SAMPLE_SOURCE_NAVIGATION_MISMATCH",
   "SAMPLE_NAVIGATION_READ_FAILED",
 ]);
-const SAMPLE_FILES = new Map([
-  ["src/auth.ts", "TypeScript"],
-  ["src/validation.ts", "TypeScript"],
-  ["worker.py", "Python"],
-]);
-
 export interface CliOptions {
   help: boolean;
   runs: number;
   timeoutMs: number;
+  sample: BaselineSampleKind;
 }
 
 export interface PhaseEvent {
@@ -69,6 +64,29 @@ export interface SampleFileSummary {
   language: string;
   bytes: number;
   sha256: string;
+}
+
+export interface SnapshotPairEvidence {
+  sourceManifestSha256: string;
+  sourceFileCount: number;
+  canonicalFactsSha256: string;
+  persistedPayloadSha256: string;
+  repositoryId: string;
+  snapshotId: string;
+  originalCreatedAt: string;
+  healthStatus: string;
+  indexedFiles: number;
+  totalFiles: number;
+  failedFiles: number;
+  nodeNavigationSha256: string;
+  evidenceNavigationSha256: string;
+  nodeCount: number;
+  edgeCount: number;
+  unknownEdgeCount: number;
+  evidenceCount: number;
+  resolvedEvidenceCount: number;
+  resolvedNavigationSha256: string;
+  navigationErrors: string[];
 }
 
 export interface TimingSummary {
@@ -89,6 +107,7 @@ export interface ChildSummary {
     id: string;
     manifestSha256: string;
     files: SampleFileSummary[];
+    generatorVersion?: number;
   };
   runtime: {
     nodeVersion: string;
@@ -123,6 +142,10 @@ export interface ChildSummary {
     coldSha256: string;
     warmSha256: string;
   };
+  pairEvidence?: {
+    cold: SnapshotPairEvidence;
+    warm: SnapshotPairEvidence;
+  };
   gates: {
     passed: boolean;
     checks: Record<string, boolean>;
@@ -149,17 +172,25 @@ export interface ControlledChildResult {
 }
 
 export function parseCliArguments(args: string[]): CliOptions {
-  if (args.length === 1 && args[0] === "--help") return { help: true, runs: DEFAULT_RUNS, timeoutMs: DEFAULT_TIMEOUT_MS };
+  if (args.length === 1 && args[0] === "--help") return { help: true, runs: DEFAULT_RUNS, timeoutMs: DEFAULT_TIMEOUT_MS, sample: "small" };
   const seen = new Set<string>();
   let runs = DEFAULT_RUNS;
   let timeoutMs = DEFAULT_TIMEOUT_MS;
+  let sample: BaselineSampleKind = "small";
   for (let index = 0; index < args.length; index += 1) {
     const flag = args[index];
-    if (flag !== "--runs" && flag !== "--timeout-ms") throw new Error("CLI_ARGUMENT_INVALID");
+    if (flag !== "--runs" && flag !== "--timeout-ms" && flag !== "--sample") throw new Error("CLI_ARGUMENT_INVALID");
     if (seen.has(flag)) throw new Error("CLI_ARGUMENT_DUPLICATE");
     seen.add(flag);
     const value = args[index + 1];
-    if (!value || !/^\d{1,6}$/.test(value)) throw new Error("CLI_ARGUMENT_INVALID");
+    if (!value) throw new Error("CLI_ARGUMENT_INVALID");
+    if (flag === "--sample") {
+      if (value !== "small" && value !== "medium") throw new Error("CLI_SAMPLE_INVALID");
+      sample = value;
+      index += 1;
+      continue;
+    }
+    if (!/^\d{1,6}$/.test(value)) throw new Error("CLI_ARGUMENT_INVALID");
     index += 1;
     const number = Number(value);
     if (!Number.isSafeInteger(number)) throw new Error("CLI_ARGUMENT_INVALID");
@@ -171,7 +202,7 @@ export function parseCliArguments(args: string[]): CliOptions {
       timeoutMs = number;
     }
   }
-  return { help: false, runs, timeoutMs };
+  return { help: false, runs, timeoutMs, sample };
 }
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -315,11 +346,12 @@ function parseTiming(value: unknown): TimingSummary | null {
 
 function parseGateResults(value: unknown): ChildSummary["gates"] | null {
   if (!record(value) || typeof value.passed !== "boolean" || !record(value.checks) || !Array.isArray(value.failureCodes)) return null;
-  const checkNames = Object.keys(value.checks);
-  if (checkNames.length !== REQUIRED_GATE_CHECKS.length || REQUIRED_GATE_CHECKS.some((name) => !Object.hasOwn(value.checks, name))) return null;
+  const rawChecks = value.checks;
+  const checkNames = Object.keys(rawChecks);
+  if (checkNames.length !== REQUIRED_GATE_CHECKS.length || REQUIRED_GATE_CHECKS.some((name) => !Object.hasOwn(rawChecks, name))) return null;
   const checks: Record<string, boolean> = {};
   for (const name of REQUIRED_GATE_CHECKS) {
-    const passed = value.checks[name];
+    const passed = rawChecks[name];
     if (typeof passed !== "boolean") return null;
     checks[name] = passed;
   }
@@ -350,15 +382,87 @@ function parseGateResults(value: unknown): ChildSummary["gates"] | null {
   return { passed, checks, failureCodes };
 }
 
-function parseChildSummary(value: unknown): ChildSummary | null {
-  if (!record(value) || !Number.isInteger(value.runNumber) || (value.runNumber as number) < 1 || (value.runNumber as number) > MAX_RUNS) return null;
-  if (!record(value.sample) || value.sample.id !== SAMPLE_ID || !safeString(value.sample.manifestSha256, 64) || !/^[0-9a-f]{64}$/.test(value.sample.manifestSha256) || !Array.isArray(value.sample.files)) return null;
+function parseSnapshotPairEvidence(value: unknown): SnapshotPairEvidence | null {
+  if (!record(value)) return null;
+  const digests = [value.sourceManifestSha256, value.canonicalFactsSha256, value.persistedPayloadSha256, value.nodeNavigationSha256, value.evidenceNavigationSha256, value.resolvedNavigationSha256];
+  if (digests.some((item) => typeof item !== "string" || !/^[0-9a-f]{64}$/.test(item))) return null;
+  if (![value.sourceFileCount, value.indexedFiles, value.totalFiles, value.failedFiles, value.nodeCount, value.edgeCount, value.unknownEdgeCount, value.evidenceCount, value.resolvedEvidenceCount].every((item) => finiteNonnegative(item) && Number.isSafeInteger(item))) return null;
+  const sourceFileCount = value.sourceFileCount as number;
+  const indexedFiles = value.indexedFiles as number;
+  const totalFiles = value.totalFiles as number;
+  const failedFiles = value.failedFiles as number;
+  const evidenceCount = value.evidenceCount as number;
+  const resolvedEvidenceCount = value.resolvedEvidenceCount as number;
+  if (!safeString(value.repositoryId, 80) || !safeString(value.snapshotId, 80) || !safeString(value.originalCreatedAt, 80) || !safeString(value.healthStatus, 20) || !Array.isArray(value.navigationErrors)) return null;
+  const navigationErrors: string[] = [];
+  for (const item of value.navigationErrors) {
+    if (typeof item !== "string" || !NAVIGATION_FAILURE_CODES.has(item)) return null;
+    navigationErrors.push(item);
+  }
+  if (new Set(navigationErrors).size !== navigationErrors.length || navigationErrors.some((item, index) => index > 0 && navigationErrors[index - 1]! > item)
+    || sourceFileCount !== totalFiles || indexedFiles + failedFiles > totalFiles || resolvedEvidenceCount > evidenceCount
+    || (value.healthStatus === "ready" && failedFiles === 0 && indexedFiles !== totalFiles)) return null;
+  return {
+    sourceManifestSha256: value.sourceManifestSha256 as string,
+    sourceFileCount: value.sourceFileCount as number,
+    canonicalFactsSha256: value.canonicalFactsSha256 as string,
+    persistedPayloadSha256: value.persistedPayloadSha256 as string,
+    repositoryId: value.repositoryId,
+    snapshotId: value.snapshotId,
+    originalCreatedAt: value.originalCreatedAt,
+    healthStatus: value.healthStatus,
+    indexedFiles: value.indexedFiles as number,
+    totalFiles: value.totalFiles as number,
+    failedFiles: value.failedFiles as number,
+    nodeNavigationSha256: value.nodeNavigationSha256 as string,
+    evidenceNavigationSha256: value.evidenceNavigationSha256 as string,
+    nodeCount: value.nodeCount as number,
+    edgeCount: value.edgeCount as number,
+    unknownEdgeCount: value.unknownEdgeCount as number,
+    evidenceCount: value.evidenceCount as number,
+    resolvedEvidenceCount: value.resolvedEvidenceCount as number,
+    resolvedNavigationSha256: value.resolvedNavigationSha256 as string,
+    navigationErrors,
+  };
+}
+
+function pairEvidenceChecks(pair: ChildSummary["pairEvidence"], sampleId: string): Record<string, boolean> | null {
+  if (!pair) return null;
+  const sample = getBaselineSample(sampleId);
+  if (!sample) return null;
+  const expectedManifest = computeSampleManifestSha256(sample.id, sample.files);
+  const cold = pair.cold;
+  const warm = pair.warm;
+  const filesMatchExpected = (item: SnapshotPairEvidence): boolean => item.sourceFileCount === sample.files.length && item.sourceManifestSha256 === expectedManifest;
+  return {
+    sourceFilesEqual: cold.sourceFileCount === warm.sourceFileCount && cold.sourceManifestSha256 === warm.sourceManifestSha256,
+    canonicalFactsEqual: cold.canonicalFactsSha256 === warm.canonicalFactsSha256,
+    persistedPayloadEqual: cold.persistedPayloadSha256 === warm.persistedPayloadSha256,
+    sameSnapshotIdentity: cold.repositoryId === warm.repositoryId && cold.snapshotId === warm.snapshotId,
+    originalCreatedAtPreserved: cold.originalCreatedAt === warm.originalCreatedAt,
+    stableNodeNavigation: cold.nodeCount === warm.nodeCount && cold.nodeNavigationSha256 === warm.nodeNavigationSha256,
+    stableEvidenceNavigation: cold.evidenceCount === warm.evidenceCount && cold.evidenceNavigationSha256 === warm.evidenceNavigationSha256,
+    stableResolvedSourceNavigation: cold.resolvedNavigationSha256 === warm.resolvedNavigationSha256,
+    expectedSourceFilesEqual: filesMatchExpected(cold) && filesMatchExpected(warm),
+    bothSnapshotsHealthy: cold.healthStatus === "ready" && warm.healthStatus === "ready" && cold.failedFiles === 0 && warm.failedFiles === 0,
+    navigationResolved: cold.navigationErrors.length === 0 && warm.navigationErrors.length === 0
+      && cold.resolvedEvidenceCount === cold.evidenceCount && warm.resolvedEvidenceCount === warm.evidenceCount,
+  };
+}
+
+function parseChildSummary(value: unknown, expectedSampleKind: BaselineSampleKind): ChildSummary | null {
+  const expectedSample = getBaselineSample(expectedSampleKind);
+  if (!expectedSample || !record(value) || !Number.isInteger(value.runNumber) || (value.runNumber as number) < 1 || (value.runNumber as number) > MAX_RUNS) return null;
+  if (!record(value.sample) || value.sample.id !== expectedSample.id || value.sample.manifestSha256 !== expectedSample.manifestSha256 || !Array.isArray(value.sample.files)) return null;
   const files: SampleFileSummary[] = [];
   for (const item of value.sample.files) {
-    if (!record(item) || typeof item.path !== "string" || !SAMPLE_FILES.has(item.path) || typeof item.language !== "string" || SAMPLE_FILES.get(item.path) !== item.language || !finiteNonnegative(item.bytes) || !Number.isSafeInteger(item.bytes) || !safeString(item.sha256, 64) || !/^[0-9a-f]{64}$/.test(item.sha256)) return null;
+    if (!record(item) || typeof item.path !== "string" || typeof item.language !== "string" || !finiteNonnegative(item.bytes) || !Number.isSafeInteger(item.bytes) || !safeString(item.sha256, 64) || !/^[0-9a-f]{64}$/.test(item.sha256)) return null;
     files.push({ path: item.path, language: item.language, bytes: item.bytes, sha256: item.sha256 });
   }
-  if (files.length !== SAMPLE_FILES.size) return null;
+  files.sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
+  if (canonicalJson(files) !== canonicalJson(expectedSample.files) || computeSampleManifestSha256(expectedSample.id, files) !== expectedSample.manifestSha256) return null;
+  const generatorVersion = value.sample.generatorVersion;
+  if (expectedSample.generatorVersion === undefined ? generatorVersion !== undefined : generatorVersion !== expectedSample.generatorVersion) return null;
   if (!record(value.runtime) || !safeString(value.runtime.nodeVersion, 80) || !safeString(value.runtime.platform, 40) || !safeString(value.runtime.architecture, 40) || !safeString(value.runtime.graphIrVersion, 40) || !record(value.runtime.analyzerVersions)) return null;
   const analyzerVersions: Record<string, string> = {};
   for (const [name, version] of Object.entries(value.runtime.analyzerVersions)) {
@@ -376,12 +480,42 @@ function parseChildSummary(value: unknown): ChildSummary | null {
   const warmNoopReindex = parseTiming(value.measurements.warmNoopReindex);
   if (!coldIndex || !warmNoopReindex) return null;
   if (!record(value.navigation) || !Number.isSafeInteger(value.navigation.nodeCount) || !Number.isSafeInteger(value.navigation.evidenceCount) || !Number.isSafeInteger(value.navigation.resolvedEvidenceCount) || !safeString(value.navigation.coldSha256, 64) || !/^[0-9a-f]{64}$/.test(value.navigation.coldSha256) || !safeString(value.navigation.warmSha256, 64) || !/^[0-9a-f]{64}$/.test(value.navigation.warmSha256)) return null;
+  const indexedFiles = snapshot.indexedFiles as number;
+  const failedFiles = snapshot.failedFiles as number;
+  const totalFiles = snapshot.totalFiles as number;
+  const unknownEdges = snapshot.unknownEdges as number;
+  const edgeCount = snapshot.edges as number;
+  const navigationNodeCount = value.navigation.nodeCount as number;
+  const navigationEvidenceCount = value.navigation.evidenceCount as number;
+  const navigationResolvedEvidenceCount = value.navigation.resolvedEvidenceCount as number;
+  if (coldIndex.phaseEvents.some((event) => event.stage !== "cold") || warmNoopReindex.phaseEvents.some((event) => event.stage !== "warm")
+    || totalFiles !== expectedSample.files.length || indexedFiles + failedFiles > totalFiles
+    || unknownEdges > edgeCount || snapshot.nodes !== navigationNodeCount || snapshot.evidence !== navigationEvidenceCount
+    || navigationResolvedEvidenceCount > navigationEvidenceCount) return null;
+  let pairEvidence: ChildSummary["pairEvidence"];
+  if (expectedSample.kind === "medium") {
+    if (!record(value.pairEvidence)) return null;
+    const cold = parseSnapshotPairEvidence(value.pairEvidence.cold);
+    const warm = parseSnapshotPairEvidence(value.pairEvidence.warm);
+    if (!cold || !warm) return null;
+    pairEvidence = { cold, warm };
+    if (snapshot.repositoryId !== cold.repositoryId || snapshot.snapshotId !== cold.snapshotId || snapshot.originalCreatedAt !== cold.originalCreatedAt
+      || snapshot.healthStatus !== cold.healthStatus || snapshot.indexedFiles !== cold.indexedFiles || snapshot.totalFiles !== cold.totalFiles || snapshot.failedFiles !== cold.failedFiles
+      || snapshot.nodes !== cold.nodeCount || snapshot.evidence !== cold.evidenceCount || snapshot.canonicalResultSha256 !== cold.canonicalFactsSha256
+      || snapshot.edges !== cold.edgeCount || snapshot.unknownEdges !== cold.unknownEdgeCount
+      || snapshot.persistedContentSha256 !== cold.persistedPayloadSha256 || value.navigation.nodeCount !== cold.nodeCount
+      || value.navigation.evidenceCount !== cold.evidenceCount || value.navigation.resolvedEvidenceCount !== cold.resolvedEvidenceCount
+      || value.navigation.coldSha256 !== cold.resolvedNavigationSha256 || value.navigation.warmSha256 !== warm.resolvedNavigationSha256) return null;
+  } else if (value.pairEvidence !== undefined) return null;
   const gates = parseGateResults(value.gates);
   if (!gates) return null;
-  const filesSorted = files.sort((a, b) => a.path.localeCompare(b.path));
+  if (pairEvidence) {
+    const calculatedChecks = pairEvidenceChecks(pairEvidence, expectedSample.id);
+    if (!calculatedChecks || REQUIRED_GATE_CHECKS.some((name) => calculatedChecks[name] !== gates.checks[name])) return null;
+  }
   return {
     runNumber: value.runNumber as number,
-    sample: { id: SAMPLE_ID, manifestSha256: value.sample.manifestSha256, files: filesSorted },
+    sample: { id: expectedSample.id, manifestSha256: expectedSample.manifestSha256, files: files, ...(expectedSample.generatorVersion === undefined ? {} : { generatorVersion: expectedSample.generatorVersion }) },
     runtime: { nodeVersion: value.runtime.nodeVersion, platform: value.runtime.platform, architecture: value.runtime.architecture, graphIrVersion: value.runtime.graphIrVersion, analyzerVersions },
     snapshot: {
       repositoryId: snapshot.repositoryId, snapshotId: snapshot.snapshotId, originalCreatedAt: snapshot.originalCreatedAt, healthStatus: snapshot.healthStatus,
@@ -394,11 +528,12 @@ function parseChildSummary(value: unknown): ChildSummary | null {
       nodeCount: value.navigation.nodeCount as number, evidenceCount: value.navigation.evidenceCount as number, resolvedEvidenceCount: value.navigation.resolvedEvidenceCount as number,
       coldSha256: value.navigation.coldSha256, warmSha256: value.navigation.warmSha256,
     },
+    ...(pairEvidence ? { pairEvidence } : {}),
     gates,
   };
 }
 
-function parseProtocolLine(line: string): { terminal?: ChildTerminal; progress?: PhaseEvent } | "invalid" | null {
+function parseProtocolLine(line: string, expectedSampleKind: BaselineSampleKind): { terminal?: ChildTerminal; progress?: PhaseEvent } | "invalid" | null {
   if (!line.startsWith(PROTOCOL_PREFIX)) return null;
   let value: unknown;
   try { value = JSON.parse(line.slice(PROTOCOL_PREFIX.length)); } catch { return "invalid"; }
@@ -410,7 +545,7 @@ function parseProtocolLine(line: string): { terminal?: ChildTerminal; progress?:
   if (value.type === "terminal") {
     if (value.status !== "completed" && value.status !== "failed" && value.status !== "cancelled") return "invalid";
     if (!safeString(value.code, 80) || !/^[A-Z0-9_]+$/.test(value.code)) return "invalid";
-    const summary = value.summary === undefined ? undefined : parseChildSummary(value.summary);
+    const summary = value.summary === undefined ? undefined : parseChildSummary(value.summary, expectedSampleKind);
     if (value.summary !== undefined && !summary) return "invalid";
     if (value.status === "completed" && (value.code !== "OK" || !summary?.gates.passed)) return "invalid";
     if (value.status === "failed" && (value.code === "OK" || (summary && (summary.gates.passed || value.code !== "EQUIVALENCE_GATE_FAILED")) || (!summary && value.code === "EQUIVALENCE_GATE_FAILED"))) return "invalid";
@@ -489,7 +624,7 @@ async function terminateOwnedProcessTree(child: ChildProcess, closePromise: Prom
 export async function runControlledChild(
   command: string,
   args: string[],
-  options: { cwd: string; timeoutMs: number; signal?: AbortSignal; protocol?: boolean; onProgress?: (event: PhaseEvent) => void },
+  options: { cwd: string; timeoutMs: number; signal?: AbortSignal; protocol?: boolean; expectedSample?: BaselineSampleKind; onProgress?: (event: PhaseEvent) => void },
 ): Promise<ControlledChildResult> {
   if (!Number.isSafeInteger(options.timeoutMs) || options.timeoutMs < 1 || options.timeoutMs > MAX_TIMEOUT_MS) throw new Error("CHILD_TIMEOUT_INVALID");
   if (options.signal?.aborted) return { termination: "cancelled", closed: true, forcedTermination: false, exitCode: null, signal: null, durationMs: 0, progress: [] };
@@ -515,7 +650,7 @@ export async function runControlledChild(
         protocolError = "CHILD_PROTOCOL_LIMIT";
         return;
       }
-      const message = parseProtocolLine(line);
+      const message = parseProtocolLine(line, options.expectedSample ?? "small");
       if (!message || message === "invalid") {
         protocolError = "CHILD_PROTOCOL_INVALID";
         return;
@@ -588,12 +723,14 @@ export interface BaselineReport {
   timeoutMs: number;
   validPairCount: number;
   environment: Record<string, string>;
+  sample?: { id: string; generatorVersion: number; manifestSha256: string; fileCount: number; languageCounts: Record<string, number>; totalBytes: number };
   runs: Array<Record<string, unknown>>;
   limitations: string[];
 }
 
 export async function runBaseline(options: CliOptions, signal?: AbortSignal): Promise<{ root: OwnedRunRoot; report: BaselineReport }> {
-  if (options.help || options.runs < 1 || options.runs > MAX_RUNS || options.timeoutMs < MIN_TIMEOUT_MS || options.timeoutMs > MAX_TIMEOUT_MS) throw new Error("CLI_OPTIONS_INVALID");
+  const sample = getBaselineSample(options.sample);
+  if (options.help || !sample || options.runs < 1 || options.runs > MAX_RUNS || options.timeoutMs < MIN_TIMEOUT_MS || options.timeoutMs > MAX_TIMEOUT_MS) throw new Error("CLI_OPTIONS_INVALID");
   const root = await createUniqueRunRoot();
   const deadline = Date.now() + options.timeoutMs;
   const runs: Array<Record<string, unknown>> = [];
@@ -619,11 +756,12 @@ export async function runBaseline(options: CliOptions, signal?: AbortSignal): Pr
     }
     const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
     const childPath = join(repoRoot, "benchmarks", "local-index-baseline-child.ts");
-    const run = await runControlledChild(process.execPath, ["--import", "tsx", childPath, "--run-id", root.id, "--run-number", String(runNumber)], {
+    const run = await runControlledChild(process.execPath, ["--import", "tsx", childPath, "--run-id", root.id, "--run-number", String(runNumber), "--sample-id", sample.id], {
       cwd: repoRoot,
       timeoutMs: Math.min(remainingMs, MAX_TIMEOUT_MS),
       signal,
       protocol: true,
+      expectedSample: sample.kind,
     });
     const childStatus = run.termination === "timeout" ? "timed_out"
       : run.termination === "cancelled" ? "cancelled"
@@ -656,6 +794,7 @@ export async function runBaseline(options: CliOptions, signal?: AbortSignal): Pr
     requestedRuns: options.runs,
     timeoutMs: options.timeoutMs,
     validPairCount,
+    ...(sample.kind === "medium" ? { sample: { id: sample.id, generatorVersion: sample.generatorVersion!, manifestSha256: sample.manifestSha256, fileCount: sample.files.length, languageCounts: getSampleLanguageCounts(sample), totalBytes: sample.totalBytes } } : {}),
     environment: {
       nodeVersion: process.version,
       platform: process.platform,
@@ -671,7 +810,9 @@ export async function runBaseline(options: CliOptions, signal?: AbortSignal): Pr
     },
     runs,
     limitations: [
-      "Fixed three-file mixed TypeScript/Python sample only; no scale or broad-project inference.",
+      sample.kind === "small"
+        ? "Fixed three-file mixed TypeScript/Python sample only; no scale or broad-project inference."
+        : "Deterministic 128-file mixed TypeScript/Python synthetic sample (generator v1); no broad-project inference.",
       "Direct XRayApplication.indexProject API; not an Electron or desktop-worker measurement.",
       "RSS samples cover only this Node indexing child process and exclude Python subprocess RSS.",
       "No operating-system build, hardware load, storage type, or external tool versions were collected.",
@@ -698,7 +839,7 @@ async function main(): Promise<void> {
     return;
   }
   if (options.help) {
-    process.stdout.write("Usage: pnpm exec tsx benchmarks/local-index-baseline.ts [--runs 1..5] [--timeout-ms 5000..180000]\n");
+    process.stdout.write("Usage: pnpm exec tsx benchmarks/local-index-baseline.ts [--sample small|medium] [--runs 1..5] [--timeout-ms 5000..180000]\n");
     return;
   }
   const controller = new AbortController();

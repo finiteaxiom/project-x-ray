@@ -5,11 +5,13 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import type { ProjectSnapshot } from "../packages/contracts/src/index.ts";
+import { getBaselineSample, MEDIUM_FILE_COUNT } from "./local-index-baseline-samples.ts";
 import {
   compareSnapshotPair,
   createRunDirectory,
   createUniqueRunRoot,
   isCompletedChildRun,
+  MAX_PROTOCOL_LINE_LENGTH,
   parseCliArguments,
   runControlledChild,
   writeReportExclusive,
@@ -55,19 +57,15 @@ const REQUIRED_GATE_CHECKS = [
 ] as const;
 
 function protocolSummary(): Record<string, unknown> {
-  const files = [
-    { path: "src/auth.ts", language: "TypeScript", bytes: 10, sha256: "a".repeat(64) },
-    { path: "src/validation.ts", language: "TypeScript", bytes: 10, sha256: "b".repeat(64) },
-    { path: "worker.py", language: "Python", bytes: 10, sha256: "c".repeat(64) },
-  ];
   const timing = {
     elapsedMs: 10,
     rss: { source: "Node child process process.memoryUsage().rss", intervalMs: 20, startBytes: 1, peakSampledBytes: 2, samples: 1 },
     phaseEvents: [],
   };
+  const sample = getBaselineSample("small")!;
   return {
     runNumber: 1,
-    sample: { id: "e2e-project-small-v1", manifestSha256: "d".repeat(64), files },
+    sample: { id: sample.id, manifestSha256: sample.manifestSha256, files: sample.files },
     runtime: { nodeVersion: "v24.17.0", platform: "win32", architecture: "x64", graphIrVersion: "1.3.0", analyzerVersions: { typescript: "5.9.3" } },
     snapshot: {
       repositoryId: "repository-fixture", snapshotId: "snapshot-fixture", originalCreatedAt: "2026-10-02T00:00:00.000Z", healthStatus: "ready",
@@ -80,23 +78,66 @@ function protocolSummary(): Record<string, unknown> {
   };
 }
 
-async function runProtocolTerminal(terminal: Record<string, unknown>) {
+function mediumProtocolSummary(): Record<string, unknown> {
+  const sample = getBaselineSample("medium")!;
+  const pairSummary = () => ({
+    sourceManifestSha256: sample.manifestSha256,
+    sourceFileCount: sample.files.length,
+    canonicalFactsSha256: "a".repeat(64),
+    persistedPayloadSha256: "b".repeat(64),
+    repositoryId: "repository-medium",
+    snapshotId: "snapshot-medium",
+    originalCreatedAt: "2026-10-02T00:00:00.000Z",
+    healthStatus: "ready",
+    indexedFiles: sample.files.length,
+    totalFiles: sample.files.length,
+    failedFiles: 0,
+    nodeNavigationSha256: "c".repeat(64),
+    evidenceNavigationSha256: "d".repeat(64),
+    nodeCount: 128,
+    edgeCount: 127,
+    unknownEdgeCount: 0,
+    evidenceCount: 128,
+    resolvedEvidenceCount: 128,
+    resolvedNavigationSha256: "e".repeat(64),
+    navigationErrors: [],
+  });
+  const cold = pairSummary();
+  const warm = pairSummary();
+  return {
+    runNumber: 1,
+    sample: { id: sample.id, generatorVersion: sample.generatorVersion, manifestSha256: sample.manifestSha256, files: sample.files },
+    runtime: { nodeVersion: "v24.17.0", platform: "win32", architecture: "x64", graphIrVersion: "1.3.0", analyzerVersions: { typescript: "5.9.3", python: "2.1.1" } },
+    snapshot: {
+      repositoryId: cold.repositoryId, snapshotId: cold.snapshotId, originalCreatedAt: cold.originalCreatedAt, healthStatus: cold.healthStatus,
+      indexedFiles: cold.indexedFiles, totalFiles: cold.totalFiles, failedFiles: cold.failedFiles, nodes: cold.nodeCount, edges: 127, evidence: cold.evidenceCount, unknownEdges: 0,
+      canonicalResultSha256: cold.canonicalFactsSha256, persistedContentSha256: cold.persistedPayloadSha256,
+    },
+    measurements: protocolSummary().measurements,
+    navigation: { nodeCount: cold.nodeCount, evidenceCount: cold.evidenceCount, resolvedEvidenceCount: cold.resolvedEvidenceCount, coldSha256: cold.resolvedNavigationSha256, warmSha256: warm.resolvedNavigationSha256 },
+    pairEvidence: { cold, warm },
+    gates: { passed: true, checks: Object.fromEntries(REQUIRED_GATE_CHECKS.map((name) => [name, true])), failureCodes: [] },
+  };
+}
+
+async function runProtocolTerminal(terminal: Record<string, unknown>, expectedSample: "small" | "medium" = "small") {
   const line = `XRAY_LOCAL_INDEX_BASELINE:${JSON.stringify({ type: "terminal", ...terminal })}\n`;
   return await runControlledChild(process.execPath, ["-e", `process.stdout.write(${JSON.stringify(line)})`], {
     cwd: process.cwd(),
     timeoutMs: 5_000,
     protocol: true,
+    expectedSample,
   });
 }
 
 describe("local index baseline tool guards", () => {
   it("accepts only bounded supported options", () => {
-    expect(parseCliArguments([])).toEqual({ help: false, runs: 1, timeoutMs: 60_000 });
-    expect(parseCliArguments(["--runs", "5", "--timeout-ms", "180000"])).toEqual({ help: false, runs: 5, timeoutMs: 180_000 });
+    expect(parseCliArguments([])).toEqual({ help: false, runs: 1, timeoutMs: 60_000, sample: "small" });
+    expect(parseCliArguments(["--runs", "5", "--timeout-ms", "180000", "--sample", "medium"])).toEqual({ help: false, runs: 5, timeoutMs: 180_000, sample: "medium" });
     expect(parseCliArguments(["--help"]).help).toBe(true);
     for (const args of [
       ["--runs", "0"], ["--runs", "6"], ["--runs", "1.5"], ["--runs", "1", "--runs", "2"],
-      ["--timeout-ms", "4999"], ["--timeout-ms", "180001"], ["--other", "value"], ["D:\\source"], ["--help", "--runs", "1"],
+      ["--timeout-ms", "4999"], ["--timeout-ms", "180001"], ["--sample", "large"], ["--sample", "medium", "--sample", "small"], ["--other", "value"], ["D:\\source"], ["--help", "--runs", "1"],
     ]) expect(() => parseCliArguments(args)).toThrow();
   });
 
@@ -177,7 +218,7 @@ describe("local index baseline tool guards", () => {
     const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
     const childPath = join(repoRoot, "benchmarks", "local-index-baseline-child.ts");
     const controller = new AbortController();
-    const result = await runControlledChild(process.execPath, ["--import", "tsx", childPath, "--run-id", root.id, "--run-number", "1"], {
+    const result = await runControlledChild(process.execPath, ["--import", "tsx", childPath, "--run-id", root.id, "--run-number", "1", "--sample-id", "e2e-project-small-v1"], {
       cwd: repoRoot,
       timeoutMs: 20_000,
       signal: controller.signal,
@@ -189,6 +230,19 @@ describe("local index baseline tool guards", () => {
     expect(result.terminal).toEqual({ status: "cancelled", code: "CANCELLED" });
     expect(result.closed).toBe(true);
     expect(result.forcedTermination).toBe(false);
+  });
+
+  it("rejects unregistered child sample ids before touching a run directory", async () => {
+    const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+    const childPath = join(repoRoot, "benchmarks", "local-index-baseline-child.ts");
+    const result = await runControlledChild(process.execPath, ["--import", "tsx", childPath, "--run-id", randomUUID(), "--run-number", "1", "--sample-id", "unregistered"], {
+      cwd: repoRoot,
+      timeoutMs: 5_000,
+      protocol: true,
+    });
+    expect(result.exitCode).toBe(1);
+    expect(result.terminal).toEqual({ status: "failed", code: "CHILD_ARGUMENT_INVALID" });
+    expect(result.protocolError).toBeUndefined();
   });
 
   it("rejects inconsistent, incomplete, and wrongly typed child gate claims at the process boundary", async () => {
@@ -222,6 +276,11 @@ describe("local index baseline tool guards", () => {
     const wrongType = await runProtocolTerminal({ status: "completed", code: "OK", summary: wrongTypeSummary });
     expect(wrongType.protocolError).toBe("CHILD_PROTOCOL_INVALID");
 
+    const contradictoryTiming = protocolSummary();
+    ((contradictoryTiming.measurements as { coldIndex: { phaseEvents: Array<Record<string, unknown>> } }).coldIndex.phaseEvents).push({ stage: "warm", phase: "reading", elapsedMs: 1, completed: 0, total: 1 });
+    const timingRejected = await runProtocolTerminal({ status: "completed", code: "OK", summary: contradictoryTiming });
+    expect(timingRejected.protocolError).toBe("CHILD_PROTOCOL_INVALID");
+
     const falseGateSummary = protocolSummary();
     const falseGate = falseGateSummary.gates as { passed: boolean; checks: Record<string, boolean>; failureCodes: string[] };
     falseGate.checks.canonicalFactsEqual = false;
@@ -235,6 +294,69 @@ describe("local index baseline tool guards", () => {
     const mismatchedStatus = await runProtocolTerminal({ status: "failed", code: "OK", summary: falseGateSummary });
     expect(mismatchedStatus.protocolError).toBe("CHILD_PROTOCOL_INVALID");
     expect(mismatchedStatus.terminal).toBeUndefined();
+  });
+
+  it("accepts only the complete registered medium manifest and checks gate claims against paired evidence", async () => {
+    const validSummary = mediumProtocolSummary();
+    const valid = await runProtocolTerminal({ status: "completed", code: "OK", summary: validSummary }, "medium");
+    expect(valid.protocolError).toBeUndefined();
+    expect(valid.terminal?.summary?.sample.files).toHaveLength(128);
+    expect(valid.terminal?.summary?.pairEvidence?.cold.sourceFileCount).toBe(128);
+
+    const wrongGenerator = structuredClone(validSummary);
+    (wrongGenerator.sample as { generatorVersion: number }).generatorVersion = 2;
+    const generatorRejected = await runProtocolTerminal({ status: "completed", code: "OK", summary: wrongGenerator }, "medium");
+    expect(generatorRejected.protocolError).toBe("CHILD_PROTOCOL_INVALID");
+
+    const duplicateFile = structuredClone(validSummary);
+    const duplicateFiles = (duplicateFile.sample as { files: Array<Record<string, unknown>> }).files;
+    duplicateFiles[127] = structuredClone(duplicateFiles[0]!);
+    const duplicateRejected = await runProtocolTerminal({ status: "completed", code: "OK", summary: duplicateFile }, "medium");
+    expect(duplicateRejected.protocolError).toBe("CHILD_PROTOCOL_INVALID");
+
+    const wrongLanguage = structuredClone(validSummary);
+    ((wrongLanguage.sample as { files: Array<Record<string, unknown>> }).files[32]!).language = "Python";
+    const languageRejected = await runProtocolTerminal({ status: "completed", code: "OK", summary: wrongLanguage }, "medium");
+    expect(languageRejected.protocolError).toBe("CHILD_PROTOCOL_INVALID");
+
+    const wrongDigest = structuredClone(validSummary);
+    ((wrongDigest.sample as { files: Array<Record<string, unknown>> }).files[0]!).sha256 = "0".repeat(64);
+    const digestRejected = await runProtocolTerminal({ status: "completed", code: "OK", summary: wrongDigest }, "medium");
+    expect(digestRejected.protocolError).toBe("CHILD_PROTOCOL_INVALID");
+
+    const alteredCount = structuredClone(validSummary);
+    ((alteredCount.pairEvidence as { cold: Record<string, unknown> }).cold).sourceFileCount = 127;
+    const countRejected = await runProtocolTerminal({ status: "completed", code: "OK", summary: alteredCount }, "medium");
+    expect(countRejected.protocolError).toBe("CHILD_PROTOCOL_INVALID");
+
+    const contradictoryGate = structuredClone(validSummary);
+    (contradictoryGate.gates as { checks: Record<string, boolean> }).checks.sourceFilesEqual = false;
+    (contradictoryGate.gates as { passed: boolean }).passed = false;
+    (contradictoryGate.gates as { failureCodes: string[] }).failureCodes = ["PAIR_SOURCE_FILES_EQUAL"];
+    const gateRejected = await runProtocolTerminal({ status: "failed", code: "EQUIVALENCE_GATE_FAILED", summary: contradictoryGate }, "medium");
+    expect(gateRejected.protocolError).toBe("CHILD_PROTOCOL_INVALID");
+
+    const mismatchedSample = await runProtocolTerminal({ status: "completed", code: "OK", summary: protocolSummary() }, "medium");
+    expect(mismatchedSample.protocolError).toBe("CHILD_PROTOCOL_INVALID");
+  });
+
+  it("keeps a maximal fixed 128-file terminal summary below the measured finite protocol line cap", () => {
+    const summary = mediumProtocolSummary();
+    const fileCount = MEDIUM_FILE_COUNT;
+    const eventCounts: Array<[string, number, number]> = [
+      ["discovering", 1, 0], ["reading", fileCount, fileCount], ["analyzing", fileCount, fileCount],
+      ["verifying", fileCount + 1, fileCount], ["persisting", 1, fileCount],
+    ];
+    const timing = (stage: "cold" | "warm") => ({
+      elapsedMs: 180_000,
+      rss: { source: "Node child process process.memoryUsage().rss", intervalMs: 20, startBytes: 4_294_967_296, peakSampledBytes: 8_589_934_592, samples: 9_000 },
+      phaseEvents: eventCounts.flatMap(([phase, count, total]) => Array.from({ length: count }, (_, index) => ({ stage, phase, elapsedMs: 180_000, completed: Math.min(index, total), total }))),
+    });
+    (summary.measurements as Record<string, unknown>).coldIndex = timing("cold");
+    (summary.measurements as Record<string, unknown>).warmNoopReindex = timing("warm");
+    const line = `XRAY_LOCAL_INDEX_BASELINE:${JSON.stringify({ type: "terminal", status: "completed", code: "OK", summary })}`;
+    expect(line.length).toBe(85_679);
+    expect(line.length).toBeLessThan(MAX_PROTOCOL_LINE_LENGTH);
   });
 
   it("force-stops timed out children and returns only after close", async () => {

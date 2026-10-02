@@ -460,3 +460,37 @@ Sol修订两文档冻结idle（cursor582f17aa-f30f-4365-a7b1-0dbecc3b2b9d:12）�
 已告知Sol明确复现/预期/边界并排队P1 1C-2B-2B-C，在纯契约冻结后再派精确修复。计划目标是同userData活跃单写所有权门先于DB/worker初始化，保留真正崩溃重启恢复/零自动重发及隔离userData并行。候选main启动策略与定向测试，broker/graph只有证明必要才扩文件边界；不立即改active契约或用用户操作约束规避缺陷。真实双Electron技术验收待root协调窗口，GUI仍延期。队列/交接已同步，原接线不提交。
 
 本轮AGENTS新增0条：问题有复现但修复/预防动作尚未独立验证，暂记录诊断与门槛；反馈闭环待交付后复验完成，不把当前失败写成成功。检索误用不存在文件及Windows路径glob失败后改确切路径，只是审查命令错误，不是产品或环境经验。
+
+## 2026-10-02 11:01后 3C-L与2B-S1独立验收及集成
+
+### 3C-L工具与实际样本
+
+Luna六文件明确冻结idle，实际main差异仅原三工具/测试、新registry/测试/本记录。完整核对registry生成96TS/32Python、每文件单函数的语言内导入/调用链，固定13518字节、清单0c250b857248c59e5aaa9d40341857f10770049d128e70010f10a9a3dc2ed9aa。父/child共享有限枚举与逐项清单；medium配对摘要重算11门，原small形状兼容；128KiB有限协议行、2000行限、5轮/180秒上限、wx新目录/报告、全部证据解析仍存在。原取消RSS finally已保留，不引用当前测试作为OS/全应用RSS证明。
+
+独立命令node_modules/.bin/vitest.CMD run benchmarks/local-index-baseline.test.ts benchmarks/local-index-baseline-samples.test.ts --reporter=verbose：14项/2文件exit0；原五目标严格tsc --noEmit（ES2023/NodeNext/strict/allowImportingTsExtensions）exit0。阅读负向测试本身确认未知样例、重复/错语言/错摘要/计数、矛盾门和forced timeout，不只接受开发报告。
+
+单协调窗口真实CLI：默认--runs 1 --timeout-ms 60000，小样例run fd9ba26c-b173-40c3-be4f-332bf4b41a7d completed/exit0/一对，11门通过、28/28证据。随后--sample medium --runs 1 --timeout-ms 180000，run cd152778-cfd0-4b1e-80ae-e13f8331bc61 completed/exit0；再--sample medium --runs 2 --timeout-ms 180000，run 2c6a4c5d-9d26-41ed-b641-40cdf07ccd1c completed/exit0/两对。三对全部11门、128文件/387节点/1275边/1177证据/0 unknown，每对1177/1177源码API成功，cold/warm phase均387条。此为自建样例API导航/当前快照等价，不是GUI导航或真实项目性能。
+
+| medium样本 | cold index ms | warm无变化index ms | 完整child ms | cold Node采样峰值bytes | warm Node采样峰值bytes |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| cd152778 run1 | 2618.1669 | 2530.3913 | 48870.262 | 342319104 | 406626304 |
+| 2c6a4c5d run1 | 2003.9272 | 2142.6221 | 42259.362 | 320393216 | 359378944 |
+| 2c6a4c5d run2 | 2457.1493 | 2323.8526 | 47585.493 | 316174336 | 359514112 |
+
+环境Node24.17.0/win32/x64、graph1.3.0、typescript-program5.9.3+xray.3、python-ast2.1.1；不收集OS build/硬件负载/存储/Python版本，RSS不含Python子进程。每个run都是新库/同根的冷暖配对；不能称OS磁盘冷缓存，样本数不支持广泛性能承诺。phase事件是公开阶段时刻，不是TS/Python分项计时。完整child另含启动/两次所有证据导航/汇总/关闭等，不能把差值直接归因某函数。
+
+报告存于工具自有临时run目录、未覆盖旧报告；总report SHA256：small 2A1A427BC89D5F26633BB8CF10ACD220742C3AC0DEB450B9BC6AEC22CB8FBB25；medium单对835DCA09CC7A16E506C948CBC57B831D93F81BE224DAAB52E38D39B0AC3CC37B；两对099BC73BDE11315CF01C3B7FC806A17EBA04215186861AE6FB806044AA6DC46D。只记run ID/hash/指标，不记录私人临时根或源码。读取首次用了过低ConvertTo-Json深度/过宽输出，随后只选实际字段；报告hash首次PowerShell foreach直接管道语法失败后以局部数组修正，均为审查命令错误。
+
+额外ignored medium-cancel.ts实际child cold reading16/128时取消：run fd52c807-2702-48d7-b850-ca477ddebf6b，command exit0，termination/terminal cancelled/CANCELLED、closed=true、forced=false、protocolError=null、duration1623.589ms；父收到cancel后等待child close，未遗留RSS interval。probe import路径在执行前核对纠正。原small取消/强制超时已有14测试，本额外实验补medium实际取消点。3C-L工具切片接受，不代表实现增量算法或UI/大型项目门。
+
+### 2B-S1纯契约
+
+Sol新增三文件冻结，独立读取完整模块/ADR与关键61样例：strict有限字段、domain hash规范化无序集合而保留路径/range顺序、actual answer/hash绑定/合法UTF16代理对、required证据闭包与criterion/limitation双向归属、全题合法所选verified CALLS序列及引用完整、未知动态限制必须有unknown proof、三类verdict安全结构与全criterion全集、硬预算/不裁剪、固定错误。只验证已提供DTO与实际答案，不证明SQL当前性、真实question/attempt权威性、源码真伪、学习目标充分性或模型语义。
+
+在Sol冻结路径执行61项新增定向、118项全contracts回归及新增两文件strict/noUncheckedIndexedAccess/exactOptionalPropertyTypes类型，均exit0。旧冻结协议测试两行protocolVersion的TS2345由新启动小批明确准许最小类型修正，不静默降门。main三目标先确认不存在后仅复制module/test/record，由root独立追加一条public export，没有复制Sol index.ts或24文件接线。集成main contracts116项/5文件exit0、contracts/desktop/ui tsc各无错误退出0；实际node --import tsx公共index import断言purpose及validator函数exit0。118与116来自Sol未集成桌面协议另两测试，不把数量差异当本模块丢测。纯模块接受并集成，旧purpose/grade/mastery/SQL/UI无实施，真实模型门仍开放。
+
+### 后续与Git边界
+
+原Sol正式接1C-2B-2B-C，仅main启动顺序、独立startup策略/定向测试/记录；另明确允许旧协议测试两处protocolVersion字面量类型修正。不改graph全局恢复或纯语义冻结模块、不重置worktree；真实Electron双进程技术门由root下个协调窗口补验，GUI仍延期。Luna接3D-L两新文档只读诊断设计，依据实际child/index时间差和requireSnapshot反复load/parseStoredSnapshot的候选路径，先定义分项计数/计时再决定实现或复杂优化，不先加缓存/制造重构。
+
+本轮AGENTS新增0条：工具安全/证据门、纯契约失败关闭及范围/hash规则已覆盖；单次耗时不作通用规则，启动缺陷未修复不标闭环完成。只将已独立验收工具六文件、纯契约三文件+root导出和对应协调文档纳入Git；Sol旧接线、启动在写文件及未完成新设计不提交。无电脑操作、生产凭据、真实HTTP、公开二进制。

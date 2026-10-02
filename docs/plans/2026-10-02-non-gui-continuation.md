@@ -46,6 +46,16 @@ Sol 的迟到 dispatched 被最新 SQL terminal 拒绝缺陷经原失败实验�
 
 Sol 当前只新增2B-S1纯契约/测试/记录，自己的两设计文档仅同步接受与INSERT事实；原24文件保持冻结。Luna仅写基准工具及本批记录，无共享文件竞争。真实规模索引待六文件冻结并由协调方单窗口执行，开发不得自行占用native/dist/Electron。契约交付后独立审查，再按依赖选择最小后续实施，不以设计接受替代运行验收。
 
+11:08更新：两批冻结后均已推进独立检查，3C-L的14项/类型/small及medium三对/取消通过；2B-S1纯模块复制三文件到main并由root独立追加公开导出，116项回归和contracts/desktop/ui类型及公共导入通过。只有这些纯模块/工具可Git收尾，旧接线仍冻结且GUI未验。Sol已正式接下述启动门及旧协议测试两处字面量类型修正，不在其进行中并发构建。
+
+## 3D-L：导航耗时分解诊断设计（P2，仅设计）
+
+实测依据：固定medium128文件三对全部门禁通过，每轮1177证据全部读取；child整体48.870、42.259、47.585秒，cold/warm index分别2.618/2.530、2.004/2.143、2.457/2.324秒。总耗时还有进程启动、两轮完整导航、汇总/关闭等成本，不能把差值直接命名为某个函数耗时。源码candidate是application.requireSnapshot在getEvidence/readSource中调用GraphStore.loadSnapshot，后者对完整payload调用parseStoredSnapshot；还有安全文件打开/每条证据源码读取成本，尚未证明哪项主导。
+
+目标：设计一个只在自建隔离样例上进行的有界诊断，对index、完整导航、SQL快照load/parse、证据查询及安全源码读取划出可归属计时/计数；说明计时嵌套与统计差值，不编造分项。区分测量工具与未来产品优化，先测再判断，不因warm无明显加速直接引入缓存。固定当前medium生成器/清单、全部证据门禁、冷暖同身份与历史保护，取消/失败关闭、报告不含源码/凭据/私人路径。
+
+Luna仅新增docs/plans/2026-10-02-navigation-performance-diagnostic.md及docs/development-runs/2026-10-02-navigation-performance-diagnostic-design.md；读取当前实际API/源码/样例报告字段，定义未来最小benchmarks专用实现候选与验证门。此批不改产品/GraphStore、缓存、六个已冻结基准文件、契约/依赖/AGENTS，不运行新测量、build/native/dist/Electron/Git；无依据重构及软件指标推断禁止。设计接受后才派最小诊断实现，复杂优化仍由Sol后续按实测负责，当前优先启动安全修复。
+
 ## 1C-2B-2B-C：活跃所有者与启动恢复边界（P1，排队）
 
 依据：协调方新隔离实验用两条ExplanationPolicy数据库连接、不同owner的两个broker；首任务dispatched且提供商Promise仍等待，第二session调用startSession→stop→recoverInterrupted后，首SQL任务变interrupted而首worker仍alive。remote-explanation-store.ts的恢复全局清除任务inflight/context；main.ts未设置single-instance启动门。此为核心状态失败，真实两个Electron进程/重复网络派发尚未验证。实验与命令见本计划独立审查记录最新节。
