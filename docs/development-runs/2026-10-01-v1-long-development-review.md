@@ -494,3 +494,11 @@ Sol新增三文件冻结，独立读取完整模块/ADR与关键61样例：stric
 原Sol正式接1C-2B-2B-C，仅main启动顺序、独立startup策略/定向测试/记录；另明确允许旧协议测试两处protocolVersion字面量类型修正。不改graph全局恢复或纯语义冻结模块、不重置worktree；真实Electron双进程技术门由root下个协调窗口补验，GUI仍延期。Luna接3D-L两新文档只读诊断设计，依据实际child/index时间差和requireSnapshot反复load/parseStoredSnapshot的候选路径，先定义分项计数/计时再决定实现或复杂优化，不先加缓存/制造重构。
 
 本轮AGENTS新增0条：工具安全/证据门、纯契约失败关闭及范围/hash规则已覆盖；单次耗时不作通用规则，启动缺陷未修复不标闭环完成。只将已独立验收工具六文件、纯契约三文件+root导出和对应协调文档纳入Git；Sol旧接线、启动在写文件及未完成新设计不提交。无电脑操作、生产凭据、真实HTTP、公开二进制。
+
+### 11:13–11:14 Git结果及启动门稳定复审
+
+待提交14文件逐项及cached --check通过，main index仅追加ownership-semantics export，无Sol旧接线；实际commit1fa81b1ab7451abe0a97cde47c87e5e448421688。首次普通push exit1：远端main ref已在同1fa81b1而期望旧ab8bfc2，随后ls-remote与本HEAD精确一致；再普通push exit0 Everything up-to-date。不能从此确定谁先完成远端更新，不改写第一次为成功，不force或把偶发ref冲突沉淀规则。主提交后status无源代码待提交，Luna继续自己的两文档设计，不包含其未来未接受文档。
+
+Sol启动批冻结idle后继续推进实际审查：读取startup-ownership.ts/test、main末段和record。有效userData选择后同步requestSingleInstanceLock，拒绝exit0、异常/缺所有权exit1且不调用ready/init，ready后复核；锁不提前release。main唯一初始化回调含Policy/Broker/Analysis/IPC/窗口，旧callbacks保留。旧协议测试只在command字段追加1.0.0字面量类型，未改使用点/断言；base总diff还含早先未接受接线两新增测试，不能全部作为新类型修正提交。
+
+独立startup9项及Sol desktop/contracts类型exit0。纯port模型/实际入口AST能证明该源码排序与模型逻辑；**尚未运行新build/两个真实Electron进程/首SQL任务保持/退出重开/隔离userData并行**，不把启动批或整接线标完成。底层双连接probe绕过入口仍展示全局recover假设，新方案需实际入口门证明阻止第二owner才关门。此批继续冻结，root下一协调窗口执行技术验收；原GUI延期、无凭据/HTTP操作不变。实际游标Sol582f17aa-f30f-4365-a7b1-0dbecc3b2b9d:20 idle、Luna768020f8-a63c-4530-81b6-8232542daca8:20 active，本轮无新增AGENTS。

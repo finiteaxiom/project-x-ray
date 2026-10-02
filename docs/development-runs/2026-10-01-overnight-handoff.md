@@ -4,6 +4,8 @@
 
 ## 当前实际状态
 
+实际Git收尾11:13–11:14：工具/纯契约及协调证据14文件提交1fa81b1ab7451abe0a97cde47c87e5e448421688，ls-remote确认origin/main同SHA；首次push exit1报远端ref已在本SHA而expected旧ab8bfc2，再普通push exit0 Everything up-to-date。只声明实际远端一致，不把第一次失败改写成功；没有force、旧接线提交或公开二进制。随后Sol启动门已冻结，root实际9项/desktop+contracts类型通过，真实双Electron及GUI仍未验；Luna导航诊断设计active。新增AGENTS0条。
+
 补充 2026-10-02 11:08：3C-L工具已独立验收，14项/严格类型、默认small、medium128文件三对冷暖11项门禁及1177证据API读取通过；medium第16读取点取消正常退出。三对index约2.0–2.6秒/轮，完整child42–49秒，分项尚未归因，不声称增量加速。2B-S1纯契约在Sol61项定向/118回归通过；root只复制三文件到main并追加公开导出，集成116回归、contracts/desktop/ui类型与实际公共导入通过。语义SQL/模型/界面仍未实现，旧接线GUI仍未验。Sol已接启动所有权门与旧两行测试类型修正；Luna接有实际测量依据的两文档导航诊断设计。两纯切片Git收尾版本随后核对，未提交未验收接线。
 
 补充 2026-10-02 10:50后：独立隔离双连接/双owner实验复现启动恢复误中断活跃首任务（dispatched→interrupted，首worker仍alive）。根因路径及后续P1修复边界已记录、告知Sol排队，先完成当前纯契约，不并发改冻结接线。无真实HTTP/凭据/GUI；真实双Electron进程与修复尚未验证。Luna有界工具仍待六文件冻结，开发测试不当作协调方独立验收。
