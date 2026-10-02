@@ -331,7 +331,20 @@ export class XRayApplication {
     const question = this.questions.get(questionKey(submission)); if (!question) throw new Error("题目不存在、已经完成或属于其他快照");
     const citations = validateCitations(snapshot, submission.citations, (filePath) => store.readSnapshotSource(snapshot.snapshotId, filePath)?.content);
     const grade = gradeAnswer(question, submission, snapshot, citations);
-    const completedAt = new Date().toISOString(); const attempt: OwnershipAttempt = { repositoryId: snapshot.repositoryId, snapshotId: snapshot.snapshotId, attemptId: stableId(snapshot.snapshotId, question.id, completedAt), questionId: question.id, questionVersion: question.version, concept: question.concept, questionKind: question.kind, variantKey: question.variantKey, structuredAnswer: submission.structuredAnswer, citations: grade.validatedCitations, locationScore: grade.location.score, structureScore: grade.structure.score, passed: grade.passed, scoringVersion: OWNERSHIP_SCORING_VERSION, semanticText: submission.answer, completedAt, legacy: false };
+    let structuredAnswer = submission.structuredAnswer;
+    if (structuredAnswer.kind === "variable-flow") {
+      const citationKey = (citation: SourceCitation): string => JSON.stringify([citation.filePath, citation.startLine, citation.startColumn, citation.endLine, citation.endColumn, citation.evidenceId]);
+      const indices = new Map(grade.validatedCitations.map((citation, index) => [citationKey(citation), index]));
+      // Grade against the original input; only the new persisted structure uses deduplicated indices.
+      structuredAnswer = { ...structuredAnswer, roles: structuredAnswer.roles.map(role => {
+        const original = submission.citations[role.citationIndex];
+        if (!original) return { ...role }; // An already invalid index stays invalid after deduplication.
+        const citationIndex = indices.get(citationKey(original));
+        if (citationIndex === undefined) throw new SafeDiagnosticError("TASK_FAILED");
+        return { ...role, citationIndex };
+      }) };
+    }
+    const completedAt = new Date().toISOString(); const attempt: OwnershipAttempt = { repositoryId: snapshot.repositoryId, snapshotId: snapshot.snapshotId, attemptId: stableId(snapshot.snapshotId, question.id, completedAt), questionId: question.id, questionVersion: question.version, concept: question.concept, questionKind: question.kind, variantKey: question.variantKey, structuredAnswer, citations: grade.validatedCitations, locationScore: grade.location.score, structureScore: grade.structure.score, passed: grade.passed, scoringVersion: OWNERSHIP_SCORING_VERSION, semanticText: submission.answer, completedAt, legacy: false };
     settingsStore.withIgnoreRevision(snapshot.repositoryId, settingsRevision, () => store.saveOwnershipAttempt(attempt, settingsStore === store ? settingsRevision : undefined));
     // Failed attempts remain retryable, while every attempt is still persisted.
     // The server-owned question keeps the deterministic rules out of the renderer.
