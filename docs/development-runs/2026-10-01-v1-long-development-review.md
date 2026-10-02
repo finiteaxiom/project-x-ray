@@ -574,3 +574,7 @@ Sol设计修订逐段复审：not-evaluated独立有界hash/标量字段、完�
 依据导航实测派Luna3F-L只读两文档方案，要求最小有界状态复用与替代比较、调用方变异/多连接/配置/current/历史/关闭边界；不得提前改产品/cache或称已加速，复杂状态实现未来由Sol负责。两线程继续原目录和feedback loops。
 
 Git已精确提交S2a四文件0eef6582f0afe1f02fdfffcf0884923d45327f6c及3E四文件8b15d7b42a8c403903155949953ecd53ae036cd1；未纳入Sol旧接线/main/UI。3E记录一处Markdown行尾空格在staged check发现，提交后即在协调文档批修正，无代码变化，不改已接受源码或历史。当前待推送核对。GUI、真实远程、发布/干净Windows边界仍保留。
+
+16:12实际Git补记：协调八文档提交18e55244fe9ec68f3862d4101291fe62d185c724；普通 `git push origin main` exit0，输出7a9f81b..18e5524，随后ls-remote origin/main精确同SHA。本地当时干净，未重置Sol worktree、不合并其未验收24文件，只有验收范围进入主远端。
+
+最新紧凑状态：Luna9993bce3-7453-47ad-a94b-a4c190f6cb0f:14仍active只读3F；Sol17efe2e9-6731-4d51-95c3-0059f40192d0:13曾报告S3公共消费接缝后idle，未提前写四实现/测试；root实际读准备记录和两package.json后明确允许contracts/index.ts再加新capsule导出一行，不增加依赖或导出builder，恢复同任务。下一快照Sol实际cursor:14为active。此是授权批必需正常公开接口，不扩大产品/SQL/旧barrel内容；开发侧应记录补边界，不用私有相对导入或重复hash绕行。当前不等待模型钥匙/GUI空跑，继续原纯实现与只读方案。

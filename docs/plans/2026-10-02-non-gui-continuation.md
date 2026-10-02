@@ -95,3 +95,7 @@ Sol在S2a源码冻结期间只修订原rubric/capsule两设计文档：not-evalu
 Sol两设计文档冻结后root逐段核对当前async hash/纯schema及既有同步SQLite锁，接受独立ready/not-evaluated字段和唯一preimage预算方案及私有prepare receipt的事务接缝，复制修订到main并保留协调状态。只派2B-S3纯builder：contracts/ownership-capsule.ts及测试、ownership/semantic-rubric.ts及测试、独立记录五文件；精确允许补main已接受的semantic公共导出一行，逐文件核对纯模块一致，不同步整barrel、不导出新胶囊/构造器。四型、完整配对路径、精确来源与角色投影、固定标准、不裁剪及预算/编码/跨后端hash golden门按修订计划执行。无FS/SQL/application/provider/IPC/UI，S4/S5未派、迁移不占。S2a/旧接线继续冻结。
 
 root Git快照诊断见2026-10-02-git-snapshot-timing-diagnostic.md：三次真实比较身份/历史/源码断言通过，staged每次19个Git子进程；原快照文件4/4原5秒门通过。新一次完整application正在复验，旧失败不抹去，未收敛前S2a不提交。没有使用电脑操作或模型。
+
+16:12实际收尾：main111/111原门通过后，S2a后台修正0eef658、3E工具8b15d7b及接受设计/审查18e5524普通push exit0；ls-remote精确18e55244fe9ec68f3862d4101291fe62d185c724，与本地一致，未纳入未验收旧接线/UI。新增公共引用索引经验1条；测量/设计经验0。
+
+S3公开接缝补充：Sol核对contracts只exports index，正常ownership消费无法复用新capsule契约。root实际核对两个package.json及准备记录，允许contracts/index.ts另加 `export * from "./ownership-capsule.js"`，与已接受semantic同步合计两行例外；不改package/依赖、不跨包私有相对导入、不导出builder、不复制整barrel。Sol恢复原纯builder批；Luna只读3F方案仍active。当前实际cursor两者后缀14（完整值见审查最新节）；不依赖旧派发游标。
