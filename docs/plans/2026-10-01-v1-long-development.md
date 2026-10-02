@@ -74,8 +74,8 @@ Sol 先测量当前全量索引/查询/内存基线，设计按语言的保守�
 | 1C-2A graph/application策略与任务 | 后台核心已验收并集成 | Sol/协调方 | 取消修正后独立161项/三包类型通过；独立真实索引+SQL两等待点cancelled/dispatch0/result空；5665245提交，32dbae8合并，集成93项/五包类型通过；非GUI/真实网络 |
 | 1C-2B-1 生产provider桥接/desktop协议 | 独立验收并集成 | Sol/协调方 | 0cdc683提交、8e99f82合并；独立203项/五包类型，实际索引至正文摘要/同步fetch/结果与事件守卫验证；集成72项/三包类型通过；非真实网络/IPC/GUI |
 | 1C-2B-2A Windows凭据原生适配器 | 底层独立验收并集成 | Sol/协调方 | 61项/两包类型、最终原Electron CLI完整通过；556e9f2提交/a09be86合并；main再编译与61项/desktop+ui类型、Node/Electron原命令/copy及test清理通过；无production凭据/GUI/远程/portable |
-| 1C-2B-2B worker/broker/main/preload安全接线 | 额度恢复后继续实施，尚未冻结 | Sol | 保留455d4ad基线全部未提交改动；补齐App快速切页/项目代际、worker/broker丢失回复与恢复回归，重新验证后冻结；重型检查由协调方安排，不以历史26/18项自测当当前验收 |
-| 1D-0 远程解释界面接入设计 | 已派发，设计中 | Luna | 仅新增2026-10-02-remote-explanation-ui计划及ui-design开发记录两文档；依据main真实离线页面/会话与已接受协议划分状态/文件/依赖/验证门，未集成安全接线列前置；不改UI或共享契约 |
+| 1C-2B-2B worker/broker/main/preload安全接线 | 独立审查退回修正 | Sol | 冻结后独立262项/desktop+ui类型、正常desktop build及产物worker1项通过；额外真实SQL+有序延迟端口复现completed通知被丢弃，须修复/复验；产物测试父fixture计数无关联，需纠正证明范围；未集成/GUI未验收 |
+| 1D-0 远程解释界面接入设计 | 设计审查定向修订 | Luna | 仍仅原两文档；保留离线/远程代际隔离，修订不存在的剩余额度、暂缓电脑操作及候选API/queued取消依赖；安全接线修复接受前不实施UI或共享契约 |
 | 1D 解释/授权 UI | 待契约冻结 | Luna | 后端契约进入主checkout后派发 |
 | 1E 独立测试、真实 GUI/远程与集成 | 待交付 | 协调方 | 实际代码/产物，远程密钥与项目选择未完成 |
 | 2 所有权语义评价 | 待设计 | 双线程 | 第一批接口稳定，真实远程阻碍分别保留 |

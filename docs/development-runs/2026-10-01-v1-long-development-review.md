@@ -374,3 +374,19 @@ wait_threads timeoutMs0实际返回Sol最近回合failed且usage-limit错误，L
 派发后紧凑检查确认Sol新回合01a0fa47-aad6-7cb1-aa34-b98b6b08c83b和Luna新回合01a0fa47-b111-7f53-917f-cdef52981423均inProgress/active；最近游标分别582f17aa-f30f-4365-a7b1-0dbecc3b2b9d:2、768020f8-a63c-4530-81b6-8232542daca8:2。两聊天实际已有新commentary与工具执行，不只发消息推测已启动。
 
 原project-x-ray本轮实际核对为PAUSED；通过automation_update更新完整现行工作流为ACTIVE，保留原名称、review target、15分钟间隔与无变化静默，明确暂不computer-use、GUI仍未验收、不提交未验收界面实现。代码/适用回归与技术产物检查可继续，不把技术CLI替代GUI，不改变无密钥/项目外发/Windows发布安全边界。此次没有新实现验收/电脑操作/生产凭据/真实HTTP结果，没有重复已接受检查。本轮AGENTS新增0条：这是用户临时检验安排与额度恢复调度，属于协作状态，不是代码证实的新工程经验。协调文档Git动作仅实际执行后补记。
+
+## 2B-2B及1D-0首轮独立审查（2026-10-02 10:03–10:09）
+
+主checkout为6c18c20a3f2270609c59d5e6fc33cf81ddac13fd，仅Luna原两设计文档未跟踪。紧凑检查Sol游标:5、Luna游标:5均completed/idle，均明确冻结。对照Sol实际23文件边界、455d4ad基线、开发记录、main/preload/worker/broker/策略/App及协议源码，通知保持冻结后启动独立验证；没有同批并发开发或电脑操作。
+
+独立执行各package cwd的 `node ../../node_modules/vitest/vitest.mjs run`：desktop六文件73项、contracts两文件44项、graph14项、application55项、llm Responses37项、UI App39项，全部exit0，共262项。desktop/UI的 `node node_modules/typescript/bin/tsc -p <对应tsconfig> --noEmit` 均通过。application与UI初次命令返回session，随后poll均exit0，不把打印passed而未退出当最终命令完成。没有依赖安装或导入项目代码执行。
+
+协调方唯一重型窗口执行Sol checkout的 `pnpm --filter @project-xray/desktop build` exit0，真实tsup clean生成main/preload/analysis-worker/explanation-worker与sourcemap，Python/secure reader/production credentials正常复制；没有重新编译native或运行凭据smoke。再在desktop执行 `node ../../node_modules/vitest/vitest.mjs run src/remote-explanation.worker.test.ts`，产物worker1项通过。production addon源/目标SHA256均96C8EE0AFCE3C7BAA5E6AEEEEE0B14E34BF843690566FC9CA4A185AD49488505；dist/native只有secure_reader.node与windows_credentials.node，rg检索main/preload/explanation-worker的test-support、MemoryWorker、test addon及fixture-only标记无命中。该技术验证仅Node Worker的bootstrap/provider-state/denied-state，无GUI/真实Electron/portable/生产凭据操作/HTTP。产物测试的f.reads/f.calls属于父进程fixture注入端口，未关联实际production Worker，虽为0但不能证明其无OS读取/HTTP；已退回纠正这一测试证据缺陷，不以通过断言扩大证明范围。
+
+额外独立复现确认产品缺陷：主checkout ignored `.benchmarks/remote-desktop-review-20261002/late-events.ts`使用同显式隔离fixture的真实SQLite与正常broker入口，仅延迟无requestId的task消息、保留RPC，待数据库completed后按顺序释放dispatched→completed。命令 `node_modules/.bin/tsx.CMD .benchmarks/remote-desktop-review-20261002/late-events.ts` exit1；heldPhases=[dispatched,completed]、observedPhases=[]、persistedPhase=completed、injectedDispatches=1，期望completed恰好一次。未发真实请求/操作生产凭据。首轮probe用Windows绝对ESM路径导致ERR_UNSUPPORTED_ESM_URL_SCHEME，改成file URL后进入上述断言；这是审查工具加载错误，不是产品失败。
+
+根因：broker.message将当前最新persisted task与历史event.task整对象强制相等；端口消息迟到时SQL已completed，dispatched被拒绝；随后completed又因协议要求previous.dispatched而被拒绝。实际跨worker端口延迟或主进程繁忙能够触发，同步MemoryWorker原测试不能排除。已向原Sol派原冻结范围修正及延迟完成/取消/失败、重复/回退/错身份/伪造完成回归；必须保留权威身份/发布门与一次终态，不凭空补事件、重发请求或扩大API。重型窗口结束后仅定向tests/types，交付后独立复验，尚未接受或集成该实现。
+
+Luna两文档独立对照main实际离线会话、候选协议与ADR0007：本地跨页保留和远程代际撤销分离、短期key/preview、main-owned context及history无API时不猜恢复的方向成立。定向退回不存在的“剩余额度”展示（当前preview只有确定上限等字段）、用户暂缓computer-use的顺序、尚未接受候选XRayApi及queued无SQL取消分支，后续复用Sol最小撤销入口而不是两套cleanup。仍只原两文档，不实施UI。本轮AGENTS新增0条，延迟事件经验待修正与独立复验后再评估/查重；测试计数不是经验，既有规则已要求区分技术/GUI及相关证据。队列/交接同步修正中，保留用户所有改动。
+
+修正派发后紧凑检查确认Sol新回合01a0fa5f-2723-75a3-b2bf-481f4e058894和Luna新回合01a0fa5f-2950-71d1-b05a-90d11b3c38a1均active/inProgress；最近游标分别582f17aa-f30f-4365-a7b1-0dbecc3b2b9d:6及768020f8-a63c-4530-81b6-8232542daca8:6。不在同批修改期间继续运行构建或重复已完成检查；下一次以实际重新冻结交付为准。本次仅三份协调文档进入Git范围，Luna两待修文档、Sol未验收实现与ignored probe均保留。
