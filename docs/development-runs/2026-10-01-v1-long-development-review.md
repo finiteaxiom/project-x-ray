@@ -518,3 +518,5 @@ probe第一次失败是计数hook只接受node:worker_threads，而tsup产物规
 Luna两文档3D-L冻结后读全文/记录，对照requireSnapshot/readSource/GraphStore/安全读边界，接受inclusive分组及独立安全读取回放；不能把差值算导航瓶颈或把SQL+parse拆成私有实测。root补设计接受状态，派3E-L三新增benchmark文件+开发记录，仅纯测试/类型，由root随后实际执行CLI/取消/medium门。Sol恢复fixture只读准备完成，指出appendResult/finish/release及等待session/崩溃切点边界；root实验独立构造与执行，不以其报告代替验收。已派2B-S2两新文档设计实际rubric与本地attempt事务胶囊，先核对真实题型/路径/预算/角色/版本/冲突与精确后续文件，不占迁移、不实现SQL/模型/UI。具体可审查目标及门槛先写non-gui-continuation。
 
 本轮公共AGENTS新增1条：全局恢复依赖共享userData单写时的入口持锁/零初始化/异常退出真实进程回归。已有规则涉及跨库发布、任务消息与状态门，未覆盖OS活跃写实例的排他入口；新条有核心原失败、启动修正及本轮真实产物实验支持，适用/动作/记录链接完整，不放当前数值或改变GUI/安全/授权门。开发各自记录0新增合理。只对已接受两设计与协调记录/公共规则做Git收尾，保留Luna新实施文件和Sol全部未验收实现。
+
+本轮实际Git：只对7份已接受设计/协调文档及公共经验提交a92a4c4424451987a5eb2fae7fb5d200ca791362，没有Sol实现或Luna新工具。首次普通push exit1报远端已在同a92a4c4但expected旧1d7d66c；随后ls-remote精确匹配，再普通push exit0 Everything up-to-date。不能推断谁先更新远端，不force、不改写首push成功。Luna3E-L和Sol2B-S2紧凑检查均active，新实际cursor分别9993bce3-7453-47ad-a94b-a4c190f6cb0f:6及17efe2e9-6731-4d51-95c3-0059f40192d0:4；automation本地状态复核ACTIVE/原15分钟。最终本段文档版本由Git历史识别。
