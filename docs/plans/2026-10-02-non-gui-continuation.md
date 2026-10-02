@@ -99,3 +99,7 @@ root Git快照诊断见2026-10-02-git-snapshot-timing-diagnostic.md：三次真�
 16:12实际收尾：main111/111原门通过后，S2a后台修正0eef658、3E工具8b15d7b及接受设计/审查18e5524普通push exit0；ls-remote精确18e55244fe9ec68f3862d4101291fe62d185c724，与本地一致，未纳入未验收旧接线/UI。新增公共引用索引经验1条；测量/设计经验0。
 
 S3公开接缝补充：Sol核对contracts只exports index，正常ownership消费无法复用新capsule契约。root实际核对两个package.json及准备记录，允许contracts/index.ts另加 `export * from "./ownership-capsule.js"`，与已接受semantic同步合计两行例外；不改package/依赖、不跨包私有相对导入、不导出builder、不复制整barrel。Sol恢复原纯builder批；Luna只读3F方案仍active。当前实际cursor两者后缀14（完整值见审查最新节）；不依赖旧派发游标。
+
+16:24：Luna3F首版设计已冻结并经root实际源码审查，因跨连接改写/删除/损坏payload可被无有效性检查缓存遮蔽，退回原两文档修订。要求选择可观察外部变更且处理本实例写/首次构建/事务/close的最小方案或窄SQL查询；不得宣布只支持受控写入来降低现有失败关闭行为。root隔离双连接WAL实测data_version变化/回滚/读事务延后/关闭门通过，已提供准确结果，仍不是缓存实现验收。Luna不改产品或启动索引；Sol保持原S3纯实现范围、未冻结。重型窗口空闲，不因无冻结实现重复运行既有回归；GUI暂缓与远程未验边界保持。
+
+22:57用户额度恢复后已续派原两批，旧回合均usage-limit失败而非交付。Sol保留三新文件/两导出，继续补第四合同测试、类型及纯回归/记录；Luna只修订3F两文档。main23f6d7a与Sol455d4ad保留，旧接线不集成。定时器ACTIVE/15分钟明确核对，无电脑操作或重型并发，S4/S5未派；阶段只以冻结交付及独立实际证据晋升。

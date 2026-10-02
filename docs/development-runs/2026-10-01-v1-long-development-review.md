@@ -578,3 +578,23 @@ Git已精确提交S2a四文件0eef6582f0afe1f02fdfffcf0884923d45327f6c及3E四�
 16:12实际Git补记：协调八文档提交18e55244fe9ec68f3862d4101291fe62d185c724；普通 `git push origin main` exit0，输出7a9f81b..18e5524，随后ls-remote origin/main精确同SHA。本地当时干净，未重置Sol worktree、不合并其未验收24文件，只有验收范围进入主远端。
 
 最新紧凑状态：Luna9993bce3-7453-47ad-a94b-a4c190f6cb0f:14仍active只读3F；Sol17efe2e9-6731-4d51-95c3-0059f40192d0:13曾报告S3公共消费接缝后idle，未提前写四实现/测试；root实际读准备记录和两package.json后明确允许contracts/index.ts再加新capsule导出一行，不增加依赖或导出builder，恢复同任务。下一快照Sol实际cursor:14为active。此是授权批必需正常公开接口，不扩大产品/SQL/旧barrel内容；开发侧应记录补边界，不用私有相对导入或重复hash绕行。当前不等待模型钥匙/GUI空跑，继续原纯实现与只读方案。
+
+## 2026-10-02 16:14–16:24：3F首版设计审查与SQLite变更标记机制验证
+
+本轮先读当前队列、审查及交接，main HEAD23f6d7a7f49fc4200e864e42c9327d7d47f8832b、初始工作区干净。紧凑检查原双聊天：Sol纯S3进行中未冻结；Luna3F两文档随后冻结completed。最新已读cursor分别17efe2e9-6731-4d51-95c3-0059f40192d0:16与9993bce3-7453-47ad-a94b-a4c190f6cb0f:16；Luna随后收到原范围修订任务，不能把上述idle快照当最新永久状态。
+
+root完整读取3F两个文件并核对application.requireSnapshot/getEvidence/readSource/current/close、GraphStore.parseStoredSnapshot/loadSnapshot/saveSnapshot/activateSnapshot/配置/源码读取及不可变快照测试。首选私有单槽投影、4MiB准入、返回对象克隆和实时配置/工作区检查有清晰边界；但方案承认会延迟察觉绕过saveSnapshot的另一连接UPDATE/DELETE或损坏payload。原下一请求的完整loadSnapshot本会发现缺失/解析失败，不能通过宣称仅支持受控写入缩小失败关闭行为。首版暂不接受实施，已退回Luna只修订原两文档：比较有可观察变更标记的有界投影与窄SQL读，明确连接/本实例写入/首次构建竞态/关闭门，不提前实现产品或测量工具。另明确两轮每类API2354调用、完整loadSnapshot4708的计数归属，index/current调用不混入命中门；初始HEAD作为历史保留，当前S2a已提交事实纠正。
+
+root在ignored审查目录创建并执行 `node --import tsx .benchmarks/remote-desktop-review-20261002/snapshot-navigation-data-version.ts`，exit0。自有临时SQLite双连接WAL断言：初始data_version2，本连接UPDATE提交仍2，另一连接UPDATE回滚仍2，另一连接UPDATE提交后3；首连接BEGIN并实际SELECT建立读视图后，另一连接提交，首连接事务中token仍3且SELECT旧值，结束事务后4并读新值；另一连接DELETE后5且首连接读取无行，关闭后pragma拒绝。两连接/精确自有目录已清理；没有读取用户项目、修改产品数据库、执行导入代码或开启Electron。
+
+这些结果只验证现有better-sqlite3/SQLite的机制：token是连接局部变化观察，不是全局修订/hash；本连接写要另有失效动作，跨请求持读事务会遮蔽外部提交。已把实际结果发Luna用于设计修订；首次构建/缓存命中/异常/close仍须未来产品回归，当前不能称缓存已正确或提速。未并发检查仍在编辑的Sol S3文件，未运行重型构建。真实GUI/远程边界不变。本轮AGENTS新增0：这是方案风险与底层机制实验，已有证据/状态规则覆盖，不将尚未实现的缓存设计提升为经验。
+
+## 2026-10-02 22:57：用户恢复额度后的原批次续跑
+
+用户明确五小时额度已恢复、按原计划继续。先读当前计划/审查/交接/AGENTS及实际Git：main仍23f6d7a，四协调文档和Luna首版两文档未提交；Sol仍455d4ad，旧接线与S2a改动保留。两聊天紧凑快照均notLoaded，上一回合failed且错误明确usage limit；此为额度中断，不是产品失败或冻结交付。新实际游标Luna49eda2c0-f29f-4f35-a52a-f21ffcad8c23:1、Sol85467c24-1155-49cc-b7f0-696158c3ee5b:1，不能沿用旧epoch游标。
+
+Sol实际新增ownership-capsule.ts、semantic-rubric.ts及其测试已经落文件，capsule.test.ts尚未出现；builder记录仍是端口授权补充前准备，不能据此宣称完成。contracts barrel两个新导出已在，其他XRayApi/IPC旧差异保持不带入main。已发恢复原S3具体消息：核对实际状态后修正收窄/补合同测试与四型/路径/引用/预算/hash golden、更新真实反馈闭环并冻结交付；不重做已接受模块、不提前SQL/模型/UI，不ff/reset或自行Git。Luna已发恢复原3F两设计修订，继续跨连接可观察失效/本实例写/首次构建/读事务/close与准确计数门，只原两文档。
+
+原automation_update view和明确automation.toml的非敏感id/kind/status/rrule核对为ACTIVE、15分钟、原协调聊天，无需创建重复或反复修改。没有GUI/生产凭据/远程/索引或重型检查。本轮无新增AGENTS规则：恢复授权及进行中开发状态不属于工程经验。四协调文档只记录实际证据与未验收边界，开发两文档仍待修订验收。
+
+续派后紧凑快照已确认原双聊天均active，游标各为上述新epoch后缀:2。Sol报告18项纯builder通过、正在补合同golden/总包预算和记录；这是开发自测报告，root尚未核对冻结源码或独立运行，不标验收通过。Luna恢复设计修订，未冻结。本轮只核对/提交协调记录，不纳入开发中的两设计或任何未验收实现。
