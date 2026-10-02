@@ -623,3 +623,12 @@ Sol实际新增ownership-capsule.ts、semantic-rubric.ts及其测试已经落文
 
 后续精确派发：Sol仅2B-S4新增ownership-capsule-store.ts/test与记录、graph index窄迁移/prepare/save/read接缝；核对迁移7/10后本批用11，不改旧结构或普通save历史；异步准备私有一次receipt→同步settings/source锁内权威检查与两INSERT原子保存，禁止事务await/FS。application/S5、provider/IPC/UI和性能cache仍未派。Luna仅3F-T新测量协议plan/run两文档，依据已接受3F与原3E门，定义原baseline不可变、新版本计数/语义门/资源/取消与未来最小文件范围；不实现/跑新工具或修改产品。依赖顺序避免graph/application同文件写冲突，重型窗口继续仅root。
 续派后紧凑快照实际确认两原聊天均active，Sol新turn01a0fd3a-b051-7133-88e4-491afe88e188、cursor85467c24-1155-49cc-b7f0-696158c3ee5b:10；Luna新turn01a0fd3a-b1c3-7240-8a4b-3086f1a4b8f9、cursor49eda2c0-f29f-4f35-a52a-f21ffcad8c23:7。定时器安全字段核对仍ACTIVE/原15分钟与目标，无需重复恢复。接受的新设计两文档去除行末空白后纳入文档收尾；新任务实现仍按冻结切片复验。
+本轮实际Git收尾：纯准备7文件提交1da4d8191265e741096278b37b2eeb1f8577f323；接受设计/协调7文档提交7a0e760f1968f0d28232a93205115f2b0022b3a6。普通git push origin main exit0，git ls-remote --heads origin main精确7a0e760f1968f0d28232a93205115f2b0022b3a6，与本地HEAD一致，核对时main工作区干净。未提交旧桌面/GUI接线或新S4实现；此结果补记保留供下批文档收尾。
+
+## 2026-10-02 23:32 S4历史读取保证的明确边界
+
+协调方读取Sol材料缺口记录并复核S3 validateOwnershipCapsule原题依赖、ownership_attempts/capsule字段及application passed删题行为：库中未持完整choices/合法备选/deterministicChecks/concept，单参数loadOwnershipCapsule(attemptId)不能重算完整questionFingerprint。明确采用受限历史read，不重造question或新增整题/源码持久化；这不是新完整原题验证实现。
+
+prepare仍以完整原题/尝试强校验，私有一次receipt和同步权威保存强门不变。read为Promise，在短同步读事务捕获同源attempt/capsule/必要历史快照与节点/边/proof/源码私有一致材料，退出事务再用现有公开async rubric/limitation/answer/projection函数验证，不在SQL锁内await或复制私有normalize。重算实际持久attempt/capsule摘要、核列/关联/必要事实与精确来源，损坏固定拒绝；旧attempt缺胶囊返回legacy-capsule-absent，不回填。
+
+read内部返回明确questionBinding:'prepare-only'固定保证标签：完整原题指纹只在prepare时核验，历史读取不独立验证原题，也不提供对全部重写并重算摘要的数据库的认证保证。历史snapshot/analysis/manifest核验不代表当前activation/config/工作区仍有效；合法当前晋升或配置变化不能改写旧历史，未来外发必须重新核验当前性和授权。此标签仅内部graph端口，不改公共contracts/评分/UI/外发。没有原题时不能伪造原题复用S3validator；四文件实现范围不变。附加重开ready/not-evaluated/缺胶囊、当前状态变化下历史边界、损坏拒绝和零外发回归。这个源码依据的设计决定允许继续实施，不代表S4验收通过或新的AGENTS经验。

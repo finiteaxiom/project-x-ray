@@ -105,3 +105,5 @@ Sol修订后的胶囊两分支与async准备/sync事务设计接受并复制；�
 23:06新增独立缺陷：Sol提供稳定源码hash后，root纯契约探针确认not-evaluated validator会接受跨题号/项目/快照的question-非对应attempt组合；调用后首await期间替换attempt对象也能改变验证目标，正常matching控制通过、前后源hash相同。已退回同S3契约/test/记录修正，两个分支统一身份门与首await前完整捕获，待独立复验；未进入SQL/集成/GUI。Luna仍修订3F设计。main80dff40不含此开发中实现，本轮无新增规则，复现exit0不是修复验收成功。
 
 23:27新增可复验成果：S3纯rubric/capsule准备独立接受，实际main提交1da4d8191265e741096278b37b2eeb1f8577f323。两公开validator身份缺陷修正后，独立7错配/受控await/匹配捕获/getter门在Sol/main各通过；main159纯回归与contracts/ownership/graph类型通过。新增AGENTS工程经验1条，未包含旧接线或GUI相关实现。此成果仍无SQL提交、用户界面或自然语言质量判断。3F带有效性标记的导航缓存设计已接受，优化未实现/收益未测。续派Sol S4本地事务端口与Luna3F-T新计量协议只读设计，文件分离、S5未派。GUI/真实远程、签名与干净Windows边界未变化；暂缓电脑操作继续有效。实际push与远端SHA随后核实。
+本轮实际Git收尾：纯准备7文件提交1da4d8191265e741096278b37b2eeb1f8577f323；接受设计/协调7文档提交7a0e760f1968f0d28232a93205115f2b0022b3a6。普通git push origin main exit0，git ls-remote --heads origin main精确7a0e760f1968f0d28232a93205115f2b0022b3a6，与本地HEAD一致，核对时main工作区干净。未提交旧桌面/GUI接线或新S4实现；此结果补记保留供下批文档收尾。
+23:32进展边界：Sol在S4开工核对中报告历史读取缺少完整原题，root源码复核后明确内部read只保证持久材料完整性/来源闭合、显式prepare-only；完整原题核验仍在prepare。已恢复同四文件实施，不新增整题持久化、不把历史当当前授权，尚无SQL成果验收。Luna继续原3F-T两文档设计；本轮新增工程规则0。

@@ -122,3 +122,11 @@ builder和prepare验证均为async，须完成所有await后再进入同步事�
 验收语料须在实施前由root选择/同步实际主语料并冻结，而非声称本worktree已覆盖116项。必要矩阵：正确结构错误文本不被本地判正确；文本正确无合法引用沿用原拒绝；同节点多调用位置任一完整配对可选、混拼失败；变量重复引用导致索引偏移须映射，错role/多余role不可评；本地相交引用仍可成绩但语义不发送；空答案可ready后未来insufficient；孤立代理、UTF8临界、>8criterion、每proof行/字节与整个DTO超限不裁剪；old attempt不回填；injected comments/answer不改模板/权重/文件范围；配置/activation写前变更两行零写；所有评分/历史回归。实际测试命令、失败类型与未验证项由实施批记录，本设计没有测试结果。
 
 接受门：协调方确认上述更窄语义资格和role映射、有限模板充分性及胶囊字段/预算，然后只派纯builder。模型对自然语言是否判对、远程隐私授权与最终body、主SQL集成、真实GUI均仍开放。本设计不把ready、保存胶囊或pure schema通过当作语义能力端到端完成。
+
+## 2026-10-02 23:32 S4历史读取保证的明确边界
+
+协调方读取Sol材料缺口记录并复核S3 validateOwnershipCapsule原题依赖、ownership_attempts/capsule字段及application passed删题行为：库中未持完整choices/合法备选/deterministicChecks/concept，单参数loadOwnershipCapsule(attemptId)不能重算完整questionFingerprint。明确采用受限历史read，不重造question或新增整题/源码持久化；这不是新完整原题验证实现。
+
+prepare仍以完整原题/尝试强校验，私有一次receipt和同步权威保存强门不变。read为Promise，在短同步读事务捕获同源attempt/capsule/必要历史快照与节点/边/proof/源码私有一致材料，退出事务再用现有公开async rubric/limitation/answer/projection函数验证，不在SQL锁内await或复制私有normalize。重算实际持久attempt/capsule摘要、核列/关联/必要事实与精确来源，损坏固定拒绝；旧attempt缺胶囊返回legacy-capsule-absent，不回填。
+
+read内部返回明确questionBinding:'prepare-only'固定保证标签：完整原题指纹只在prepare时核验，历史读取不独立验证原题，也不提供对全部重写并重算摘要的数据库的认证保证。历史snapshot/analysis/manifest核验不代表当前activation/config/工作区仍有效；合法当前晋升或配置变化不能改写旧历史，未来外发必须重新核验当前性和授权。此标签仅内部graph端口，不改公共contracts/评分/UI/外发。没有原题时不能伪造原题复用S3validator；四文件实现范围不变。附加重开ready/not-evaluated/缺胶囊、当前状态变化下历史边界、损坏拒绝和零外发回归。这个源码依据的设计决定允许继续实施，不代表S4验收通过或新的AGENTS经验。

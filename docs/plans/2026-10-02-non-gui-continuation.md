@@ -109,3 +109,4 @@ S3公开接缝补充：Sol核对contracts只exports index，正常ownership消�
 ## 2026-10-02 23:27 精确后续队列
 
 S3已独立接受并集成1da4d81（纯准备），原validator两缺陷独立探针修正通过；main159/Sol161纯回归与类型通过，AGENTS1条经验。3F修订设计接受，缓存/性能收益未验收。Sol下一批仅S4 GraphStore四文件：新ownership-capsule-store.ts/test、本批run与graph/index窄接缝；核对迁移7/10后用11，private一次receipt、异步准备/同步权威事务、双INSERT全回滚/旧attempt不回填及持久数据损坏拒绝，S5应用集成未派。Luna下一批只读3F-T两文档：新snapshot-navigation-measurement-protocol.md与同名design-run；原3E baseline和全部1177/11门不降，定义有版本的新计数、失效/资源/取消与独立验收范围；无产品/工具实现、索引或重型检查。原两聊天目录、旧改动、GUI/远程/发布门均保持。
+23:32 S4恢复决定：root源码复核确认完整原题无持久材料；采用内部单参数受限历史read，显式questionBinding:prepare-only。完整原题只在prepare强核验，历史read短同步捕获一致持久材料后事务外async闭合校验，强source/role/hash/列和保存current/config门不变，不存整题、不猜旧题、不宣称历史当前或认证保证。Sol在原四文件继续，尚无S4产品验收，规则新增0。
