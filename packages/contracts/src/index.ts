@@ -2,6 +2,7 @@ import { z } from "zod";
 export * from "./remote-explanation.js";
 export * from "./remote-explanation-desktop.js";
 export * from "./ownership-semantics.js";
+export * from "./ownership-capsule.js";
 
 export const GRAPH_IR_VERSION = "1.3.0";
 export const TASK_PROTOCOL_VERSION = "1.2.0";
