@@ -362,3 +362,15 @@ Luna`:30`idle，原三文件明确重新冻结。逐例比对README、JSON及真
 本批准备切片接受，精确待提交仅原三文件及本轮三个协调文档；没有UI修改、模型/production凭据/网络/GUI验收，不把静态语料当已接受rubric或第二批实现。AGENTS新增0条，已有证据类型/置信度/相同快照与语义未评估门覆盖本次经验；具体选择器诊断保留开发/独立记录。Git真实动作及SHA在执行后补记，其他开发仍在自己worktree实现，不纳入提交。
 
 实际Git收尾：核对main分支、六文件staged清单与diff/check、origin为既有用户仓库后，提交97191b4c2b5524f23032d91d563fded5a3581b61；普通push exit0，ls-remote确认origin/main同SHA，工作区干净。没有合并Sol未冻结实现、生成产物或公开二进制。已通知Luna本准备切片接受后保持idle等待1D安全接口；Sol保留455d4ad基线继续既定接线，不在active期间fast-forward。下一次以实际交付及游标为准。
+
+## 晨间恢复与检验安排（2026-10-02 09:41–09:48）
+
+用户要求核对两聊天/规划并继续任务，当前检验暂不使用电脑操作。先核对真实main HEAD792602e4c35e67a3c5d2e5a30cae02628495a838和干净状态、队列/交接/最新审查；Sol worktree仍为455d4ad，保存main/preload/worker/broker/credential-policy/App及协议的未提交改动。455d4ad至main在desktop、contracts、application、graph、ui范围无源码差异，main进展为已接受文档/语料，不在Sol修改期间强行对齐。
+
+wait_threads timeoutMs0实际返回Sol最近回合failed且usage-limit错误，Lunacompleted/idle；额度工具当前ordinaryUsageAllowed=true，未购买或操作额度。核对Sol本批实际开发记录与测试源码，26项接线/18项协议属于上回合局部自测，没有冻结交付或本轮独立执行，不能晋升验收。
+
+已向原Sol派发继续既定1C-2B-2B：保留全部改动，补齐快速切页/新generation/迟到回复及worker/broker丢失回复、退出、timeout与恢复门，重新纯回归/类型后冻结具体文件；重型native/build/产物/Electron技术验证另由协调窗口执行。原Luna派1D-0仅两新增设计文档，依据实际FeatureExplanationWorkspace与ownership-sessions/当前协议明确组件、状态、API前置、上下文撤销、用户逐项目选择及验证门，不提前改UI/契约或Sol目录。该准备有现有已实现离线会话与待接线协议依据，不为填充空闲制造功能。
+
+派发后紧凑检查确认Sol新回合01a0fa47-aad6-7cb1-aa34-b98b6b08c83b和Luna新回合01a0fa47-b111-7f53-917f-cdef52981423均inProgress/active；最近游标分别582f17aa-f30f-4365-a7b1-0dbecc3b2b9d:2、768020f8-a63c-4530-81b6-8232542daca8:2。两聊天实际已有新commentary与工具执行，不只发消息推测已启动。
+
+原project-x-ray本轮实际核对为PAUSED；通过automation_update更新完整现行工作流为ACTIVE，保留原名称、review target、15分钟间隔与无变化静默，明确暂不computer-use、GUI仍未验收、不提交未验收界面实现。代码/适用回归与技术产物检查可继续，不把技术CLI替代GUI，不改变无密钥/项目外发/Windows发布安全边界。此次没有新实现验收/电脑操作/生产凭据/真实HTTP结果，没有重复已接受检查。本轮AGENTS新增0条：这是用户临时检验安排与额度恢复调度，属于协作状态，不是代码证实的新工程经验。协调文档Git动作仅实际执行后补记。

@@ -74,7 +74,8 @@ Sol 先测量当前全量索引/查询/内存基线，设计按语言的保守�
 | 1C-2A graph/application策略与任务 | 后台核心已验收并集成 | Sol/协调方 | 取消修正后独立161项/三包类型通过；独立真实索引+SQL两等待点cancelled/dispatch0/result空；5665245提交，32dbae8合并，集成93项/五包类型通过；非GUI/真实网络 |
 | 1C-2B-1 生产provider桥接/desktop协议 | 独立验收并集成 | Sol/协调方 | 0cdc683提交、8e99f82合并；独立203项/五包类型，实际索引至正文摘要/同步fetch/结果与事件守卫验证；集成72项/三包类型通过；非真实网络/IPC/GUI |
 | 1C-2B-2A Windows凭据原生适配器 | 底层独立验收并集成 | Sol/协调方 | 61项/两包类型、最终原Electron CLI完整通过；556e9f2提交/a09be86合并；main再编译与61项/desktop+ui类型、Node/Electron原命令/copy及test清理通过；无production凭据/GUI/远程/portable |
-| 1C-2B-2B worker/broker/main/preload安全接线 | 已派发实施 | Sol | worktree干净ff对齐455d4ad，按已接受ADR0007先冻结精确文件/验证顺序，权威context提交、sender/窗口/一次终态/watchdog/恢复与产物；全部稳定进入主checkout后再派UI，真实GUI仍开放 |
+| 1C-2B-2B worker/broker/main/preload安全接线 | 额度恢复后继续实施，尚未冻结 | Sol | 保留455d4ad基线全部未提交改动；补齐App快速切页/项目代际、worker/broker丢失回复与恢复回归，重新验证后冻结；重型检查由协调方安排，不以历史26/18项自测当当前验收 |
+| 1D-0 远程解释界面接入设计 | 已派发，设计中 | Luna | 仅新增2026-10-02-remote-explanation-ui计划及ui-design开发记录两文档；依据main真实离线页面/会话与已接受协议划分状态/文件/依赖/验证门，未集成安全接线列前置；不改UI或共享契约 |
 | 1D 解释/授权 UI | 待契约冻结 | Luna | 后端契约进入主checkout后派发 |
 | 1E 独立测试、真实 GUI/远程与集成 | 待交付 | 协调方 | 实际代码/产物，远程密钥与项目选择未完成 |
 | 2 所有权语义评价 | 待设计 | 双线程 | 第一批接口稳定，真实远程阻碍分别保留 |
@@ -93,6 +94,10 @@ Sol 先测量当前全量索引/查询/内存基线，设计按语言的保守�
 2B-2按风险再拆稳定边界：先实现Windows Credential Manager原生模块与窄TS适配器，再实现worker/broker/main/preload。2B-2A目标是固定自有target的状态/读/写/删除及失败关闭；生产模块固定com.projectxray.desktop/openai/api-key/v1，测试模块编译为独立固定test target，不接受用户target或环境切换，不把测试模块复制进生产产物。1–2048 UTF-8字节、Win32上限、编码/控制字符双层校验、零化/CredFree及固定错误；无SQLite/safeStorage/env回退。仅desktop新增windows-credentials.ts/test、native/windows_credentials.cc/binding.gyp、scripts/build-credentials.cjs/copy-credentials.cjs/credentials-smoke.cjs/credentials-electron-smoke.cjs、windows-credentials-scripts.test.ts与本批记录；desktop/package及lock仅同版本node-gyp12.4.0 dev声明/本批脚本，AGENTS只合格小修。不得先改main/preload/worker/tsup/contracts/application/graph/UI。先纯测试与类型冻结，实际native编译/Node/Electron/portable验收按协调窗口分阶段，缺模块/非Windows明确unavailable且不删兼容代码。该切片不代表真实生产凭据或第一批E2E完成。
 
 ## 自动跟进
+
+2026-10-02早晨用户要求检查两开发聊天并继续启动任务，检验暂不使用电脑操作。当前先推进独立源码审查、适用回归/类型检查以及协调窗口内的技术构建与运行产物检查，不调用computer-use；真实GUI仍单列未验收，此安排不豁免界面完成门与未验收实现的Git门禁。用户恢复电脑操作后补实际Electron/Windows交互。原自动任务本轮核对为PAUSED，经automation_update恢复ACTIVE并同步这一临时检验安排，沿用原15分钟间隔与无变化静默，不创建新定时器。
+
+本轮实际基线main为792602e4c35e67a3c5d2e5a30cae02628495a838；Sol仍在455d4ad50830ee2495b70927e51caf830a4efbb8且保留未提交实现，main此后只推进已接受文档/语料，无核心源码基线冲突，不在active期间重置或fast-forward其checkout。紧凑检查确认Sol上一轮因额度失败、Luna上一轮已完成空闲；恢复派发后两聊天均active。Sol继续既定安全接线，Luna新增1D-0只读设计；各自目录/文件分离，正式UI依赖安全接口进入main。
 
 2B-2B范围补充（2026-10-02）：协调方核对App现有navigateTo/installProject转换与卸载，主进程无法观察React内部页面变化。允许Sol在自身worktree仅追加apps/ui/src/App.tsx的最小撤销接线及原App.test.tsx回归，先记录触发/排序边界；离开explain、项目/快照/显式新generation变化和卸载关闭上下文，无变化轮询不重复。不能只靠被动effect遗漏快速批处理切页；旧清理及迟到回复不得影响新context，撤销失败仍关闭权限。没有控件、项目授权、凭据或1D业务状态；权威仍为broker与数据库提交，实际GUI门保持开放。Luna当前仅语料三文件，无同文件并行。
 
