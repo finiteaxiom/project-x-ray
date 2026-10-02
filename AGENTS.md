@@ -207,6 +207,8 @@ LLM 输出永远不是一级证据。LLM 可以对分析器返回的证据进行
 
 只按“执行反馈与规则沉淀”的门槛维护；详细过程保存在对应开发记录中。
 
+- 跨 worker 阶段消息可能迟于权威数据库终态提交；接纳历史阶段时核对注册任务、当前上下文、完整身份和稳定创建时间，再按实际收到的合法顺序处理，不能要求所有旧阶段与当前整行相等或补造阶段。终态仍匹配当前权威记录，completed 还须匹配实际已发布结果。回归先提交 completed/failed/cancelled 再释放 dispatched 与终态，并确认重复、回退、错身份及未发布结果被拒绝。[延迟消息独立复验](docs/development-runs/2026-10-01-v1-long-development-review.md)
+
 - 编写由 Node 或 Electron 启动的验收 CLI 时，不能仅用 `require.main === module` 判断 Electron 入口；以实际 argv 入口与当前脚本的规范化身份匹配，并保持其他应用导入时无副作用。回归覆盖真实脚本顶层、主/verify 子入口及其他应用 require；最终必须执行原 CLI，隔离 wrapper 成功不能替代入口验收。[Windows 凭据入口记录](docs/development-runs/2026-10-02-windows-credentials-adapter.md) · [独立复验](docs/development-runs/2026-10-01-v1-long-development-review.md)
 
 - 跨SQLite库发布解释，以权威任务completed和精确身份作为成功门禁；项目结果先提交而权威terminal提交失败时，只补偿非成功terminal同身份的未发布行。finish、补偿或释放失败不得掩盖原固定错误或提前解除占用；异常退出恢复不得重发，遗留结果在按身份清理前保持不可读。用两个库的延迟约束、退出切点和cleanup BUSY回归，确认completed历史与旧源码不变；持锁不等于跨库原子提交。[策略与发布记录](docs/development-runs/2026-10-01-llm-policy-application.md)

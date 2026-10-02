@@ -74,14 +74,16 @@ Sol 先测量当前全量索引/查询/内存基线，设计按语言的保守�
 | 1C-2A graph/application策略与任务 | 后台核心已验收并集成 | Sol/协调方 | 取消修正后独立161项/三包类型通过；独立真实索引+SQL两等待点cancelled/dispatch0/result空；5665245提交，32dbae8合并，集成93项/五包类型通过；非GUI/真实网络 |
 | 1C-2B-1 生产provider桥接/desktop协议 | 独立验收并集成 | Sol/协调方 | 0cdc683提交、8e99f82合并；独立203项/五包类型，实际索引至正文摘要/同步fetch/结果与事件守卫验证；集成72项/三包类型通过；非真实网络/IPC/GUI |
 | 1C-2B-2A Windows凭据原生适配器 | 底层独立验收并集成 | Sol/协调方 | 61项/两包类型、最终原Electron CLI完整通过；556e9f2提交/a09be86合并；main再编译与61项/desktop+ui类型、Node/Electron原命令/copy及test清理通过；无production凭据/GUI/远程/portable |
-| 1C-2B-2B worker/broker/main/preload安全接线 | 独立审查退回修正 | Sol | 冻结后独立262项/desktop+ui类型、正常desktop build及产物worker1项通过；额外真实SQL+有序延迟端口复现completed通知被丢弃，须修复/复验；产物测试父fixture计数无关联，需纠正证明范围；未集成/GUI未验收 |
-| 1D-0 远程解释界面接入设计 | 设计审查定向修订 | Luna | 仍仅原两文档；保留离线/远程代际隔离，修订不存在的剩余额度、暂缓电脑操作及候选API/queued取消依赖；安全接线修复接受前不实施UI或共享契约 |
+| 1C-2B-2B worker/broker/main/preload安全接线 | 延迟事件修正独立复验通过；整批仍待验收 | Sol/协调方 | 原失败 probe 现观察 dispatched→completed、SQL completed、dispatch1；本轮36项接线+20项协议、desktop/UI类型、最新正常build及产物worker1项通过；产物无关联计数已删除，证明限于bootstrap/state；实际Electron IPC、GUI和集成仍开放，未提交实现 |
+| 1D-0 远程解释界面接入设计 | 修订后设计已接受 | Luna/协调方 | 原两文档；真实preview上限、候选API、queued无SQL取消、复用同步revoke及代码→技术产物→延期GUI顺序已复审；非UI实现或运行验收 |
 | 1D 解释/授权 UI | 待契约冻结 | Luna | 后端契约进入主checkout后派发 |
 | 1E 独立测试、真实 GUI/远程与集成 | 待交付 | 协调方 | 实际代码/产物，远程密钥与项目选择未完成 |
 | 2 所有权语义评价 | 待设计 | 双线程 | 第一批接口稳定，真实远程阻碍分别保留 |
+| 2A-S 所有权语义评价 ADR 草案 | 本轮派发设计 | Sol | 仅自己worktree的0008草案及记录；离线not-evaluated、独立purpose/授权、证据rubric/追加结果/过期和版本；不修改现有实现或冻结接线 |
 | 2A-L 源码约束语义验收语料准备 | 修正后准备切片已验收 | Luna/协调方 | 原三文件；14范围匹配，17评分选择器实际唯一绑定，10有效变体经真实application评分、无引用/错快照拒绝；角色/背景/unknown边界明确，非语义模型/GUI验收 |
 | 3A-L 增量索引基线/验收设计 | 文档准备已接受 | Luna/协调方 | 两文件冻结，对照实际索引/规范化/benchmark源码复审；无性能测量或增量实现/GUI结果 |
 | 3B-L 隔离本地基线工具 | 修正后工具切片已验收 | Luna/协调方 | 原四文件；独立9测试、真实child取消自行退出、矛盾门禁拒绝及小样例11门禁通过；不是规模性能、增量实现或GUI验收 |
+| 3C-L 有界合成规模基准工具 | 本轮派发实现 | Luna | 实际工具硬编码3文件只能验证small；按2026-10-02-non-gui-continuation.md扩展固定medium128文件，保留所有11门禁、无外部项目/任意路径；规模实测由协调方单窗口，不实现产品缓存 |
 | 4A Windows发布链/验收设计 | 修订后设计已接受 | Luna/协调方 | 隔离共存/原始签名Status/迁移阶段已复审；仅文档，不代表安装、升级、卸载或GUI已验收 |
 | 4B Windows发布实现 | 待设计审查及功能稳定 | 双线程 | 产物版本稳定，签名证书待决定，干净机器用户跳过不改写 |
 

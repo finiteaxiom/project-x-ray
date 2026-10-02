@@ -4,6 +4,10 @@
 
 ## 当前实际状态
 
+最新 2026-10-02 10:18–10:27：Sol 延迟事件修正经原失败 probe、36 项接线、20 项协议、desktop/UI 类型、最新普通 desktop build 及实际 worker 产物状态测试 1 项独立复验通过；SQL 先 completed 后释放消息，现正确观察 dispatched→completed，注入 dispatch 恰好一次。产物计数证明已纠正，不能据父 fixture 推出 OS/HTTP 非调用。整批真实 Electron IPC、App GUI、远程服务仍未验收，Sol 原 24 文件未提交/集成。Luna 两文档 UI 设计修订已接受，非 UI 实现。
+
+接下来按[暂缓 GUI 的后续计划](../plans/2026-10-02-non-gui-continuation.md)并行：Sol 2A-S 两新文档设计所有权语义评价；Luna 3C-L 仅扩展有界基准工具，从默认 small 三文件增加固定 medium128 文件，为实测准备。原接线冻结，正式 UI 暂不实施，开发不得自行 Git 收尾或重型验收。紧凑检查确认两聊天新回合 active。本轮沉淀 1 条已复现且独立复验的 worker 消息时序经验；不会把缺 GUI 的实现提交或认定完成。详细命令与边界见最新独立审查节。
+
 最新2026-10-02 10:03–10:09：Sol接线冻结后已独立执行262项回归、desktop/UI类型、正常desktop build与产物worker1项，均通过；额外真实SQLite+有序延迟端口复现数据库completed但通知被丢弃，已退回修复，接线未接受/集成。产物测试父fixture计数未连接实际Worker，已要求纠正其有限证明范围。Luna两文档设计也已审查并派原范围修订（实际preview字段、暂缓电脑操作、候选API/queued取消）；正式UI仍等待安全接线。当前没有新GUI、生产凭据或真实服务结果，详见独立审查最新一节。原晨间恢复协调记录6c18c20已普通推送且origin/main核对一致。
 
 以下2026-10-02 09:41–09:48状态取代本节下方历史“下一步”安排；旧阶段/命令/版本仍留作证据，不作为当前交付结论。

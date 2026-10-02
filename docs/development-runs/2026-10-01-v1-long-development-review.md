@@ -390,3 +390,29 @@ wait_threads timeoutMs0实际返回Sol最近回合failed且usage-limit错误，L
 Luna两文档独立对照main实际离线会话、候选协议与ADR0007：本地跨页保留和远程代际撤销分离、短期key/preview、main-owned context及history无API时不猜恢复的方向成立。定向退回不存在的“剩余额度”展示（当前preview只有确定上限等字段）、用户暂缓computer-use的顺序、尚未接受候选XRayApi及queued无SQL取消分支，后续复用Sol最小撤销入口而不是两套cleanup。仍只原两文档，不实施UI。本轮AGENTS新增0条，延迟事件经验待修正与独立复验后再评估/查重；测试计数不是经验，既有规则已要求区分技术/GUI及相关证据。队列/交接同步修正中，保留用户所有改动。
 
 修正派发后紧凑检查确认Sol新回合01a0fa5f-2723-75a3-b2bf-481f4e058894和Luna新回合01a0fa5f-2950-71d1-b05a-90d11b3c38a1均active/inProgress；最近游标分别582f17aa-f30f-4365-a7b1-0dbecc3b2b9d:6及768020f8-a63c-4530-81b6-8232542daca8:6。不在同批修改期间继续运行构建或重复已完成检查；下一次以实际重新冻结交付为准。本次仅三份协调文档进入Git范围，Luna两待修文档、Sol未验收实现与ignored probe均保留。
+
+## 2026-10-02 10:18–10:27：延迟事件独立复验、设计接受与后续派发
+
+读取当前队列、最新审查与交接，核对实际目录/Git/AGENTS/开发记录，紧凑检查确认两修订交付均冻结 idle，实际游标 Sol 582f17aa-f30f-4365-a7b1-0dbecc3b2b9d:7、Luna 768020f8-a63c-4530-81b6-8232542daca8:7。main 3f58ddc24a395f1d8bc2b585ac942ed41d24cfc2，Sol455d4ad50830ee2495b70927e51caf830a4efbb8，保留未提交接线与新增AGENTS条目；没有重置/覆盖。此前262项是上一版本证据，本轮仅因修正运行必要定向组合，不写作新版262项通过。
+
+### 已独立验证的修正
+
+审查实际 broker.message 差异：历史 dispatched 仍核对已注册/current-context/完整identity/createdAt；其他阶段精确匹配权威SQL整行，completed额外精确匹配实际source库已发布result。未伪造事件、扩大API、放宽结果门禁或重复dispatch。负向回归实际覆盖先到completed无dispatched、错owner/epoch/context/ref/task/package/bodyDigest/createdAt、重复/回退、篡改完成时间和结果，以及隔离库publication移除→拒绝→恢复原fixture结果→接纳一次。此删除仅测试临时库。
+
+独立重跑原 ignored probe（不是新改预期）：主 checkout 执行 node_modules/.bin/tsx.CMD .benchmarks/remote-desktop-review-20261002/late-events.ts，exit0；heldPhases=[dispatched,completed]、observedPhases=[dispatched,completed]、persistedPhase=completed、injectedDispatches=1。仍使用真实隔离SQLite/正常broker入口及显式注入测试端口，无真实请求/生产凭据。上一节同probe exit1与本节修正后exit0形成闭环。
+
+独立命令均exit0：Sol apps/desktop cwd运行 node ../../node_modules/vitest/vitest.mjs run src/explanation-broker.test.ts src/explanation-worker-runtime.test.ts src/explanation-policy.test.ts src/remote-credential-policy.test.ts，4文件36项；contracts cwd同入口 src/remote-explanation-desktop.test.ts，20项。Sol根执行 node node_modules/typescript/bin/tsc -p apps/desktop/tsconfig.json --noEmit 及 UI 对应命令，通过；git diff --check无空白错误，仅Windows换行提醒。
+
+取得冻结及单窗口后，根协调方执行 pnpm --filter @project-xray/desktop build，正常tsup四入口和Python/secure-reader/production credentials复制成功，无native重新编译；随后 desktop cwd vitest run src/remote-explanation.worker.test.ts，1文件1项通过。实际Node Worker从最新dist启动、关联RPC并返回null-context/provider-unconfigured/auth-denied；修订测试已删除与生产Worker无关的父fixture reads/calls计数，只证明bootstrap/state协议，不据此宣称OS或HTTP调用计数为零。本轮仅请求该三类无凭据/start命令，未操作生产凭据、真实网络、Electron GUI或portable。
+
+因此接受该具体延迟事件修正的源码/回归结果；整批 main/preload/Electron IPC、App真实GUI及集成仍开放，Sol24文件不提交，不把用户暂缓电脑操作当GUI豁免。未经GUI验收的实现不进入本次Git范围。
+
+### 设计接受、经验与下一批
+
+Luna两文档对照实际RemotePreview、queued cancellation及当前main未接线状态复审：不再造账户余额/剩余额度/线上正文长度；queued取消不造SQL task；复用Sol同步revoke入口，仅候选接线接受后补enter/confirmed门；离线session不变，远程ephemeral，旧context不恢复或重发；先组件/技术产物、真实GUI延期。1D-0设计接受，文档标状态并保留写作时事实，非UI实现或实际远程质量。
+
+公共AGENTS逐条集成1条消息时序经验：实际红测/根因/原probe独立红→绿及安全负向回归支持；现有跨SQLite发布规则管terminal发布，不覆盖迟到历史阶段的整行误拒绝，因此未重复。只取该条并链接本独立记录，不整体覆盖Sol的AGENTS或把未验收实现文档搬进main。Luna设计无新经验。检索时猜错baseline计划文件名及Windows rg glob失效后改实际路径；是审查检索错误，不是产品/工程经验。
+
+新增可审查计划 docs/plans/2026-10-02-non-gui-continuation.md，依据ownership语义固定未评估/feature-only purpose与benchmark固定三文件实际限制，派Sol2A-S仅ADR0008草案+记录；Luna3C-L有界medium样例工具实施，精确六文件，无同文件/契约竞争。保留接线冻结，无GUI/模型/凭据/Git开发动作；规模采样只协调方单窗口。先计划后派发，不把旧TODO或没有性能数据的缓存想法当实现依据。
+
+紧凑检查实际确认新回合Sol01a0fa70-0317-7d32-b220-d59bde758374与Luna01a0fa70-0541-7100-9232-5953c4958514均active/inProgress，最近实际游标分别582f17aa-f30f-4365-a7b1-0dbecc3b2b9d:8、768020f8-a63c-4530-81b6-8232542daca8:8。当前进入Git范围只已接受两份设计、协调计划/审查/交接与合格规则；两个开发新批文件与Sol产品实现保持不纳入。
