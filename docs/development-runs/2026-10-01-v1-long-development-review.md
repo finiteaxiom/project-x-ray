@@ -416,3 +416,35 @@ Luna两文档对照实际RemotePreview、queued cancellation及当前main未接�
 新增可审查计划 docs/plans/2026-10-02-non-gui-continuation.md，依据ownership语义固定未评估/feature-only purpose与benchmark固定三文件实际限制，派Sol2A-S仅ADR0008草案+记录；Luna3C-L有界medium样例工具实施，精确六文件，无同文件/契约竞争。保留接线冻结，无GUI/模型/凭据/Git开发动作；规模采样只协调方单窗口。先计划后派发，不把旧TODO或没有性能数据的缓存想法当实现依据。
 
 紧凑检查实际确认新回合Sol01a0fa70-0317-7d32-b220-d59bde758374与Luna01a0fa70-0541-7100-9232-5953c4958514均active/inProgress，最近实际游标分别582f17aa-f30f-4365-a7b1-0dbecc3b2b9d:8、768020f8-a63c-4530-81b6-8232542daca8:8。当前进入Git范围只已接受两份设计、协调计划/审查/交接与合格规则；两个开发新批文件与Sol产品实现保持不纳入。
+
+## 2026-10-02 10:33–10:44：目标 Electron 状态 IPC 技术验证与语义设计复审
+
+读取当前AGENTS/队列/审查/交接，main基线c36d67a6ecb96f9408b1fe8b1a91f00d4133c10b（前轮已普通推送并ls-remote一致，设计/协调/规则7文件，无未验收实现）。紧凑检查Sol2A-S两文档冻结完成，Luna3C-L继续修改；不运行正在修改的基准工具，不读写开发同批文件。原接线继续冻结，重型窗口仅根协调方的以下技术运行，没有新增build/native/dist。
+
+### 实际目标运行时检查
+
+根自建ignored .benchmarks/remote-desktop-review-20261002/electron-bootstrap.ts及两个CJS入口。独立复用原隔离fixture的真实SQL和正常生产产物；fixture只提供自建数据，没有把测试provider/native端口注入Electron worker。每次唯一临时目录/SQL/元数据文件，用已校验作用域的fixture.close清理；仅固定本地Electron可执行文件，windowsHide，无下载/生产凭据或真实HTTP。CJS只在argv脚本身份匹配时执行，无导入副作用。
+
+命令 node_modules/.bin/tsx.CMD .benchmarks/remote-desktop-review-20261002/electron-bootstrap.ts，exit0：Electron44.4.3、Node24.21.0，实际dist/explanation-worker.js由node:worker_threads启动，activate-context(null)、provider-state、authorization三类RPC得到inactive/unconfigured/denied。未创建BrowserWindow、未调用credential/status原生操作、prepare/start或传输。额外源码核对worker-runtime.execute中provider-state/authorization只读SQL元数据；这仍不是对任意未来调用的OS/HTTP计数证明。
+
+命令同入口加 --ipc，exit0：直接require最新dist/main.js（未复制main处理器），实际dist/preload.js在contextIsolation=true、nodeIntegration=false、sandbox=true的隐藏窗口调用三个状态命令；main/broker/实际解释worker返回inactive/unconfigured/denied。另一隐藏窗口用同生产preload、正确provider-state形状请求被main拒绝；原窗口导航到自建空HTML后同请求被固定POLICY_INVALID拒绝。两条stderr固定RemoteExplanationError是预期拒绝证据，不是运行失败。输出realMainPreloadWorker=true、controlsOperated=false、wrongWindowRejected=true、wrongPageRejected=true。
+
+隔离方式：在加载main前固定userData/sessionData为本次临时根，设置既有XRAY_SMOKE隐藏窗口模式和本次XRAY_E2E_USER_DATA；不读取生产用户数据。技术harness只延后smoke在did-finish-load时的app.quit，完成检查后恢复正常退出并经过main的worker清理。使用已有UI静态壳只承载contextBridge，不操作产品控件、不重建UI，也不声称验证新App撤销钩子。该时序拦截意味着不能把实验作为原smoke自动退出/真实GUI完成证据。没有电脑操作工具或产品GUI交互；source/task发送/取消全路径、窗口关闭竞态、真实远程与App GUI仍开放。
+
+实际运行产物SHA256：main.js 8269D2B0AD3F7A01B9B02375BE6F07567F1BFF3208251926B4BBFE92D6E22C59；preload.js 791BC6D66A332F234968AFCBEB5E7D649F1860D8A87AFB6AB2CC26F3F563379E；explanation-worker.js EA93B8EB826F1B261B5CF44EDC4EE3EF68F63653BCB7970A1BBA9BA694BA81EF；production credentials addon 96C8EE0AFCE3C7BAA5E6AEEEEE0B14E34BF843690566FC9CA4A185AD49488505；已有UI index.html EE5315DBC1F94B6CBAEA695C60672993E7374754F016C08E9AA2F9563876D200。Sol源码/产物尚未提交或集成，只有这些技术门取得新证据。
+
+### 2A-S实际设计审查
+
+读取完整ADR0008草案与开发记录，对照application.gradeOwnershipAnswer、contracts.grade/attempt、GraphStore.saveOwnershipAttempt及ADR0006：passed后内存question确实删除，attempt无完整rubric；独立授权/答案披露、提交同事务胶囊、sidecar不改定位/结构/passed/mastery、预算与精确身份/跨库恢复方向合理，设计记录明确没有运行实现或模型验证。
+
+三处明确退回原Sol、仅两文档修订：①strict criterion输出无limitationIds，却要求insufficient引用本地限制ID；须结构化有限字段与criterion允许集合，不解析自由文本、不把限制充作源码proof；②必要完整合法所选路径不可截断，但矩阵准许缺步骤/混拼发送部分命题，须明确不能绑定完整合法路径时零发送、保留本地失败attempt；③纯验证器不能保证识别任何凭据泄露，收敛至可检查的字段/正文/header/日志边界，启发式若保留必须说明有限，不额外扫描OS或Codex秘密。不是实现缺陷或运行红测，草案尚未接受，不占迁移11，不实施评分。
+
+Sol最新修订回合01a0fa79-9359-7f41-8937-a4dded91ca3e active，最近实际cursor582f17aa-f30f-4365-a7b1-0dbecc3b2b9d:11；Luna原工具回合仍active、cursor768020f8-a63c-4530-81b6-8232542daca8:10。本轮经验新增0条：既有入口/隔离与证据规则已覆盖技术验证，设计不一致尚无实现实验，不把补充状态/数量写成通用规则。检索两次误用worktree/Windows literal glob后按确切目录修正，仅为审查检索错误。提交范围仅本轮四份协调文档；保留ignored实验、Luna正在修改文件及Sol全部实现/草案，不以暂缓GUI豁免提交门。
+
+### 10:46 修订复验与2B-S1派发
+
+Sol修订两文档冻结idle（cursor582f17aa-f30f-4365-a7b1-0dbecc3b2b9d:12）。独立读取修订全文相关段及记录：limitations字典明确code/稳定hash/允许集/最多24条、insufficient必须1–8结构化限制ID且不能作proof、supported/contradicted限制空；未提供相关解释时answer-information-insufficient明确只是可选择的辅助判断，不伪称本地已证明语义不足。call-path完整合法所选边序列不成立即整题not-evaluated零发送，正文/矩阵一致；结构安全边界不再保证任意秘密检测。设计修订接受，无运行质量结果。
+
+另对照main GraphStore.saveOwnershipAttempt当前普通INSERT，纠正草案误写“现有INSERT OR IGNORE”。root只复制两份新设计文件到main（先确认目标不存在），标ADR设计接受，补充sidecar分数不进原passed/mastery、胶囊沿用attempt保留/显式删除、迁移/授权UI文案分阶段复核政策；不占迁移号、不提前实施SQL或隐私选择。复制文件保留开发时草案/基线/静态检查历史，新增协调接受说明。首次apply_patch用了错误记录标题，整个patch验证拒绝；核对无修改后以实际标题重试成功。此为文档编辑错误，不是产品缺陷/AGENTS经验。
+
+派原Sol2B-S1仅新增contracts ownership-semantics模块/测试及开发记录；自己ADR/记录仅同步接受状态与INSERT事实。原index.ts含未验收桌面API改动继续冻结，不借barrel导出混合提交未验收实现。纯契约可复用同包既有schema、直接在同包tests加载新模块；不改旧purpose/grade/attempt、数据库/网络/GUI或生产入口。本批后续独立审查稳定ID/字典/criteria、预算、actual-answer UTF16/range/identity与三类verdict安全负向，再按明确切片导出/集成。不能把契约模块当第二批端到端、真实源码/SQL当前性或模型质量通过。队列/后续计划/交接同步，仅接受设计和本轮协调记录进入Git，Luna active工具与Sol原实现仍保留。

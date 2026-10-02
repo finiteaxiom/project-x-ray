@@ -1,6 +1,6 @@
 # 暂缓电脑操作期间的后续切片
 
-状态：协调方依据实际源码规划并派发；2026-10-02。主代码基线 3f58ddc（近期提交仅文档）。沿用双聊天及 Windows/V1 边界，不恢复 GUI 操作，不把技术检查当 GUI 或真实远程验收。
+状态：协调方依据实际源码规划并派发；2026-10-02。主代码基线 3f58ddc（近期提交仅文档）。10:46 Sol设计修订复审后接受，转2B-S1独立契约；Luna工具实施中。沿用双聊天及 Windows/V1 边界，不恢复 GUI 操作，不把技术检查当 GUI 或真实远程验收。
 
 ## 已核对的前置与开放项
 
@@ -31,6 +31,16 @@ Sol 的迟到 dispatched 被最新 SQL terminal 拒绝缺陷经原失败实验�
 开发验证：生成器确定性与硬限额/安全路径、CLI枚举和parent/child不匹配、恶意/矛盾/重复清单、原small兼容、取消测试；不调用导入样例代码、不联网安装或重型build/native/dist/Electron。可运行纯工具测试；真实索引采样由协调方验收单窗口执行。实现→验证→诊断→修正→再验证记录真实，AGENTS经验只提出证据支持且未覆盖条目（本轮可为0），不改变门槛。
 
 独立验收：差异/类型/必要回归及默认small实际CLI；随后medium单次门禁、取消、再最多3次冷库与无变化重索引配对采样；失败先诊断，不输出成功均值。记录环境/规模/原始样本、阶段进度时刻和测量限制，不从粗阶段推断TS/Python分项耗时。测量仅在本地自建隔离样例，不是GUI、真实项目性能或已实现增量加速。
+
+## 2B-S1：独立契约与纯响应校验（2A-S接受后实施）
+
+依据：已接受ADR0008采用独立purpose、rubric/限制字典、独立sidecar；现有解释response/purpose schema不能容纳这些语义。先以纯版本化模块落实字段/预算/引用与答案范围校验，供后续rubric/数据发布消费，不提前接评分API、SQL或真实provider。
+
+文件只新增 packages/contracts/src/ownership-semantics.ts、ownership-semantics.test.ts、docs/development-runs/2026-10-02-ownership-semantic-contract.md。Sol原index.ts有未验收桌面API差异，保持冻结、不追加导出；此轮在新测试直接加载同包新模块，公开barrel/跨包消费由后续单独集成安排。可复用同包既有证据schema，但不改变feature-explanation purpose literal或旧grade/attempt。只Sol自己的worktree，保留旧实现。
+
+实现目标：strict、显式版本的有限rubric/limitations/assessment package/response及可纯调用的响应校验入口。稳定规范化ID/hash、unique完整criteria和criterion允许集合一致；每个verdict的evidenceIds/limitationIds/answerRanges符合ADR，拒绝错包/跨criterion/重复/未知/漏项/多项/多余字段，答案范围在实际提交文本UTF-16边界内且不切代理对。答案/必需rubric/路径证据不得截断；检测相关字节/数量/集合边界，仅声明能在已提供package/答案材料上验证的规则。外部SQL当前性、实际源码读取及模型自然语言正确性不由schema证明。
+
+不计算或改写passed/mastery/旧分、不引入运行时transport、秘密读取、全局配置/迁移、新依赖或生产mock。必要tests覆盖受限正例、三类verdict及坏范围/ID/字典/身份/预算/字段，并保留当前契约回归及类型检查。记录真实反馈闭环，经验合格可为0。完成定义为该纯模块行为独立验证，不称第二批端到端或真实语义质量完成。
 
 ## 协调与下一步
 

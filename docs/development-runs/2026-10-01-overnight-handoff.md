@@ -4,6 +4,10 @@
 
 ## 当前实际状态
 
+补充 2026-10-02 10:46：Sol三处设计修订已独立复审接受，ADR0008及记录已按两文件复制到main；模型辅助分只sidecar、旧passed/mastery不改，胶囊沿用对应attempt保留/删除边界。下一批Sol2B-S1只新增纯契约/响应校验及测试，不改原冻结index.ts或IPC，不占迁移11；Luna3C-L继续工具实施。语义实现、模型质量、UI均未完成。
+
+最新 2026-10-02 10:33–10:44：协调方在实际 Electron44.4.3/Node24.21.0 无窗口启动最新解释worker，三类bootstrap/state命令通过；再用隐藏窗口与实际main/preload/worker验证未配置/默认拒绝、其他窗口和错页面拒绝。无产品控件操作、生产凭据或HTTP命令，App GUI与发送/取消完整路径仍未验收，不据技术CLI关闭GUI门。Sol2A-S草案已审查并退回原两文档补三处契约边界；Luna3C-L继续工具实现中，未冻结，不并发跑其规模索引。详细版本/产物摘要与实验限制见审查最新节。
+
 最新 2026-10-02 10:18–10:27：Sol 延迟事件修正经原失败 probe、36 项接线、20 项协议、desktop/UI 类型、最新普通 desktop build 及实际 worker 产物状态测试 1 项独立复验通过；SQL 先 completed 后释放消息，现正确观察 dispatched→completed，注入 dispatch 恰好一次。产物计数证明已纠正，不能据父 fixture 推出 OS/HTTP 非调用。整批真实 Electron IPC、App GUI、远程服务仍未验收，Sol 原 24 文件未提交/集成。Luna 两文档 UI 设计修订已接受，非 UI 实现。
 
 接下来按[暂缓 GUI 的后续计划](../plans/2026-10-02-non-gui-continuation.md)并行：Sol 2A-S 两新文档设计所有权语义评价；Luna 3C-L 仅扩展有界基准工具，从默认 small 三文件增加固定 medium128 文件，为实测准备。原接线冻结，正式 UI 暂不实施，开发不得自行 Git 收尾或重型验收。紧凑检查确认两聊天新回合 active。本轮沉淀 1 条已复现且独立复验的 worker 消息时序经验；不会把缺 GUI 的实现提交或认定完成。详细命令与边界见最新独立审查节。
