@@ -448,3 +448,15 @@ Sol修订两文档冻结idle（cursor582f17aa-f30f-4365-a7b1-0dbecc3b2b9d:12）�
 另对照main GraphStore.saveOwnershipAttempt当前普通INSERT，纠正草案误写“现有INSERT OR IGNORE”。root只复制两份新设计文件到main（先确认目标不存在），标ADR设计接受，补充sidecar分数不进原passed/mastery、胶囊沿用attempt保留/显式删除、迁移/授权UI文案分阶段复核政策；不占迁移号、不提前实施SQL或隐私选择。复制文件保留开发时草案/基线/静态检查历史，新增协调接受说明。首次apply_patch用了错误记录标题，整个patch验证拒绝；核对无修改后以实际标题重试成功。此为文档编辑错误，不是产品缺陷/AGENTS经验。
 
 派原Sol2B-S1仅新增contracts ownership-semantics模块/测试及开发记录；自己ADR/记录仅同步接受状态与INSERT事实。原index.ts含未验收桌面API改动继续冻结，不借barrel导出混合提交未验收实现。纯契约可复用同包既有schema、直接在同包tests加载新模块；不改旧purpose/grade/attempt、数据库/网络/GUI或生产入口。本批后续独立审查稳定ID/字典/criteria、预算、actual-answer UTF16/range/identity与三类verdict安全负向，再按明确切片导出/集成。不能把契约模块当第二批端到端、真实源码/SQL当前性或模型质量通过。队列/后续计划/交接同步，仅接受设计和本轮协调记录进入Git，Luna active工具与Sol原实现仍保留。
+
+## 2026-10-02 10:50–10:58 非冲突独立恢复检查
+
+先读当前队列/审查/交接并紧凑检查原双聊天，实际main HEAD38bfecb、Luna五个工具源码/测试仍修改，Sol当前只新增纯契约。没有并发执行其未冻结回归或重型索引。最新实际游标Luna768020f8-a63c-4530-81b6-8232542daca8:13；Sol582f17aa-f30f-4365-a7b1-0dbecc3b2b9d:16。开发13项工具测试和49/50契约首轮自测只是进度，不代替独立验收；Sol报告旧冻结契约测试类型错误，已要求确切行/命令与单独门禁，不提前改冻结文件或宣称整包类型通过。
+
+代码核对：ExplanationBroker.startSession先commit本owner再stop；stop在终止自身worker后调用全局recoverInterrupted。该函数终止所有dispatched任务、清除所有inflight并使全部owner context失效，无活跃进程所有权识别。main.ts的app.whenReady直接打开userData SQL/创建worker，检索没有requestSingleInstanceLock。发布设计要求同userData任一时刻一个写实例，但未见运行门，不能把文档串行要求当强制保护。
+
+新ignored实验 .benchmarks/remote-desktop-review-20261002/concurrent-session.ts：两ExplanationPolicy连接同一新临时SQL、两个不同owner broker；首实际任务进入dispatched，注入provider的Promise挂起，第二session启动后检查首状态和worker生命。命令 node_modules/.bin/tsx.CMD .benchmarks/remote-desktop-review-20261002/concurrent-session.ts exit1，原预期dispatched未满足；JSON before=dispatched、after=interrupted、firstWorkerAlive=true、isolatedConnections=2、injectedDispatches=1、actualElectronProcesses=0。finally先解除注入等待再关闭两broker/SQL/自有临时目录，未读取生产用户数据/OS凭据或真实HTTP。此确认核心状态/恢复缺陷；没有实际两个Electron进程、GUI或重复网络派发结论。没有在日志保存源码、答案或凭据。
+
+已告知Sol明确复现/预期/边界并排队P1 1C-2B-2B-C，在纯契约冻结后再派精确修复。计划目标是同userData活跃单写所有权门先于DB/worker初始化，保留真正崩溃重启恢复/零自动重发及隔离userData并行。候选main启动策略与定向测试，broker/graph只有证明必要才扩文件边界；不立即改active契约或用用户操作约束规避缺陷。真实双Electron技术验收待root协调窗口，GUI仍延期。队列/交接已同步，原接线不提交。
+
+本轮AGENTS新增0条：问题有复现但修复/预防动作尚未独立验证，暂记录诊断与门槛；反馈闭环待交付后复验完成，不把当前失败写成成功。检索误用不存在文件及Windows路径glob失败后改确切路径，只是审查命令错误，不是产品或环境经验。

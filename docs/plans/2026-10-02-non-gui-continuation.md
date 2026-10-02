@@ -44,4 +44,14 @@ Sol 的迟到 dispatched 被最新 SQL terminal 拒绝缺陷经原失败实验�
 
 ## 协调与下一步
 
-Sol 仅写两份新设计，原24文件保持冻结；Luna仅写基准工具及本批记录，无共享文件/契约竞争。根协调方结束接线普通build窗口后才调度索引测量，开发不得自行占用native/dist/Electron。两批交付后独立审查，再选择基于实测的优化或最小语义实施；没有设计接受前不开发新评分或改purpose。
+Sol 当前只新增2B-S1纯契约/测试/记录，自己的两设计文档仅同步接受与INSERT事实；原24文件保持冻结。Luna仅写基准工具及本批记录，无共享文件竞争。真实规模索引待六文件冻结并由协调方单窗口执行，开发不得自行占用native/dist/Electron。契约交付后独立审查，再按依赖选择最小后续实施，不以设计接受替代运行验收。
+
+## 1C-2B-2B-C：活跃所有者与启动恢复边界（P1，排队）
+
+依据：协调方新隔离实验用两条ExplanationPolicy数据库连接、不同owner的两个broker；首任务dispatched且提供商Promise仍等待，第二session调用startSession→stop→recoverInterrupted后，首SQL任务变interrupted而首worker仍alive。remote-explanation-store.ts的恢复全局清除任务inflight/context；main.ts未设置single-instance启动门。此为核心状态失败，真实两个Electron进程/重复网络派发尚未验证。实验与命令见本计划独立审查记录最新节。
+
+目标：同一userData只允许一个拥有数据库/worker的活跃应用实例，第二实例不能触发首实例恢复或清占用；真正退出后重启仍可恢复遗留任务且不能自动重发。不同隔离userData的验收进程不得互相阻止。不新增产品能力、后台服务、依赖或安全设置。
+
+负责人Sol，先完成并冻结2B-S1，协调方再明确派发本批。候选最小边界仅desktop main启动顺序、独立启动所有权策略/测试与本批记录；现有broker/graph恢复算法只有证据证明必要时再明确扩范围。所有权门必须先于数据库打开及worker创建；不靠发布文档要求用户手动串行作为实现保证。不改其他worktree、全局协议、UI控件或生产凭据。
+
+验收：纯启动排序/失败关闭/错误退出回归；协调窗口内以两个真实Electron技术进程、同一全新userData确认第二拒绝且无DB/worker初始化，用不同自建userData确认独立运行；关闭首实例后重开确认恢复且零自动派发。回归保留取消、补偿、completed历史及旧源码保护。当前不使用电脑操作，GUI前台/窗口行为另列未验收；未通过前不提交接线实现。

@@ -76,6 +76,7 @@ Sol 先测量当前全量索引/查询/内存基线，设计按语言的保守�
 | 1C-2B-2A Windows凭据原生适配器 | 底层独立验收并集成 | Sol/协调方 | 61项/两包类型、最终原Electron CLI完整通过；556e9f2提交/a09be86合并；main再编译与61项/desktop+ui类型、Node/Electron原命令/copy及test清理通过；无production凭据/GUI/远程/portable |
 | 1C-2B-2B worker/broker/main/preload安全接线 | 延迟事件及状态IPC技术复验通过；整批仍待验收 | Sol/协调方 | 原probe/36+20项、类型/build/Node worker已验证；Electron44.4.3实际worker状态与main/preload状态IPC、错窗口/错页面拒绝技术检查通过，无产品控件操作；App GUI、发送/取消完整IPC、真实远程与集成仍开放，未提交实现 |
 | 1D-0 远程解释界面接入设计 | 修订后设计已接受 | Luna/协调方 | 原两文档；真实preview上限、候选API、queued无SQL取消、复用同步revoke及代码→技术产物→延期GUI顺序已复审；非UI实现或运行验收 |
+| 1C-2B-2B-C 活跃所有者与启动恢复 | 新核心失败已复现，待原契约冻结后派发 | Sol/协调方 | 两SQL连接/owner的第二session令首dispatched→interrupted且worker仍alive；main缺启动单实例门，真实双Electron进程尚未验；详见非GUI后续计划，不并发改冻结接线 |
 | 1D 解释/授权 UI | 待契约冻结 | Luna | 后端契约进入主checkout后派发 |
 | 1E 独立测试、真实 GUI/远程与集成 | 待交付 | 协调方 | 实际代码/产物，远程密钥与项目选择未完成 |
 | 2 所有权语义评价 | ADR设计接受；纯底层契约开始实施 | 双线程 | 真实远程/持久化/安全接线/UI依赖与各自验收门仍保留 |
