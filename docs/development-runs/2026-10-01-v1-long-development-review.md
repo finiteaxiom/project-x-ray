@@ -520,3 +520,57 @@ Luna两文档3D-L冻结后读全文/记录，对照requireSnapshot/readSource/Gr
 本轮公共AGENTS新增1条：全局恢复依赖共享userData单写时的入口持锁/零初始化/异常退出真实进程回归。已有规则涉及跨库发布、任务消息与状态门，未覆盖OS活跃写实例的排他入口；新条有核心原失败、启动修正及本轮真实产物实验支持，适用/动作/记录链接完整，不放当前数值或改变GUI/安全/授权门。开发各自记录0新增合理。只对已接受两设计与协调记录/公共规则做Git收尾，保留Luna新实施文件和Sol全部未验收实现。
 
 本轮实际Git：只对7份已接受设计/协调文档及公共经验提交a92a4c4424451987a5eb2fae7fb5d200ca791362，没有Sol实现或Luna新工具。首次普通push exit1报远端已在同a92a4c4但expected旧1d7d66c；随后ls-remote精确匹配，再普通push exit0 Everything up-to-date。不能推断谁先更新远端，不force、不改写首push成功。Luna3E-L和Sol2B-S2紧凑检查均active，新实际cursor分别9993bce3-7453-47ad-a94b-a4c190f6cb0f:6及17efe2e9-6731-4d51-95c3-0059f40192d0:4；automation本地状态复核ACTIVE/原15分钟。最终本段文档版本由Git历史识别。
+
+## 2026-10-02 15:00–15:09：角色引用去重后的持久化错位
+
+本轮读取当前队列、AGENTS与交接，main业务/文档HEAD为7a9f81b；以最新实际游标紧凑检查原双聊天，两者仍active且无冻结交付。Luna后来出现首个新工具文件，仍在写入，不对其并发测试/构建；Sol保持两文档设计范围。没有新增GUI或远程操作。
+
+只读准备确认实际application.gradeOwnershipAnswer先由私有validateCitations按完整引用key去重，而ownership.gradeAnswer的variable-roles检查使用submission.citations原数组；保存attempt时保留submission.structuredAnswer，却将citations替换为grade.validatedCitations。该差异不能仅当作新语义schema的输入限制。
+
+root在自建单文件TypeScript样例进行真实应用索引，当前快照生成变量读写/返回题；提交四个精确引用[write,write,read,return]，角色原索引[0,2,3]。即时评分passed=true且合法引用去重为3个。关闭并重开XRayApplication后，getOwnershipProgress读出的SQL记录仍保留[0,2,3]：读取角色index2指向返回证据，返回角色index3越界。确认当前持久化记录产品缺陷；此例即时评分正确，无模型参与。独立复现命令 `node --import tsx .benchmarks/remote-desktop-review-20261002/ownership-citation-index.ts` exit0，断言证明缺陷存在，不是正确行为验收通过。脚本位于ignored本地审查目录，只输出有限布尔/计数；自有临时目录在应用关闭后清理，未执行样例代码。
+
+已向Sol发送复现、预期和范围：设计中先拆原索引→合法规范引用索引最小修正；核验重复、顺序、角色共用引用、越界/无效引用、重开、保存失败后可重试及历史不改写。保留当前评分/passed/scoringVersion，不回填或重新解释既有历史，不在当前设计批提前改产品/SQL/契约。待两文档冻结后独立审查并派精确实现。现有本地引用允许相交、新语义契约要求精确范围的差别继续显式保留。
+
+本轮无新增AGENTS规则：新缺陷已复现但尚无修正及再验证，先记录诊断与后续门槛，不把任务状态或未经验证方案变成经验规则。真实GUI、修正实现及历史兼容仍未验收。本轮无产品提交/合并/推送。
+
+## 2026-10-02 15:15起：S2a设计接受与胶囊预算边界
+
+最新紧凑检查Sol设计修订回合completed，两文档冻结。逐段读计划和记录，核对main真实gradeAnswer、application.validateCitations、GraphStore.saveOwnershipAttempt及contracts的submission/attempt schema；main与Sol的application/index.ts、ownership/index.ts、graph/index.ts逐文件diff无差异，worktree HEAD455d4ad及原未验收改动保留。独立接受S2a最小修正设计，复制两文档到main；其余S3/S4/S5只为待审候选，不标整份胶囊设计接受。
+
+已派Sol三个文件：application/index.ts评分后新attempt有效角色索引映射、ownership-citation-index.test.ts、ownership-citation-index-fix开发记录。完整key映射/克隆而不改submission与grade，越界保持原失败行为，引用/role顺序及重复不丢，同payload原事务保存，旧历史不回填。明确真实红测→修正→重开/历史/SQL失败重试/配置竞态等回归与类型，重型构建/GUI/远程/SQL迁移/其他冻结文件不改。开发最新报告已找到准确红测，修正进行中；此为开发进度，不是root复验。
+
+胶囊设计另有需澄清的有界fallback：通用字段列variantKey而not-evaluated要求≤2KiB且不阻止合法本地attempt。实际createQuestions的variable variantKey拼接所有候选edge IDs，旧question schema对此无长度限制。root纯合成81边快照调用真实createQuestions并通过ownershipQuestionSchema，生成variantKey单字段5275 UTF8字节。命令 `node --import tsx .benchmarks/remote-desktop-review-20261002/ownership-capsule-budget.ts` exit0，断言确认设计预算反例；不含真实SQL/索引/模型/GUI结果，也不是产品修复验收。已反馈Sol作为S2a之后的设计澄清：not-evaluated只保留有限固定身份/hash/枚举，省略variantKey及其他无界明细，完整question/attempt hash仍绑定实际数据；ready过大须转换有界不可评估，不能因此拒绝原合法本地答题。不要求其并行扩当前S2a范围。
+
+Luna3E-L仍active，报告纯测试/类型诊断后继续收紧取消/关停；未冻结，不并发运行同批检查。最近实际cursor：Luna9993bce3-7453-47ad-a94b-a4c190f6cb0f:8，Sol17efe2e9-6731-4d51-95c3-0059f40192d0:7。无新GUI/产品实现验收；本轮无新增AGENTS规则，设计候选/预算反例先留记录，不用进度替代工程经验。
+
+收尾紧凑检查cursor更新为Luna9993bce3-7453-47ad-a94b-a4c190f6cb0f:9、Sol17efe2e9-6731-4d51-95c3-0059f40192d0:8，两者仍active。Sol报告17项新增回归通过，application全量有3个Git测试5秒超时及后续清理EBUSY，正在保留门槛串行诊断；尚无冻结交付，不把开发报告当root验收。root已准备ignored独立正向运行脚本ownership-citation-index-fixed.ts，覆盖实际应用多种引用布局、submission不变、重复/共用角色、旧payload保护、无效引用/原越界失败、真实SQL trigger故障零写与可重试、关闭重开；尚未运行，待稳定交付再执行，避免与其应用回归竞争。主协调文档diff --check通过；本轮无Git收尾。
+
+## 2026-10-02 15:30–15:44：S2a独立核心复验与未收敛的广回归
+
+Sol三文件已冻结；读取实际13行映射逻辑、完整17项测试、真实红测/原并行超时记录，核对只修改新attempt结构且原grade及SQL配置锁/删题时点不变。JSON tuple包含文件、行列和evidenceId；只克隆variable-flow roles，有效索引指向保存的去重数组，原越界保留，内部映射缺失固定TASK_FAILED。没有改旧attempt读取/SQL/版本或其他题型。
+
+独立正向命令 `node --import tsx .benchmarks/remote-desktop-review-20261002/ownership-citation-index-fixed.ts` 对Sol目标exit0；五种布局、引用/角色顺序、重复/共用role、submission不变、原成绩、越界失败、无效引用零写、真实SQL trigger失败零写/原题重试、七次attempt重开、此前payload原字节保持通过。独立读取开发测试另覆盖历史错误payload、不同范围、配置第二连接及内部错误注入。该运行是后台应用/SQL验证，无GUI或真实HTTP。
+
+root串行完整application（默认原5秒）第一次为110通过/1个Git staged超时，71.90秒，退出1并伴cleanup EBUSY；同snapshot-result文件单独复跑3通过/1个staged超时，15.89秒，退出1/EBUSY。测试文件与main逐文件diff相同；在尚未复制修正的main7a9f81b运行同文件也是3通过/1个staged超时，16.57秒，退出1/EBUSY。S2a新逻辑在该Git用例未被调用。Sol单staged原门跑1通过/3未选择，5.72秒总时长、用例4.91秒，退出0；未选择的3例不算本次通过，不能用此结果抹去整包失败。证据仅确认旧基线时限亦不稳定，根因仍未确认，不盲目称资源问题。
+
+独立ownership6项通过；Sol application类型及main application/ownership类型通过。复制前核对main application源文件HEAD无差异、目标测试不存在，再仅复制本批三文件，旧Sol接线/AGENTS/barrel不带入。main集成后完整application109通过/2个Git staged/last-commit超时，71.41秒，退出1/EBUSY；新增17项所在文件通过。main目标正向CLI加`main`参数exit0，同SQL/重开门再过。核心修复已有独立证据，但广回归门保留未收敛，三个文件仍未提交，不能标整包或整个S2a完成。
+
+下一步先对自建Git两文件做实际阶段耗时及清理生命周期诊断，不改原测试超时/断言，也不把多次盲重跑替代根因；当前两设计文档已派Sol修订有界fallback与async-hash/同步SQL边界，S2a源码保持冻结。Luna四文件进入最终只读边界，root已读开发记录、公开wrapper与取消预算片段，独立10纯测试通过；完整代码/新CLI与medium真实门仍未验。没有并发重型构建/GUI/凭据操作。经验候选引用索引持久化一致性有代码/独立SQL证据且未被已有公共规则明确覆盖，本轮先保留候选，广门收敛后再集成；当前AGENTS新增0。
+
+3E-L目标严格类型命令（strict/noUncheckedIndexedAccess，ES2023/NodeNext、三份新ts、allowImportingTsExtensions、node/esModuleInterop/skipLibCheck）root执行exit0；没有启用探索性的exactOptionalPropertyTypes，开发已记录其被未修改旧baseline可选signal类型阻断，不宣称通过该额外检查。最新紧凑cursor为Luna9993bce3-7453-47ad-a94b-a4c190f6cb0f:12、Sol17efe2e9-6731-4d51-95c3-0059f40192d0:11。无新Git动作。
+
+## 2026-10-02 15:48–16:10：S2a广门收敛、3E真实工具验收与后续派发
+
+紧凑状态读取确认Luna四文件冻结idle、Sol两设计修订冻结idle（最近cursor分别9993bce3-7453-47ad-a94b-a4c190f6cb0f:13、17efe2e9-6731-4d51-95c3-0059f40192d0:12）。root继续实际工作，无电脑操作。
+
+3E父/child/10测试完整源码已审查，唯一自有目录/生成器限额/报告白名单/进度计数、嵌套inclusive方法包装及finally恢复、实际API全导航/独立安全回放、固定错误/取消/close门均核对。原medium CLI exit0：run073ece06-40d5-43e7-8fc5-e27433c1323e，11门全true，两轮各1177 getEvidence/readSource/解析全部成功，report60323字节，cold/warm navigation10.937/11.020s，loadSnapshot重复2354次各合计8.723/8.768s；SQL+解析未拆，不与API/wall叠加。独立secure replay1177次0.791s不代表产品内部I/O。单人工样例不能当真实项目/机器普遍性能。实际2.5秒取消 run920c77c4-d8de-4a76-b462-518427e4132c，closed无强杀、第二轮未启动、磁盘report精确相等；最小时限原CLI run625100da-d23d-4cca-9733-b785c865f588 exit1为timed_out/0有效对/closed的预期失败关闭。原10纯测试覆盖不合作child强制终止；目标严格类型已有root通过。本工具后台切片接受，未实现优化/GUI。
+
+Git快照独立阶段诊断保留原partial→complete→partial/旧事实与源码断言：staged总4.221–4.595s，last-commit3.511s，await完后精确自有目录清理正常；公开Node包装证实staged每次比较19个Git execFile，inclusive约0.906–1.063s，TS两侧约0.247–0.265s。捕获公开进度及实际方法分别测量，未删检查或改产品，见专门诊断记录；未将cleanup时序猜测当已确认产品/测试缺陷。
+
+原snapshot-result四例4/4（14.19s）及随后main application整包5文件111/111（56.19s，tests53.13s）exit0；原5秒门/断言未改、无EBUSY，历史失败保留。一次误用不存在的--project application启动失败后改实际目录命令，非产品缺陷。结合已有两checkout真实SQL/七attempt重开/输入与旧payload不变、故障可重试、ownership6与类型，S2a后台修正独立接受。公共AGENTS逐条去重后新增引用规范数组与角色索引一致性1条，有实际代码/SQL证据、可执行回归动作及记录链接；Git测量/工具无新增规则。
+
+Sol设计修订逐段复审：not-evaluated独立有界hash/标量字段、完整question/attempt未裁剪hash绑定、ready超预算不阻断本地合法attempt；现有async WebCrypto校验在prepare之外同步SQLite不可await，明确封闭receipt/同步同一preimage摘要/权威SQL身份门。复制仅两设计到main并保留协调状态，接受方案而非SQL结果。新派2B-S3仅四个纯源码/测试和记录；允许contracts barrel最小追加main已接受semantic导出一行，模块逐文件核对、不覆盖其未验收接线。S4/S5/迁移/模型未派。
+
+依据导航实测派Luna3F-L只读两文档方案，要求最小有界状态复用与替代比较、调用方变异/多连接/配置/current/历史/关闭边界；不得提前改产品/cache或称已加速，复杂状态实现未来由Sol负责。两线程继续原目录和feedback loops。
+
+Git已精确提交S2a四文件0eef6582f0afe1f02fdfffcf0884923d45327f6c及3E四文件8b15d7b42a8c403903155949953ecd53ae036cd1；未纳入Sol旧接线/main/UI。3E记录一处Markdown行尾空格在staged check发现，提交后即在协调文档批修正，无代码变化，不改已接受源码或历史。当前待推送核对。GUI、真实远程、发布/干净Windows边界仍保留。

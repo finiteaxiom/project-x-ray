@@ -83,3 +83,13 @@
 语料准备实际提交与普通推送97191b4c2b5524f23032d91d563fded5a3581b61，ls-remote确认origin/main一致，六文件范围已核对且主checkout干净。Luna保持idle等待安全接口，Sol继续原worktree未冻结实现；不将其自测、当前App钩子或旧Electron产物改写为独立GUI验收。最终记录提交另行由Git历史识别，97191b4为本准备切片版本。
 
 14:58 Git补记：已接受设计/本轮技术验收证据与公共规则提交a92a4c4424451987a5eb2fae7fb5d200ca791362，远端main精确同SHA。首次push报expected旧ref失败，随后普通push exit0 Everything up-to-date；仅报告核实远端一致。产品业务版本仍1fa81b1，Sol main/旧接线与Luna新工具不在提交中。原定时器已复核ACTIVE，两原聊天当前active执行新精确批次；下一轮读当前队列/最新记录，不硬编码旧游标或历史阶段。
+
+15:00–15:09新增未修正缺陷：root以真实XRayApplication、自建当前快照及SQL重开复现variable-flow重复引用去重后角色索引错位。四引用[write,write,read,return]与角色索引[0,2,3]即时评分正确通过；保存的三引用配原角色索引导致读取指向错误证据、返回越界，重开不变。已将复现及最小修正/历史保护回归门发Sol纳入2B-S2设计，待稳定设计后派精确实现；不是GUI或修正验收。完整依据与命令见独立审查最新节。两原线程仍active，Luna3E-L工具开始落文件但未冻结，避开同批并发构建；Sol只写新设计。main HEAD7a9f81b，此轮协调记录待提交，无产品Git动作，AGENTS新增0。
+
+15:15起：Sol两设计文档冻结后，root已核对实际代码、与main的相关三源码一致性，接受优先S2a角色索引修正设计并派三个精确文件实施；其余胶囊候选未接受/实施。Sol准确红测后正在修正，Luna工具仍在纯验证/关停边界收紧，均未root复验。root另外纯生成器/schema实验确认合法variable题variantKey单字段可5275字节，与胶囊not-evaluated≤2KiB通用字段有预算冲突，已反馈后续仅有限身份/hash的fallback澄清，不扩大当前修复。两份冻结设计已复制main，协调计划/审查同步；GUI、修正交付与胶囊实现均未验收，无新增AGENTS规则。
+
+15:30–15:44新增独立证据：S2a核心修正的源码、17新增回归、严格类型与Sol/main真实多布局/SQL故障重试/七attempt重开验证通过，三文件已精确复制main。广回归仍未全绿：root Sol整包110通过/1超时，旧主基线同staged超时，main集成整包109通过/2个Git staged/last-commit超时，均保留原5秒门与cleanup EBUSY失败。单staged4.91秒通过不抹去失败；下一步实际阶段诊断，未提交S2a。Sol仅修订两胶囊设计，产品冻结；Luna工具root10纯测试通过，但源码全部/实际CLI/medium与取消仍未验。GUI、模型、旧接线仍开放，AGENTS新增0；版本HEAD仍7a9f81b。
+
+16:10新增：S2a独立Git阶段诊断后原4/4快照测试与main111/111整包原门通过，接受后台引用持久化修正，提交0eef658；新增AGENTS引用数组/角色索引一致性1条，旧失败与未确认根因保留。3E实际medium11门/两轮各1177源码API导航、取消不启动次轮及最小时限失败关闭通过，工具提交8b15d7b，非性能优化或GUI。单样例每轮导航约11秒，其中两类API内部loadSnapshot重复2354次约8.7秒，inclusive不能与API/wall相加。此为下一候选测量依据，不是加速承诺。
+
+Sol修订后的胶囊两分支与async准备/sync事务设计接受并复制；已派纯2B-S3五文件与精确已有semantic导出同步，尚未交付/验收，无SQL迁移/模型/UI。Luna已派3F-L两文档导航性能设计，不改产品或启动索引；复杂状态实施未来由Sol负责。两线程继续原目录，定时任务保持ACTIVE。Git普通推送及远端SHA核对随后补记；不自动发布二进制。

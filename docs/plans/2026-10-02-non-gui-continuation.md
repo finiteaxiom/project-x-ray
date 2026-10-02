@@ -75,3 +75,23 @@ startup 批已通过 root 最新普通 desktop build、4个真实 Electron 技�
 2B-S2（P1）由Sol先设计实际本地rubric/提交胶囊最小切片，依据 ownership.generateQuestions/gradeAnswer、application.gradeOwnershipAnswer passed后删题及GraphStore.saveOwnershipAttempt普通INSERT，以及已经接受的ownership-semantics纯契约缺少question/attempt权威绑定。只新增 docs/plans/2026-10-02-ownership-rubric-capsule.md 与 docs/development-runs/2026-10-02-ownership-rubric-capsule-design.md。明确entry/call-direction/call-path/variable-flow从实际题目/快照/合法引用生成有限criteria/limitations，完整用户所选合法edge路径、无语义关键词评分、预算不裁剪；先纯构造器，再同本地attempt事务保存/冲突/旧attempt不回填。须定义题型规则充分性、胶囊版本/hash/有限不可评估原因、迁移/角色/配置事务与精确未来文件/回归门。不得提前实现SQL、purpose授权、provider/IPC/UI或修改冻结接线/契约/barrel/AGENTS，不占迁移11。计划接受后再派精确实现；缺密钥不妨碍本地准备，不伪称远程质量已验收。
 
 两线程继续各自目录；Sol只读准备已完成，旧所有改动保留，不ff/reset。定时任务复用project-x-ray，PAUSED经工具恢复ACTIVE/原15分钟与静默规则。无新增GUI或生产凭据操作。
+
+## 2026-10-02 15:15后的优先S2a派发
+
+2B-S2两文档修订后冻结，协调方读取实际设计/记录并核对本地grader、validateCitations完整key去重及GraphStore单payload普通INSERT。main与Sol的application/index.ts、ownership/index.ts、graph/index.ts逐文件diff无差异；旧worktree HEAD455d4ad保留，无需整体同步main独有barrel/语料。接受S2a新attempt角色引用索引修正设计；S3/S4/S5胶囊候选仍未派实施。
+
+Sol仅修改packages/application/src/index.ts中的grade后新attempt构造，新增packages/application/src/ownership-citation-index.test.ts及docs/development-runs/2026-10-02-ownership-citation-index-fix.md。按完整源码引用key将有效角色原索引映射到实际持久化去重数组，克隆结构、不改submission；引用/角色顺序和重复role保留。原越界角色沿用失败保存语义，不猜引用；无效引用沿用原验证拒绝，映射内部不一致固定失败零写。原即时grade、passed、scoringVersion不变，旧payload不回填/重解释；保存失败不删题。
+
+先定向真实应用红测，再修正/回归/类型；覆盖重复首中尾、排序、共用引用/重复角色、同proof不同范围、越界/无效引用、submission不变、SQL重开、原成绩、旧payload字节、保存失败可重试和配置写前变化零写。保留symlink正确断言，环境失败独立列出。仅利用现有native运行适用应用测试，不占重型native/build/dist/Electron窗口。其余产品/SQL/迁移/契约/barrel/UI/模型/依赖/旧接线冻结，三个文件交付后由root独立复验。feedback经验先在本轮记录提出，公共规则逐条集成，不动旧冻结AGENTS。
+
+15:30–15:44：S2a三个文件冻结后root独立源码/真实运行与类型检查通过，新增17回归在Sol/main的全包运行均通过，复制到main后真实SQL/重开正向CLI再次通过；广回归存在原5秒Git staged/last-commit边界超时及cleanup EBUSY，不标整包成功/不提交。未改主基线也复现staged超时，单staged原门内4.91秒通过，支持时限接近边界，不能据此确认资源/产品根因。下一步由root在ignored审查目录自建两文件Git样例，保留原身份/partial→complete→partial与旧源码断言，采集初始化、索引、三次比较及公开分析阶段耗时，先定位实际成本/清理生命周期，再决定有依据的修正切片；不改测试门槛/产品/旧样例，不重复盲跑整包。这是新实际失败的诊断安排，非旧TODO或性能优化结论。
+
+Sol在S2a源码冻结期间只修订原rubric/capsule两设计文档：not-evaluated有限hash/枚举元数据≤2KiB，ready超预算不阻断本地attempt；精确区分async WebCrypto准备与同步SQLite权威检查，不在事务await或信任未核验hash。候选builder/SQL尚未派实现。Luna3E-L四文件已进入最终只读交付边界，root已读记录/主要方法与取消控制片段、10项纯回归通过；完整源码/实际medium CLI/取消门仍待单窗口，不标工具验收完成。
+
+## 2026-10-02 16:00起：新独立证据与派发
+
+3E-L完整源码/真实medium原CLI11门/每轮1177导航、实际child取消和最小时限失败关闭已独立通过，工具接受，Git待收尾。单对navigation约11秒，内部loadSnapshot重复2354次约8.7秒（SQL+解析inclusive；不与API/wall相加）。Luna新3F-L仅新增快照导航性能plan与design-run两文档，按这些测量核对最小有界方案、调用方变异/多连接/配置/历史/current/close门；不改产品、旧工具、AGENTS或启动索引。本轮复杂状态实现未来转Sol，不提前制造cache。
+
+Sol两设计文档冻结后root逐段核对当前async hash/纯schema及既有同步SQLite锁，接受独立ready/not-evaluated字段和唯一preimage预算方案及私有prepare receipt的事务接缝，复制修订到main并保留协调状态。只派2B-S3纯builder：contracts/ownership-capsule.ts及测试、ownership/semantic-rubric.ts及测试、独立记录五文件；精确允许补main已接受的semantic公共导出一行，逐文件核对纯模块一致，不同步整barrel、不导出新胶囊/构造器。四型、完整配对路径、精确来源与角色投影、固定标准、不裁剪及预算/编码/跨后端hash golden门按修订计划执行。无FS/SQL/application/provider/IPC/UI，S4/S5未派、迁移不占。S2a/旧接线继续冻结。
+
+root Git快照诊断见2026-10-02-git-snapshot-timing-diagnostic.md：三次真实比较身份/历史/源码断言通过，staged每次19个Git子进程；原快照文件4/4原5秒门通过。新一次完整application正在复验，旧失败不抹去，未收敛前S2a不提交。没有使用电脑操作或模型。
