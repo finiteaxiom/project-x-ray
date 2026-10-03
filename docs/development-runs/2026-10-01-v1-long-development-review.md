@@ -898,3 +898,13 @@ root独立自有真实adapter探针确认两产品缺陷：Proxy输入被接受�
 下一任务依据真实只有read/verify、无writer/flush/manifest/marker的能力缺口，已形成docs/plans/2026-10-04-upgrade-raw-material-design-plan.md：原Sol仅新增writer设计与开发记录两文档，既有全部实现冻结，不运行native/DB/Electron或先行实现。设计可在S1a未验边界下准备，不能作接受/提交豁免；Luna没有具体不冲突实施任务，保持冻结不为填槽派发。新设计须经root逐项审查才有下一具体实施计划。
 
 设计派发实际确认：root新计划精确复制至5170且SHA E45480A1664DDA74188EDFA2EF526DEDC4124FFEDB9C0F05672AEA7B021E7389一致。原Sol新回合01a103e1-dbe8-7023-a230-b2231b3d0415 active，cursor cfe7da2a-d1e4-4a1f-9168-182cb9c80d36:27；Luna5f905603-9e05-4a70-bae4-5e6a5162a670:20 notLoaded、原冻结任务completed。设计没有重型窗口需求，旧实现均冻结；当前Git只5份root协调文档，不纳入Sol实现或未验安全门。
+
+## 2026-10-04 06:53：S1b设计接受，先派隔离目标权限实验
+
+main实际8c3b95dc7a324fd4e20626945990b02858a9ddfe且清洁；上一五份协调文档已普通提交/push exit0并独立核远端同SHA，未复制或提交S1a。先读当前规则/队列/审查/交接/Git，紧凑检查取得Sol原设计冻结完成cursor cfe7da2a-d1e4-4a1f-9168-182cb9c80d36:29；工具本次未返回Luna，单目标timeout0确认Luna原交接completed/notLoaded cursor5f905603-9e05-4a70-bae4-5e6a5162a670:20。
+
+root完整读查两文档并核81B4DC55B2910E0765B99F3CC1BEF3A0FF26F62D9A2C0D92F277ABA49DCF75AE /331E8E62AB172EEB76FF62E233BDCA53C258FA6E5FF38D735AF69179B80296DF，对照实际native/adapter权限、RootDirectory、预算/void close及Microsoft原始API。接受设计，精确复制两目标原不存在的文档main且hash相同。完整判断与限制见2026-10-04-upgrade-writer-design-independent-review.md；读查确认B0双源hash需2B真实剩余预算，当前通常只可10GiB材料；新写权限及窄掩码flush仍未实验，hash不是生产者认证、marker不是恢复或任务成功。
+
+依据这些新API可行性缺口，先形成upgrade-write-permissions-probe-plan，SHA766A76DD45891685577218B27A535524D880A053349F8038AE0C74F5A3F38226，精确复制5170核一致。原Sol下一批只有独立addon/原CLI/过程记录五新文件与一ignore行，自有固定字节验证同父相对写根/完整ID/FILE_CREATE/share/flush/读回/checked close与受控替换拒绝；不修改既有S1a/native/core/UI/AGENTS或两设计，不实施source-loan/full writer/SQLite/marker。ACL缺可控条件明确未验，read-only HANDLE拒绝不冒充ACL门；symlink EPERM保持。新回合01a10401-1b32-7843-a1de-ca166aef5f9f已active，实际cursor cfe7da2a-d1e4-4a1f-9168-182cb9c80d36:30，单技术窗口交Sol，root不并发重型检查。Luna无新具体任务，保持冻结。
+
+本轮新增接受只有设计，源码/运行/GUI验收0，旧回归未重复；AGENTS新增0，官方API说明不等于本机运行经验。S1a整体、原始材料writer/重开/恢复/生产、实际artifact/安装升级卸载、远程质量/隐私选择、签名/干净Windows以及暂缓GUI仍开放。Git只纳入七份接受设计/准确下一计划/协调材料，不纳入任何未验实现。

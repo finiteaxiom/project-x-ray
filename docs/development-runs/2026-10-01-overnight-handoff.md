@@ -197,3 +197,9 @@ Sol修正回合已确认active。Luna首稿root完整读后，继续原两文档
 05:57新实质缺陷：S1a冻结首稿经root真实源码/重构建/类型及Node、GC、crash、实际Electron技术smoke复验，普通29/30通过，file symlink EPERM仍未验。独立真实adapter反例确认Proxy执行14次trap且被接受；可覆盖signal清理方法抛错掩盖固定错误，实际整组未即时释放。因此S1a未接受/未复制/未提交，已交原Sol限定adapter/test/记录及必要原smoke修正，保持其余原生/core/UI冻结。完整证据见2026-10-04-upgrade-file-capabilities-independent-review.md。已实现是首稿文件能力，独立回归仅上述部分，真实GUI0；生产升级/原始包/恢复/VFS/实际artifact和原外部门保持。版本仍f0e9a799dc9c225aea212ceac900c4b223638a5f，AGENTS新增0。
 
 06:26：两实质缺陷修正已独立复验（Proxy零trap、固定错误/即时句柄释放、20项独立检查及真实Electron adapter入口）；原42项41通过/1 file symlink EPERM未验，不能称S1a整批完成，不复制/提交其实现。技术Node/queued GC/crash/wrapper GC/类型通过，GUI仍0。完整证据见upgrade-file-capabilities-independent-review修正节。实际上一版本22be424fa8eae7780e3c481b7ccc724a2329d43b仅协调记录已推送；本轮计划依据实际缺少目标写入/flush/原始材料marker，原Sol下一步只两文档设计，不运行或实现S1b、无生产/恢复许可。AGENTS新增0，原外部/安装/GUI等未验清单不变。
+
+06:53：S1b两份冻结设计已由root对照实际权限/读取预算/关闭代码及Microsoft原始API独立接受、精确复制main；详见2026-10-04-upgrade-writer-design-independent-review.md。没有writer运行能力：源两遍hash受20GiB累计上限约束，首切片需2B预留、通常最多10GiB材料；相对写根/flush掩码仍待真实实验。raw marker不批准恢复/生产，哈希自一致不代表生产者认证，S1a file symlink EPERM仍未验。
+
+已实现：仅S1b设计与具体下一实验计划；独立代码/回归已验证：本轮无新增，原已接受结果保持；真实GUI已验证：本轮0。当前实际主版本8c3b95dc7a324fd4e20626945990b02858a9ddfe为上一五协调文档，普通push与远端已核一致；本轮仅准确接受文档安排Git收尾，不提交S1a。用户可查看upgrade-write-permissions-probe-plan了解技术验收路径，当前无产品备份入口可操作。
+
+下一原Sol回合01a10401-1b32-7843-a1de-ca166aef5f9f active/cursor30：仅独立probe五新文件+一ignore行，自有材料验证真实同父写根/FILE_CREATE/share/flush/同HANDLE读回/确定释放，单重型窗口。既有实现与设计全部冻结，无source借用/full writer/SQLite/marker/启动/GUI；Luna原交接completed/notLoaded cursor20无新任务。全部生产/重开/恢复、实际artifact/安装升级卸载、远程质量/隐私控件、签名/干净机器门仍未验；AGENTS新增0。完整游标/冻结hash见review最新节，不用历史报告补门。
