@@ -112,3 +112,11 @@ S3已独立接受并集成1da4d81（纯准备），原validator两缺陷独立�
 23:32 S4恢复决定：root源码复核确认完整原题无持久材料；采用内部单参数受限历史read，显式questionBinding:prepare-only。完整原题只在prepare强核验，历史read短同步捕获一致持久材料后事务外async闭合校验，强source/role/hash/列和保存current/config门不变，不存整题、不猜旧题、不宣称历史当前或认证保证。Sol在原四文件继续，尚无S4产品验收，规则新增0。
 
 2026-10-03 10:20：用户恢复原流程；原定时器PAUSED→ACTIVE/15分钟已复核，两聊天恢复后均active。继续Sol S4原四文件SQL/类型/反馈收尾，Luna 3F-T原两协议文档修订；不是新批次或验收通过。3F-T首版复审明确observer依赖、唯一lookup决定与独立build-race原因/外部覆盖计数，未知覆盖拒绝性能可比；产品缓存/新工具未派。主版本仍a2d06f8，无GUI操作，保留未提交内容；当前游标、稳定hash与未验收边界见审查最新节。
+
+## 2026-10-03 S4接受后的下批边界
+
+S4独立接受并提交133686217903e854e24dbdc76af9203cf3e1fd23，main225核心/111应用及类型、独立四型构建落库重开和晚期非空投影负例通过；只SQL端口，不是用户答题或GUI完成。3F-T修订设计独立接受，observer/cache/tool尚未实现。
+
+Sol S5仅application/index、ownership/index单行builder导出、新application/ownership-capsule.test.ts及2026-10-03-ownership-capsule-integration.md。严格边界/完成门见rubric-capsule计划新增S5节；保留S2a/原分/旧历史，真实索引、异步输入/同题竞争、SQL/配置/activation/工作区切点、重开与失败重试。Sol先核对main1336862对应文件一致，不整体同步旧worktree。
+
+Luna 3F-O只新增plans/2026-10-03-navigation-cache-observer.md与development-runs/2026-10-03-navigation-cache-observer-design.md。依据已接受3F/T及当前Application导航缺少observer的实际接缝，设计内部版本化可选只读observer API/事件/phase start-end覆盖、唯一最终决定、同准入estimator、回调异常/重入/禁用隔离和明确未来文件门。只读已提交1336862源码，避免与Sol S5活动文件竞争；不修改任何生产源码、T两文档、旧工具/fixture/AGENTS或运行索引/build。设计接受并且S5稳定后才可派Sol缓存；Luna新v2工具仍等待observer实现冻结。

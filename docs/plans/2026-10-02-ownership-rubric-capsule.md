@@ -130,3 +130,13 @@ builder和prepare验证均为async，须完成所有await后再进入同步事�
 prepare仍以完整原题/尝试强校验，私有一次receipt和同步权威保存强门不变。read为Promise，在短同步读事务捕获同源attempt/capsule/必要历史快照与节点/边/proof/源码私有一致材料，退出事务再用现有公开async rubric/limitation/answer/projection函数验证，不在SQL锁内await或复制私有normalize。重算实际持久attempt/capsule摘要、核列/关联/必要事实与精确来源，损坏固定拒绝；旧attempt缺胶囊返回legacy-capsule-absent，不回填。
 
 read内部返回明确questionBinding:'prepare-only'固定保证标签：完整原题指纹只在prepare时核验，历史读取不独立验证原题，也不提供对全部重写并重算摘要的数据库的认证保证。历史snapshot/analysis/manifest核验不代表当前activation/config/工作区仍有效；合法当前晋升或配置变化不能改写旧历史，未来外发必须重新核验当前性和授权。此标签仅内部graph端口，不改公共contracts/评分/UI/外发。没有原题时不能伪造原题复用S3validator；四文件实现范围不变。附加重开ready/not-evaluated/缺胶囊、当前状态变化下历史边界、损坏拒绝和零外发回归。这个源码依据的设计决定允许继续实施，不代表S4验收通过或新的AGENTS经验。
+
+## 2026-10-03 S4接受后的精确S5范围
+
+S4已独立接受并集成133686217903e854e24dbdc76af9203cf3e1fd23。下一批仅修改application/index的本地gradeOwnershipAnswer调用与必要问答内存捕获/生命周期；ownership/index只增加一行semantic-rubric公开导出；新增application/src/ownership-capsule.test.ts和development-runs/2026-10-03-ownership-capsule-integration.md。不改已接受S3/S4/contracts、SQL迁移、remote、IPC/UI或依赖。
+
+首await前完整私有捕获submission与选定题目，不执行访问器或静默遗漏字段，之后只消费该捕获；原引用验证/即时grade/S2a角色规范化/原成绩和mastery保持。以持久source捕获和当前配置修订调用真实builder，必要源码只从该snapshot读取；原submission交给S4 prepare，特别是晚期not-evaluated仍保留非空投影的分支。完整本地attempt始终保存，不裁剪以迁就语义预算。
+
+异步准备后独立重新检查工作区current与题目/应用生命周期，随后S4事务权威核对activation/配置/source；不声称文件系统与SQL为原子屏障。成功双INSERT后才按原passed规则删除题目；失败/关闭/旧配置零新写、题目可安全重提。同题并发提交采用范围狭窄的单次占用且finally释放，不让等待中的旧问题产生重复成功；不同题正常独立。无新幂等协议、不改变旧attempt或评分版本。
+
+验收从真实自建TS索引四题型开始，覆盖原submission迟到变化、重复角色引用、相交但非精确引用仅降级、错结构/越界失败attempt、空答案/孤立代理/长variant及实际晚期预算分支、保存失败重试、同题竞争、两连接配置/activation变化、prepare后工作区变化、legacy跨库门与重开。主原S2a17测试及所有权/GraphStore回归保持，缺模型时只有本地准备，不给自然语言正确性结论；原passed仅确定性结果，不因胶囊ready升级语义分。root负责独立验收，GUI继续开放。

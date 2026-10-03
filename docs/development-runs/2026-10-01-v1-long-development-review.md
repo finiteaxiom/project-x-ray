@@ -644,3 +644,17 @@ S4两生产源上轮已完整只读审阅并对照graph接缝、S3公开校验�
 对原project-x-ray执行automation_update，保留完整prompt、名称、目标协调聊天及原15分钟周期，仅恢复ACTIVE；返回成功后实际automation.toml安全字段复核同id/目标/ACTIVE，不创建重复任务。原两聊天恢复后timeoutMs0确认均active：Luna turn `01a0ff8f-ee2f-7613-b7ae-ca095e5cd7f3`、cursor `03a3ef91-aa4d-463e-af01-2e1bfafc662c:2`；Sol turn `01a0ff8f-ef5d-7aa3-9ccf-f89fa1fe1971`、cursor `1e17a25b-f2eb-45a8-971e-2de888443e95:2`。旧epoch游标已重置。
 
 本轮未运行GUI、索引、构建、模型或产品回归。AGENTS新增0：恢复动作及未完成设计不属于已验证经验。协调文档一次patch因旧行不匹配失败且实际diff为空，改按实际行重试；这是编辑操作问题，非产品缺陷。冻结后继续独立复验，GUI/真实远程/Windows发布边界仍开放；不纳入开发中的源码或两协议文档。
+
+## 2026-10-03 10:35–10:46：S4独立接受与后续范围
+
+main审查起点d9b3f9cf，Sol455d4ad保留旧改动。实际最终四文件hash核对后，root完整审阅生产源/SQL回归/记录与main逐文件差异。root Sol13文件227项、graph noEmit通过；四文件精确集成main后13文件225项、graph/application noEmit及main5文件111项application回归通过，均保留原断言与时限。13文件分母差异为已有checkout测试差异，不混成同一次结果。
+
+独立ignored ownership-store-independent.ts在Sol/main各exit0：自有合成六条事实，实际生成器/评分器/builder四型→prepare/save→SQLite关闭重开，完整attempt/capsule相等且prepare-only；长variant/答案真实晚期budget降级保留非空投影，缺原submission拒绝、补足成功、重算完整容器仍拒绝坏投影。源hash前后不变、独占临时库清理；未执行导入项目代码、分析器、GUI或模型。新增1条有此独立依据的预算降级辅助摘要经验，查重后不改变既有捕获规则/授权。五文件精确提交133686217903e854e24dbdc76af9203cf3e1fd23，未含旧桌面/界面接线。
+
+Luna3F-T两文档冻结hash实际匹配，root完整复审接受修订设计：observer依赖稳定门、唯一lookup决定、build/race/admission独立计数及等式、首建/重建/末请求外部观测覆盖与未知拒绝可比，原4708/1177分母/11门及空metric null保持。非缓存产品或性能通过，AGENTS性能规则0。
+
+后续按依赖精确安排Sol S5本地提交集成四文件与单行builder导出例外，完整捕获/后置工作区/配置activation权威保存、原分/历史不变、失败重提/同题占用；冻结前不改其他模块。Luna仅3F-O两个新observer设计文档：目标是为现有缓存/协议补缺失产品诊断接缝的版本/API/事件/覆盖/失败隔离，不重复T协议、不实现产品。只读基线1336862，Sol修改应用期间Luna只读已提交版本；两方不写同文件。缓存与新测量实现未派，S5稳定后再决定。
+
+本轮一次四文件文档patch因引用旧行少一句而失败，实际diff为空；按原文重试成功，属于文档编辑问题，无产品失败或额外经验。GUI/真实模型/Windows发布未验收仍保持；最新双游标Luna03a3ef91-aa4d-463e-af01-2e1bfafc662c:6、Sol1e17a25b-f2eb-45a8-971e-2de888443e95:4为交付边界，后续派发需读新游标。Git推送/实际新回合状态在工具核对后补记。
+
+续派timeoutMs0已确认原双聊天均active：Sol新turn01a0ffa9-b30d-7c50-923a-8e55fa4366f2、cursor1e17a25b-f2eb-45a8-971e-2de888443e95:5；Luna新turn01a0ffa9-b3d2-7c20-a2bb-8318d1d0dcdc、cursor03a3ef91-aa4d-463e-af01-2e1bfafc662c:7。原模型/目录保持，新回合未交付不称已实现。未重复修改定时器或运行其活动文件回归。
