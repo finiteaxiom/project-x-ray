@@ -1,5 +1,6 @@
 import { OWNERSHIP_QUESTION_VERSION, OWNERSHIP_SCORING_VERSION, type Evidence, type GraphEdge, type GraphNode, type OwnershipAttempt, type OwnershipGrade, type OwnershipQuestion, type OwnershipQuestionRequest, type OwnershipSubmission, type ProjectSnapshot, type SourceCitation } from "@project-xray/contracts";
 import { stableId } from "@project-xray/analyzer-core";
+export * from "./semantic-rubric.js";
 
 export function createQuestions(snapshot: ProjectSnapshot, request: OwnershipQuestionRequest, attempts: OwnershipAttempt[] = []): OwnershipQuestion[] {
   const evidence = new Set(snapshot.evidence.map((item) => item.id)); const nodes = new Map(snapshot.nodes.map((node) => [node.id, node])); const allowed = allowedNodes(snapshot, request); const candidates: OwnershipQuestion[] = [];

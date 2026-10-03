@@ -60,7 +60,8 @@ async function build(input: OwnershipRubricInput): Promise<OwnershipCapsule> {
     if (!wellFormed(submission.answer)) unavailable("answer-encoding-unavailable");
     if (answerHash === null) unavailable("answer-budget-exceeded");
     if (submission.citations.length > 24 || citations.length > 24) unavailable("package-budget-exceeded");
-    const analysis = remoteAnalysisIdentitySchema.safeParse({ ...snapshot.analysisIdentity, ignorePolicy: snapshot.analysisIdentity.ignorePolicy ?? null });
+    const identity = snapshot.analysisIdentity;
+    const analysis = remoteAnalysisIdentitySchema.safeParse({ graphIrVersion: identity.graphIrVersion, analyzerVersions: identity.analyzerVersions, configurationHash: identity.configurationHash, sourceFingerprint: identity.sourceFingerprint, ignorePolicy: identity.ignorePolicy ? { version: identity.ignorePolicy.version, hash: identity.ignorePolicy.hash } : null, analysisResult: identity.analysisResult });
     if (!analysis.success || Object.entries(sourceIdentity).some(([key, value]) => key !== "ignorePolicyHash" && value === null)) unavailable("analysis-identity-unavailable");
     const cited = new Set<string>();
     for (const citation of citations) {

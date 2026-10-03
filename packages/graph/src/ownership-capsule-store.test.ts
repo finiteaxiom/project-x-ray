@@ -23,7 +23,7 @@ afterEach(async () => {
   for (const directory of directories.splice(0)) { if (!resolve(directory).startsWith(resolve(tmpdir()) + sep) || !basename(directory).startsWith("xray-capsule-")) throw new Error("unsafe fixture cleanup"); await rm(directory, { recursive: true, force: true }); }
 });
 const span = (line: number, endColumn: number) => ({ filePath: "a.ts", startLine: line, startColumn: 0, endLine: line, endColumn });
-async function fixture(store: GraphStore, attemptId = "attempt", ready = true): Promise<OwnershipCapsuleWriteInput> {
+async function fixture(store: GraphStore, attemptId = "attempt", ready = true, rules?: string[]): Promise<OwnershipCapsuleWriteInput> {
   const content = "token = 1;\nuse(token)\nreturn token\n// 中文🙂";
   const snapshot: ProjectSnapshot = {
     repositoryId: "repo", snapshotId: "snap", name: "fixture", rootPath: "C:/fixture", sourceType: "local", createdAt: "2026-10-02T00:00:00.000Z",
@@ -34,15 +34,19 @@ async function fixture(store: GraphStore, attemptId = "attempt", ready = true): 
     edges: ["write", "read", "return"].map((id, index) => ({ id, snapshotId: "snap", source: ["a", "b", "c"][index]!, target: "v", kind: (["WRITES", "READS", "RETURNS"] as const)[index]!, confidence: "verified", evidenceId: `e-${id}`, reason: "fixture" })),
     evidence: ["write", "read", "return"].map((id, index) => ({ id: `e-${id}`, snapshotId: "snap", analyzer: "fixture", analyzerVersion: "1.0.0", kind: ["variable-write", "variable-read", "return-flow"][index]!, confidence: "verified", reason: "fixture", span: span(index + 1, content.split("\n")[index]!.length) })),
   };
+  if (rules) {
+    const normalized = store.saveIgnoreSettings("repo", 0, rules).rules;
+    snapshot.analysisIdentity.ignorePolicy = { version: IGNORE_POLICY_VERSION, rules: normalized, hash: sha(JSON.stringify([IGNORE_POLICY_VERSION, normalized])) };
+  }
   snapshot.analysisIdentity.analysisResult = { version: "1.0.0", fingerprint: sha(canonicalSnapshotResult(snapshot)) };
   if (!store.loadSnapshot("snap")) store.saveSnapshot(snapshot, [{ filePath: "a.ts", contentHash: sha(content), content, language: "TypeScript" }]);
-  const source = store.captureOwnershipSource("repo", "snap", 0);
+  const source = store.captureOwnershipSource("repo", "snap", store.loadIgnoreSettings("repo").revision);
   const question: OwnershipQuestion = { repositoryId: "repo", snapshotId: "snap", id: "q", version: "2.0.0", kind: "variable-flow", prompt: "解释三个所选位置的变量角色", concept: { id: "variable-flow:v", label: "变量v" }, learningObjective: "定位变量角色", difficulty: "hard", choices: [], evidenceIds: snapshot.evidence.map(item => item.id), expectedNodeIds: ["v"], deterministicChecks: [{ kind: "variable-roles", requirements: ["write", "read", "return"].map((role, index) => ({ role: role as "write" | "read" | "return", edgeIds: [snapshot.edges[index]!.id] })) }], variantKey: ready ? "variable:v:write,read,return" : "v".repeat(5275) };
   const citations = snapshot.evidence.map(proof => ({ ...proof.span, evidenceId: proof.id }));
   const attempt: OwnershipAttempt = { attemptId, repositoryId: "repo", snapshotId: "snap", questionId: question.id, questionVersion: question.version, concept: question.concept, questionKind: question.kind, variantKey: question.variantKey,
     structuredAnswer: { kind: "variable-flow", roles: (["write", "read", "return"] as const).map((role, index) => ({ role, citationIndex: index })) }, citations, locationScore: 100, structureScore: 100, passed: true, scoringVersion: "2.1.0", semanticText: ready ? "三个源码引用分别写入、读取与返回。🙂" : "原答案".repeat(1500), completedAt: "2026-10-02T01:00:00.000Z", legacy: false };
   const questionFingerprint = await computeOwnershipQuestionFingerprint(question), attemptHash = await computeOwnershipAttemptHash(attempt), answerHash = await hashOwnershipAnswer(attempt.semanticText);
-  const sourceIdentity = { activation: source.activation, analysisResultFingerprint: source.analysisIdentity.analysisResult!.fingerprint, configurationHash: source.analysisIdentity.configurationHash, ignorePolicyHash: null, sourceManifestHash: source.sourceManifestHash, ignoreRevision: source.ignoreRevision };
+  const sourceIdentity = { activation: source.activation, analysisResultFingerprint: source.analysisIdentity.analysisResult!.fingerprint, configurationHash: source.analysisIdentity.configurationHash, ignorePolicyHash: source.analysisIdentity.ignorePolicy?.hash ?? null, sourceManifestHash: source.sourceManifestHash, ignoreRevision: source.ignoreRevision };
   if (!ready) {
     const capsule: OwnershipCapsule = { version: "1.0.0", builderVersion: "1.0.0", status: "not-evaluated", reason: "rubric-budget-exceeded", questionFingerprint, attemptHash, answerHash, submissionProjectionHash: null, sourceIdentity, capsuleHash: "0".repeat(64) };
     capsule.capsuleHash = await computeOwnershipCapsuleHash(capsule); return { question, attempt, capsule, source };
@@ -62,7 +66,7 @@ async function fixture(store: GraphStore, attemptId = "attempt", ready = true): 
   const structured = attempt.structuredAnswer as { kind: "variable-flow"; roles: { role: "write" | "read" | "return"; citationIndex: number }[] };
   const submissionProjectionHash = await computeOwnershipSubmissionProjectionHash({ originalCitations: citationOrder.map(index => citations[index]!), originalStructuredAnswer: { kind: "variable-flow", roles: roleBindings.map(role => ({ role: role.role, citationIndex: role.originalCitationIndex })) }, citationOrder, roleBindings, normalizedStructuredAnswer: structured, validatedCitations: citations });
   const capsule: OwnershipReadyCapsule = { version: "1.0.0", builderVersion: "1.0.0", status: "ready", repositoryId: "repo", snapshotId: "snap", attemptId, questionId: question.id, questionVersion: question.version, questionKind: question.kind, variantKey: question.variantKey, prompt: question.prompt, learningObjective: question.learningObjective,
-    questionFingerprint, attemptHash, answerHash, submissionProjectionHash, deterministicScoringVersion: "2.1.0", sourceIdentity, analysisIdentity: { ...snapshot.analysisIdentity, ignorePolicy: null, analysisResult: snapshot.analysisIdentity.analysisResult },
+    questionFingerprint, attemptHash, answerHash, submissionProjectionHash, deterministicScoringVersion: "2.1.0", sourceIdentity, analysisIdentity: { ...snapshot.analysisIdentity, ignorePolicy: snapshot.analysisIdentity.ignorePolicy ? { version: snapshot.analysisIdentity.ignorePolicy.version, hash: snapshot.analysisIdentity.ignorePolicy.hash } : null, analysisResult: snapshot.analysisIdentity.analysisResult },
     rubric: { ...rubricContent, rubricHash: await computeOwnershipRubricHash(rubricContent) }, citationOrder, roleBindings, necessaryNodeIds: ["a", "b", "c", "v"], necessaryEdgeIds: ["read", "return", "write"],
     necessaryProofs: snapshot.evidence.map(proof => ({ evidenceId: proof.id, kind: proof.kind as "variable-write" | "variable-read" | "return-flow", filePath: proof.span.filePath, span: proof.span, analyzer: proof.analyzer, analyzerVersion: proof.analyzerVersion, confidence: "verified", contentHash: sha(content) })), createdAt: attempt.completedAt, capsuleHash: "0".repeat(64) };
   capsule.capsuleHash = await computeOwnershipCapsuleHash(capsule); return { question, attempt, capsule, source };
@@ -102,6 +106,34 @@ async function relationshipFixture(store: GraphStore, kind: "entry" | "call-dire
   cap.capsuleHash = await computeOwnershipCapsuleHash(cap); return input;
 }
 describe("source-owned ownership capsule transactions", () => {
+  it.each([{ rules: [] }, { rules: ["never"] }])("完整policy $rules与有限DTO保存重开，完整规则与源码不改写", async ({ rules }) => {
+    const path = await pathFixture("policy.sqlite"); let store = open(path); const input = await fixture(store, "attempt", true, rules);
+    const snapshot = canonicalJson(store.loadSnapshot("snap")), sources = db(store).prepare("SELECT * FROM source_snapshots").all();
+    expect(input.source.analysisIdentity.ignorePolicy?.rules).toEqual(rules);
+    expect(Object.keys((input.capsule as OwnershipReadyCapsule).analysisIdentity.ignorePolicy!).sort()).toEqual(["hash", "version"]);
+    store.savePreparedOwnershipAttempt(await store.prepareOwnershipAttemptWithCapsule(input));
+    store.close(); store = open(path);
+    expect(await store.loadOwnershipCapsule("attempt")).toMatchObject({ status: "ready", capsule: input.capsule, attempt: input.attempt });
+    expect(canonicalJson(store.loadSnapshot("snap"))).toBe(snapshot); expect(db(store).prepare("SELECT * FROM source_snapshots").all()).toEqual(sources);
+  });
+  it.each(["policy-version", "policy-hash", "source-fingerprint", "result-fingerprint", "configuration-hash", "captured-rules"] as const)("有限投影 %s 错配重算capsuleHash仍拒绝且零写", async change => {
+    const store = open(), input = await fixture(store, "attempt", true, ["never"]), cap = input.capsule as OwnershipReadyCapsule;
+    if (change === "policy-version") cap.analysisIdentity.ignorePolicy!.version = "2.0.0";
+    if (change === "policy-hash") { cap.analysisIdentity.ignorePolicy!.hash = "b".repeat(64); cap.sourceIdentity.ignorePolicyHash = "b".repeat(64); }
+    if (change === "source-fingerprint") cap.analysisIdentity.sourceFingerprint = "b".repeat(64);
+    if (change === "result-fingerprint") { cap.analysisIdentity.analysisResult.fingerprint = "b".repeat(64); cap.sourceIdentity.analysisResultFingerprint = "b".repeat(64); }
+    if (change === "configuration-hash") { cap.analysisIdentity.configurationHash = "b".repeat(64); cap.sourceIdentity.configurationHash = "b".repeat(64); }
+    if (change === "captured-rules") input.source.analysisIdentity.ignorePolicy!.rules = ["different"];
+    cap.capsuleHash = await computeOwnershipCapsuleHash(cap);
+    await expect(store.prepareOwnershipAttemptWithCapsule(input)).rejects.toMatchObject({ name: "OwnershipCapsuleStoreError" }); expect(counts(store)).toEqual({ attempts: 0, capsules: 0 });
+    expect(store.loadSnapshot("snap")!.analysisIdentity.ignorePolicy?.rules).toEqual(["never"]);
+  });
+  it("有限DTO不放宽完整policy的第二连接配置事务门", async () => {
+    const path = await pathFixture("policy-gate.sqlite"), store = open(path), input = await fixture(store, "attempt", true, ["never"]);
+    const receipt = await store.prepareOwnershipAttemptWithCapsule(input), second = open(path);
+    second.saveIgnoreSettings("repo", input.source.ignoreRevision, ["later"]);
+    expect(() => store.savePreparedOwnershipAttempt(receipt)).toThrow("所有权胶囊存储失败"); expect(counts(store)).toEqual({ attempts: 0, capsules: 0 });
+  });
   it("builder晚期not-evaluated保留的非空projection必须有原submission才能prepare", async () => {
     const store = open(), input = await fixture(store, "late-budget", false), snapshot = store.loadSnapshot("snap")!;
     const builderUrl = new URL("../../ownership/src/semantic-rubric.ts", import.meta.url).href, ownershipUrl = new URL("../../ownership/src/index.ts", import.meta.url).href;

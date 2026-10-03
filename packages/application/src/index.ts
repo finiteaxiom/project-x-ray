@@ -16,7 +16,8 @@ import { TypeScriptAnalyzer } from "@project-xray/analyzer-typescript";
 import { PythonAnalyzer } from "@project-xray/analyzer-python";
 import { captureComparison, cloneRepository, comparisonStateFingerprint, getGitHead, type CapturedSide } from "@project-xray/git";
 import { GraphStore, overviewFromSnapshot, queryFlow, searchNodes } from "@project-xray/graph";
-import { createQuestions, gradeAnswer } from "@project-xray/ownership";
+import { buildOwnershipRubricCapsule, createQuestions, gradeAnswer, type OwnershipRubricSource } from "@project-xray/ownership";
+import { canonicalJson, ownershipQuestionSchema, ownershipSubmissionSchema } from "@project-xray/contracts";
 import { RemoteExplanationApplication, type RemoteProviderPort, type RemoteCredentialPort } from "./remote-explanation.js";
 export { RemoteExplanationApplication, type RemoteApplicationPorts, type RemoteProviderPort, type RemoteCredentialPort } from "./remote-explanation.js";
 
@@ -31,6 +32,25 @@ export interface ComparisonOptions { signal?: AbortSignal; onProgress?: (progres
 
 interface IndexedSource { absolutePath: string; projectPath: string; content: string; contentHash: string; language: string }
 
+// Inspect complete data without executing accessors before yielding to asynchronous work.
+function captureOwnershipData<T>(input: T): T {
+  const visiting = new Set<object>();
+  const fail = (): never => { throw new SafeDiagnosticError("TASK_FAILED"); };
+  const check = (value: unknown): void => {
+    if (value === null || value === undefined || typeof value === "string" || typeof value === "boolean") return;
+    if (typeof value === "number") { if (!Number.isFinite(value)) fail(); return; }
+    if (typeof value !== "object" || visiting.has(value) || Object.getOwnPropertySymbols(value).length || (!Array.isArray(value) && Object.getPrototypeOf(value) !== Object.prototype && Object.getPrototypeOf(value) !== null)) fail();
+    visiting.add(value);
+    for (const [key, descriptor] of Object.entries(Object.getOwnPropertyDescriptors(value))) {
+      if (descriptor.get || descriptor.set || !descriptor.enumerable && !(Array.isArray(value) && key === "length")) fail();
+      check(descriptor.value);
+    }
+    visiting.delete(value);
+  };
+  check(input);
+  try { return structuredClone(input); } catch { return fail(); }
+}
+
 export class XRayApplication {
   private readonly legacyStore: GraphStore;
   private readonly stores = new Map<string, GraphStore>();
@@ -42,6 +62,8 @@ export class XRayApplication {
   private current: ProjectOverview | null;
   private currentActivation: string;
   private readonly questions = new Map<string, OwnershipQuestion>();
+  private readonly gradingQuestions = new Set<string>();
+  private ownershipClosed = false;
 
   constructor(options: XRayApplicationOptions) {
     this.legacyStore = new GraphStore(options.databasePath, "global");
@@ -318,38 +340,85 @@ export class XRayApplication {
   async getChangeReportState(input: { repositoryId: string; reportId: string }): Promise<{ repositoryId: string; reportId: string; status: "current" | "stale" | "missing"; checkedAt: string; reason?: string }> { const report = this.loadChangeReport(input); const checkedAt = new Date().toISOString(); const leftSnapshot = this.requireSnapshot(report.left.snapshot).snapshot; try { const settingsStore = this.storeForRepository(input.repositoryId); const settings = settingsStore.loadIgnoreSettings(input.repositoryId); const policy = createIgnorePolicy(settings.rules); const oldPolicy = leftSnapshot.analysisIdentity.ignorePolicy; if (oldPolicy ? oldPolicy.hash !== policy.hash : policy.rules.length > 0) return { ...input, status: "stale", checkedAt, reason: "项目排除配置已变化" }; const current = await comparisonStateFingerprint(leftSnapshot.rootPath, report.mode, undefined, undefined, undefined, oldPolicy ? policy : undefined); settingsStore.assertIgnoreRevision(input.repositoryId, settings.revision); return { ...input, status: current === report.captureFingerprint ? "current" : "stale", checkedAt, ...(current === report.captureFingerprint ? {} : { reason: "HEAD、index 或工作区已偏离报告捕获身份" }) }; } catch { return { ...input, status: "missing", checkedAt, reason: "Git 仓库或所需对象已不可访问" }; } }
 
   async createOwnershipQuestions(input: OwnershipQuestionRequest): Promise<OwnershipQuestion[]> {
+    if (this.ownershipClosed) throw new SafeDiagnosticError("TASK_FAILED");
     const snapshot = await this.requireCurrentSnapshot(input); this.assertSnapshotPolicyCurrent(snapshot); const store = this.requireStore(input); const generated = createQuestions(snapshot, input, store.listOwnershipAttempts(snapshot.repositoryId));
-    for (const question of generated) this.questions.set(questionKey(question), question); return generated;
+    if (this.ownershipClosed) throw new SafeDiagnosticError("TASK_FAILED");
+    for (const question of generated) this.questions.set(questionKey(question), captureOwnershipData(question)); return generated;
   }
 
-  async gradeOwnershipAnswer(submission: OwnershipSubmission): Promise<OwnershipGrade> {
-    const { snapshot, store } = this.requireSnapshot(submission);
-    const settingsStore = this.storeForRepository(snapshot.repositoryId); const settingsRevision = settingsStore.loadIgnoreSettings(snapshot.repositoryId).revision;
-    const state = await this.getSnapshotState(submission);
-    if (state.status !== "current") throw new SafeDiagnosticError("SNAPSHOT_NOT_CURRENT");
-    this.assertSnapshotPolicyCurrent(snapshot);
-    const question = this.questions.get(questionKey(submission)); if (!question) throw new Error("题目不存在、已经完成或属于其他快照");
-    const citations = validateCitations(snapshot, submission.citations, (filePath) => store.readSnapshotSource(snapshot.snapshotId, filePath)?.content);
-    const grade = gradeAnswer(question, submission, snapshot, citations);
-    let structuredAnswer = submission.structuredAnswer;
-    if (structuredAnswer.kind === "variable-flow") {
-      const citationKey = (citation: SourceCitation): string => JSON.stringify([citation.filePath, citation.startLine, citation.startColumn, citation.endLine, citation.endColumn, citation.evidenceId]);
-      const indices = new Map(grade.validatedCitations.map((citation, index) => [citationKey(citation), index]));
-      // Grade against the original input; only the new persisted structure uses deduplicated indices.
-      structuredAnswer = { ...structuredAnswer, roles: structuredAnswer.roles.map(role => {
-        const original = submission.citations[role.citationIndex];
-        if (!original) return { ...role }; // An already invalid index stays invalid after deduplication.
-        const citationIndex = indices.get(citationKey(original));
-        if (citationIndex === undefined) throw new SafeDiagnosticError("TASK_FAILED");
-        return { ...role, citationIndex };
-      }) };
+  async gradeOwnershipAnswer(rawSubmission: OwnershipSubmission): Promise<OwnershipGrade> {
+    if (this.ownershipClosed) throw new SafeDiagnosticError("TASK_FAILED");
+    const submission = captureOwnershipData(rawSubmission);
+    const key = questionKey(submission), selected = this.questions.get(key);
+    if (!selected) {
+      // Preserve stale-snapshot precedence for an invalidated question, without reading caller data again.
+      const state = await this.getSnapshotState(submission);
+      if (this.ownershipClosed) throw new SafeDiagnosticError("TASK_FAILED");
+      if (state.status !== "current") throw new SafeDiagnosticError("SNAPSHOT_NOT_CURRENT");
+      throw new Error("题目不存在、已经完成或属于其他快照");
     }
-    const completedAt = new Date().toISOString(); const attempt: OwnershipAttempt = { repositoryId: snapshot.repositoryId, snapshotId: snapshot.snapshotId, attemptId: stableId(snapshot.snapshotId, question.id, completedAt), questionId: question.id, questionVersion: question.version, concept: question.concept, questionKind: question.kind, variantKey: question.variantKey, structuredAnswer, citations: grade.validatedCitations, locationScore: grade.location.score, structureScore: grade.structure.score, passed: grade.passed, scoringVersion: OWNERSHIP_SCORING_VERSION, semanticText: submission.answer, completedAt, legacy: false };
-    settingsStore.withIgnoreRevision(snapshot.repositoryId, settingsRevision, () => store.saveOwnershipAttempt(attempt, settingsStore === store ? settingsRevision : undefined));
-    // Failed attempts remain retryable, while every attempt is still persisted.
-    // The server-owned question keeps the deterministic rules out of the renderer.
-    if (grade.passed) this.questions.delete(questionKey(question));
-    return grade;
+    const question = captureOwnershipData(selected); ownershipQuestionSchema.parse(question);
+    if (this.gradingQuestions.has(key)) throw new SafeDiagnosticError("TASK_FAILED");
+    this.gradingQuestions.add(key);
+    const assertActive = (): void => {
+      if (this.ownershipClosed || this.questions.get(key) !== selected || canonicalJson(captureOwnershipData(selected)) !== canonicalJson(question)) throw new SafeDiagnosticError("TASK_FAILED");
+    };
+    try {
+      const { snapshot, store } = this.requireSnapshot(submission);
+      const settingsStore = this.storeForRepository(snapshot.repositoryId); const settingsRevision = settingsStore.loadIgnoreSettings(snapshot.repositoryId).revision;
+      const source = store.captureOwnershipSource(snapshot.repositoryId, snapshot.snapshotId, settingsRevision);
+      const state = await this.getSnapshotState(submission);
+      assertActive();
+      if (state.status !== "current") throw new SafeDiagnosticError("SNAPSHOT_NOT_CURRENT");
+      this.assertSnapshotPolicyCurrent(snapshot);
+      ownershipSubmissionSchema.parse(submission);
+      const sources = new Map<string, OwnershipRubricSource>();
+      const citations = validateCitations(snapshot, submission.citations, (filePath) => {
+        const stored = store.readSnapshotSource(snapshot.snapshotId, filePath);
+        if (stored) sources.set(filePath, { repositoryId: snapshot.repositoryId, snapshotId: snapshot.snapshotId, filePath, contentHash: stored.contentHash, content: stored.content });
+        return stored?.content;
+      });
+      const grade = gradeAnswer(question, submission, snapshot, citations);
+      let structuredAnswer = submission.structuredAnswer;
+      if (structuredAnswer.kind === "variable-flow") {
+        const citationKey = (citation: SourceCitation): string => JSON.stringify([citation.filePath, citation.startLine, citation.startColumn, citation.endLine, citation.endColumn, citation.evidenceId]);
+        const indices = new Map(grade.validatedCitations.map((citation, index) => [citationKey(citation), index]));
+        // Grade against the original input; only the new persisted structure uses deduplicated indices.
+        structuredAnswer = { ...structuredAnswer, roles: structuredAnswer.roles.map(role => {
+          const original = submission.citations[role.citationIndex];
+          if (!original) return { ...role }; // An already invalid index stays invalid after deduplication.
+          const citationIndex = indices.get(citationKey(original));
+          if (citationIndex === undefined) throw new SafeDiagnosticError("TASK_FAILED");
+          return { ...role, citationIndex };
+        }) };
+      }
+      const completedAt = new Date().toISOString(); const attempt: OwnershipAttempt = { repositoryId: snapshot.repositoryId, snapshotId: snapshot.snapshotId, attemptId: stableId(snapshot.snapshotId, question.id, completedAt), questionId: question.id, questionVersion: question.version, concept: question.concept, questionKind: question.kind, variantKey: question.variantKey, structuredAnswer, citations: grade.validatedCitations, locationScore: grade.location.score, structureScore: grade.structure.score, passed: grade.passed, scoringVersion: OWNERSHIP_SCORING_VERSION, semanticText: submission.answer, completedAt, legacy: false };
+      const capsule = await buildOwnershipRubricCapsule({ question, submission, grade, attempt, snapshot, validatedCitations: citations, sources: [...sources.values()], sourceIdentity: {
+        activation: source.activation, analysisResultFingerprint: source.analysisIdentity.analysisResult?.fingerprint ?? null,
+        configurationHash: source.analysisIdentity.configurationHash, ignorePolicyHash: source.analysisIdentity.ignorePolicy?.hash ?? null,
+        sourceManifestHash: source.sourceManifestHash, ignoreRevision: source.ignoreRevision,
+      } });
+      assertActive();
+      settingsStore.assertIgnoreRevision(snapshot.repositoryId, settingsRevision);
+      let prepared: Awaited<ReturnType<GraphStore["prepareOwnershipAttemptWithCapsule"]>>;
+      try { prepared = await store.prepareOwnershipAttemptWithCapsule({ question, submission, attempt, capsule, source }, settingsStore); }
+      catch (error) { assertActive(); settingsStore.assertIgnoreRevision(snapshot.repositoryId, settingsRevision); throw error; }
+      assertActive();
+      const finalState = await this.getSnapshotState(submission);
+      assertActive();
+      if (finalState.status !== "current") throw new SafeDiagnosticError("SNAPSHOT_NOT_CURRENT");
+      this.assertSnapshotPolicyCurrent(snapshot);
+      try { store.savePreparedOwnershipAttempt(prepared); }
+      catch (error) {
+        // Keep the application configuration diagnostic; never expose native SQL error text.
+        if (settingsStore.loadIgnoreSettings(snapshot.repositoryId).revision !== settingsRevision) throw new SafeDiagnosticError("IGNORE_SETTINGS_CONFLICT");
+        throw error;
+      }
+      // Failed attempts remain retryable, while every attempt is still persisted.
+      // The server-owned question keeps the deterministic rules out of the renderer.
+      if (grade.passed) this.questions.delete(questionKey(question));
+      return grade;
+    } finally { this.gradingQuestions.delete(key); }
   }
 
   async getOwnershipProgress(ref: SnapshotRef): Promise<OwnershipProgress> {
@@ -375,7 +444,7 @@ export class XRayApplication {
     return { repositoryId: snapshot.repositoryId, snapshotId: snapshot.snapshotId, filePath: location.filePath, language: stored.language, content: stored.content, contentHash: stored.contentHash, workspaceStatus, ...(currentHash ? { currentHash } : {}), targetSpan, ...(item ? { evidence: item } : {}) };
   }
 
-  close(): void { for (const store of new Set([this.legacyStore, ...this.stores.values()])) store.close(); }
+  close(): void { this.ownershipClosed = true; this.questions.clear(); for (const store of new Set([this.legacyStore, ...this.stores.values()])) store.close(); }
 
   private async analyzeComparisonSide(base: ProjectSnapshot, side: CapturedSide, policy: IgnorePolicy, ignoreRevision: number, signal?: AbortSignal, progress?: (completed: number, total: number, currentFile: string) => void): Promise<ProjectSnapshot> {
     const sources: IndexedSource[] = side.sources.map((item) => ({ absolutePath: resolve(base.rootPath, item.projectPath), projectPath: item.projectPath, content: item.content, contentHash: item.contentHash, language: item.language }));

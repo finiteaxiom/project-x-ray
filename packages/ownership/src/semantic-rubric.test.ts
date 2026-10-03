@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   canonicalJson, canonicalSnapshotResult, computeOwnershipAttemptHash, computeOwnershipQuestionFingerprint, digestOwnershipPreimage,
   computeOwnershipCapsuleHash, ownershipCapsuleSchema, ownershipQuestionSchema, ownershipSubmissionSchema, remoteUtf8Bytes, validateOwnershipCapsule,
+  IGNORE_POLICY_VERSION,
   type GraphEdge, type OwnershipQuestion, type OwnershipReadyCapsule, type OwnershipSubmission, type ProjectSnapshot, type SourceCitation,
 } from "@project-xray/contracts";
 import { createQuestions, gradeAnswer } from "./index.js";
@@ -85,6 +86,19 @@ function requestBytes(input: OwnershipRubricInput, capsule: OwnershipReadyCapsul
 }
 
 describe("pure ownership rubric builder", () => {
+  it.each([{ rules: [] }, { rules: ["never"] }])("完整policy $rules仅在DTO中明确投影，原数据与完整指纹保留", async ({ rules }) => {
+    const input = await inputFixture();
+    const policy: NonNullable<ProjectSnapshot["analysisIdentity"]["ignorePolicy"]> = { version: IGNORE_POLICY_VERSION, rules, hash: await digestOwnershipPreimage(JSON.stringify([IGNORE_POLICY_VERSION, rules])) };
+    input.snapshot.analysisIdentity.ignorePolicy = policy; input.sourceIdentity.ignorePolicyHash = policy.hash; await refresh(input);
+    const before = canonicalJson(input), capsule = await buildOwnershipRubricCapsule(input);
+    expect(capsule.status).toBe("ready"); if (capsule.status !== "ready") throw new Error("Expected ready");
+    expect(capsule.analysisIdentity).toEqual({ graphIrVersion: input.snapshot.analysisIdentity.graphIrVersion, analyzerVersions: input.snapshot.analysisIdentity.analyzerVersions, configurationHash: input.snapshot.analysisIdentity.configurationHash, sourceFingerprint: input.snapshot.analysisIdentity.sourceFingerprint, ignorePolicy: { version: policy.version, hash: policy.hash }, analysisResult: input.snapshot.analysisIdentity.analysisResult });
+    expect(canonicalJson(input)).toBe(before); await validateOwnershipCapsule(capsule, input.question, input.attempt);
+    const wrongHash = structuredClone(input); wrongHash.sourceIdentity.ignorePolicyHash = "b".repeat(64);
+    await expect(buildOwnershipRubricCapsule(wrongHash)).rejects.toThrow("所有权语义准备失败");
+    const wrongVersion = structuredClone(input); Object.assign(wrongVersion.snapshot.analysisIdentity.ignorePolicy!, { version: "wrong" });
+    await expect(buildOwnershipRubricCapsule(wrongVersion)).rejects.toThrow("所有权语义准备失败");
+  });
   it.each(["entry", "call-direction", "call-path", "variable-flow"] as const)("生成的 %s 题目使用真实本地评分且返回闭合 ready 胶囊", async kind => {
     const input = await inputFixture(kind), before = canonicalJson(input);
     expect(input.grade.passed).toBe(true);

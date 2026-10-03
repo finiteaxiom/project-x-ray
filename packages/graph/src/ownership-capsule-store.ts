@@ -181,7 +181,7 @@ export class OwnershipCapsuleStore {
     const identity = capsule.sourceIdentity, analysis = material.snapshot.analysisIdentity;
     // Activation/revision are publication-time bindings, not historical currentness requirements.
     if (identity.analysisResultFingerprint !== null && identity.analysisResultFingerprint !== (analysis.analysisResult?.fingerprint ?? null) || identity.configurationHash !== null && identity.configurationHash !== analysis.configurationHash || identity.sourceManifestHash !== null && identity.sourceManifestHash !== material.manifestHash || identity.ignorePolicyHash !== (analysis.ignorePolicy?.hash ?? null)) fail();
-    if (capsule.status === "ready" && !same(capsule.analysisIdentity, { ...analysis, ignorePolicy: analysis.ignorePolicy ?? null })) fail();
+    if (capsule.status === "ready" && !same(capsule.analysisIdentity, { graphIrVersion: analysis.graphIrVersion, analyzerVersions: analysis.analyzerVersions, configurationHash: analysis.configurationHash, sourceFingerprint: analysis.sourceFingerprint, ignorePolicy: analysis.ignorePolicy ? { version: analysis.ignorePolicy.version, hash: analysis.ignorePolicy.hash } : null, analysisResult: analysis.analysisResult })) fail();
   }
   private assertPublication(capsule: OwnershipCapsule, source: OwnershipSourceCapture): void {
     if (capsule.sourceIdentity.activation !== null && capsule.sourceIdentity.activation !== source.activation || capsule.sourceIdentity.ignoreRevision !== null && capsule.sourceIdentity.ignoreRevision !== source.ignoreRevision) fail("NOT_CURRENT");

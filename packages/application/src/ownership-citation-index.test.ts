@@ -134,7 +134,10 @@ describe("new ownership attempts bind role indices to their persisted citations"
     const f = await fixture(); const [write, read, returned] = f.citations;
     const submission = f.submit([write!, write!, read!, returned!], [0, 2, 3]);
     f.raw.exec("CREATE TRIGGER reject_fixture_attempt BEFORE INSERT ON ownership_attempts BEGIN SELECT RAISE(ABORT,'fixture insert denied'); END");
-    await expect(f.app.gradeOwnershipAnswer(submission)).rejects.toThrow("fixture insert denied");
+    const failure: unknown = await f.app.gradeOwnershipAnswer(submission).catch((error: unknown) => error);
+    expect(failure).toMatchObject({ name: "OwnershipCapsuleStoreError", message: "所有权胶囊存储失败", code: "INVALID_MATERIAL" });
+    // The native trigger's SQL text must not cross the application boundary.
+    expect(failure).toBeInstanceOf(Error); expect((failure as Error).message).not.toContain("fixture insert denied");
     expect(await f.attempts()).toEqual([]);
     f.raw.exec("DROP TRIGGER reject_fixture_attempt");
     expect((await f.app.gradeOwnershipAnswer(submission)).passed).toBe(true);
