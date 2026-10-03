@@ -748,3 +748,5 @@ root竞态探针首轮exit1属测试缺陷：同值payload UPDATE未产生data_v
 C2后台切片独立接受，核对exact三文件cached diff/check后提交db0630edcf82dfab25478b1b156ca2f98c232717，未整体合并worktree。远程目标仍原GitHub origin/main；本节写入时推送待公共接受文档一并执行。GUI/Electron/native/build/dist/provider/正式benchmark本轮0，后续实际性能门仍为三同调用配对、每轮两API1177、原11门、完整可比观察下两轮full-load≤2，不以小样例缓存复用称收益。
 
 root已形成T2实施计划2026-10-03-navigation-optimized-tool.md，有当前v1实际源码/固定hash/C2公开端口依据；只原Luna主目录三新工具+run，协议、隐私、计数域、资源/child关闭及真实验收窗口明确。待计划Git收尾派发；原Sol保持冻结待命，不给无依据新任务。main未验UI接线、远程模型质量/隐私选择、签名和干净Windows门保持开放。
+
+实际Git/派发补记（18:10）：C2三文件db0630edcf82dfab25478b1b156ca2f98c232717与六份接受/实施/协调文档ec40291b2400ed878ff4bb3bfa9e041240211c45已普通push exit0，ls-remote origin/main精确ec40291同本地，核对时main干净。原GitHub远端不变，无整体worktree合并或二进制公开。随后仅向原Luna派T2四新文件，实际新回合01a1013e-5aab-71c2-a3a0-e9af5f72486a已active，cursor a764dd3e-58c3-42dc-9d10-445092296241:5；Sol原冻结idle cursor b41d890d-ba14-44db-b63a-e0dcbec066a0:9。只派发未验工具，不制造Sol任务；本批重型窗口结束，开发普通协议回归可进行，正式测量待root窗口。
