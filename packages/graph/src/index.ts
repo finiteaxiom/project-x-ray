@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 import { createHash } from "node:crypto";
 import { RemoteExplanationStore, type GraphStoreRole } from "./remote-explanation-store.js";
+import { OwnershipCapsuleStore, OwnershipCapsuleStoreError, type OwnershipCapsuleWriteInput, type OwnershipSourceCapture, type PreparedOwnershipWrite, type OwnershipCapsuleRead } from "./ownership-capsule-store.js";
 export { RemoteExplanationStore, remoteStoreFailure, type GraphStoreRole } from "./remote-explanation-store.js";
 import {
   canonicalJson, canonicalSnapshotContent, canonicalSnapshotResult, IGNORE_POLICY_VERSION, projectIgnoreSettingsSchema, ignoreRulesSchema, SafeDiagnosticError, type ProjectIgnoreSettings,
@@ -38,15 +39,17 @@ function parseStoredSnapshot(payload: string): ProjectSnapshot {
 export class GraphStore {
   private readonly database: Database.Database;
   readonly remote: RemoteExplanationStore;
+  private readonly ownershipCapsules: OwnershipCapsuleStore;
 
   constructor(databasePath = ":memory:", role: GraphStoreRole = "project") {
     if (role !== "global" && role !== "project") throw new RemoteExplanationError("POLICY_INVALID");
     this.database = new Database(databasePath);
     this.remote = new RemoteExplanationStore(this.database, role);
+    this.ownershipCapsules = new OwnershipCapsuleStore(this.database, this);
     try {
       this.database.pragma("busy_timeout = 250");
       this.database.pragma("journal_mode = WAL");
-      this.migrate(); this.remote.migrate();
+      this.migrate(); this.remote.migrate(); this.ownershipCapsules.migrate();
     } catch (error) { this.database.close(); throw error; }
   }
 
@@ -537,6 +540,14 @@ export class GraphStore {
     return (this.database.prepare("SELECT payload FROM mastery_records WHERE snapshot_id = ? ORDER BY completed_at").all(snapshotId) as StoredSnapshotRow[]).map((row) => JSON.parse(row.payload) as MasteryRecord);
   }
 
+  captureOwnershipSource(repositoryId: string, snapshotId: string, ignoreRevision: number): OwnershipSourceCapture { return this.ownershipCapsules.captureSource(repositoryId, snapshotId, ignoreRevision); }
+  prepareOwnershipAttemptWithCapsule(input: OwnershipCapsuleWriteInput, settings: GraphStore = this): Promise<PreparedOwnershipWrite> {
+    if (!(settings instanceof GraphStore)) return Promise.reject(new OwnershipCapsuleStoreError());
+    return this.ownershipCapsules.prepare(input, settings);
+  }
+  savePreparedOwnershipAttempt(prepared: PreparedOwnershipWrite): void { this.ownershipCapsules.save(prepared); }
+  loadOwnershipCapsule(attemptId: string): Promise<OwnershipCapsuleRead> { return this.ownershipCapsules.load(attemptId); }
+
   saveOwnershipAttempt(attempt: OwnershipAttempt, ignoreRevision?: number): void {
     this.database.transaction(() => {
       if (ignoreRevision !== undefined) this.assertIgnoreRevision(attempt.repositoryId, ignoreRevision);
@@ -552,6 +563,7 @@ export class GraphStore {
   }
 
   close(): void {
+    this.ownershipCapsules.close();
     this.database.close();
   }
 }
