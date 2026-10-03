@@ -122,3 +122,5 @@ Sol S5仅application/index、ownership/index单行builder导出、新application
 Luna 3F-O只新增plans/2026-10-03-navigation-cache-observer.md与development-runs/2026-10-03-navigation-cache-observer-design.md。依据已接受3F/T及当前Application导航缺少observer的实际接缝，设计内部版本化可选只读observer API/事件/phase start-end覆盖、唯一最终决定、同准入estimator、回调异常/重入/禁用隔离和明确未来文件门。只读已提交1336862源码，避免与Sol S5活动文件竞争；不修改任何生产源码、T两文档、旧工具/fixture/AGENTS或运行索引/build。设计接受并且S5稳定后才可派Sol缓存；Luna新v2工具仍等待observer实现冻结。
 
 2026-10-03 11:12：S5首版冻结未通过，root独立五项失败确认四型真实索引身份投影缺陷及旧SQL消息断言冲突。按rubric-capsule计划最新精确九文件继续Sol同批修正S3/S4有限DTO接缝，保留完整source/config门和旧回滚/重试断言。未复制或提交S5；Luna原两文档继续，缓存和新测量工具尚未实施。GUI暂缓与远程/发布未验收不变。
+
+2026-10-03 11:35：S5九文件修订独立接受、main精确集成及十文件提交/推送18b6cbb，远端同SHA；main/Sol各298/298、三包类型、独立真实索引16次答题SQL探针通过。不是GUI或模型验收。root新C1三文件计划先建立GraphStore同连接token/本地代数，不触Application/observer或工具；O/T失败计数冲突另由Luna原四文档修订，保持全部语义/计数/性能门，不以inconclusive覆盖协议错误。重型窗口已释放，按冻结切片继续。

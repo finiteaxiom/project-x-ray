@@ -680,3 +680,21 @@ root读实际S5差异、S3完整捕获/身份转换、S4来源/current比较、�
 Sol续派后紧凑检查确认active新回合01a0ffc1-a804-7de0-86e5-b98207e784a6，实际cursor1e17a25b-f2eb-45a8-971e-2de888443e95:10；root本轮测试窗口已结束，允许其串行定向验证，未并发重型检查。
 
 root完整读Luna3F-O两个首稿并逐条对照冻结T：pull-only聚合避免回调/对象别名、lookup/build复用产品样本和计时外两marker可继续；未最终接受。已要求原两文档澄清lookup决定与安装后fresh API错误的区别，不能因API失败重写installed/hit/bypass事实而破坏等式；每个candidate失败时build_after实际样本与disabled行为一致，未采样必须显式缺覆盖而不补造unchanged；构建失败同时after外部变化不能把未准入失败改成discard来迁就T计数，必要协议冲突先报告；invalid admission只为failed子集，不能等同所有load失败。两首稿仍在最终复核/修订，未改冻结T或产品。实际cursor03a3ef91-aa4d-463e-af01-2e1bfafc662c:11。未跟进新第三批或重复已通过检查。
+
+本轮五份协调文档精确提交06396e7a35947303965f862f46be8be77180080e，git push origin main exit0；ls-remote origin/main精确同SHA。未纳入未验收S5、Luna两新稿或旧桌面/UI接线。最后紧凑检查两聊天active，Luna实际cursor03a3ef91-aa4d-463e-af01-2e1bfafc662c:12、Sol1e17a25b-f2eb-45a8-971e-2de888443e95:11。Sol报告已加真实SQLite空/非空规则红测，尚未root复验；Luna看到的四份额外tracked修改已明确为root协调改动，不是开发越界，继续原两稿澄清。没有重复构建/测试或修改定时器。
+
+## 2026-10-03 11:26–11:35：S5独立接受与协议修订
+
+先读当前规则、队列、审查与交接；main06396e7，原两聊天紧凑检查，Sol九文件已冻结idle，Luna两设计冻结后报告T/O失败计数冲突。Sol实际八源码/test及记录SHA256与最终交付全部相同；完整核对main逐文件差异、新36应用回归、S3/S4投影及旧S2a唯一固定错误断言、过程记录。原SQL故障、零写/原分/角色/重试/成功删题与旧安全门保持。
+
+root在Sol串行运行原11文件application/ownership/两契约/胶囊SQL命令：298/298通过、exit0、61.66秒；application/ownership/graph三包noEmit各exit0。精确九文件复制main前确认目标没有不相关tracked或untracked修改、复制后逐文件hash相等；main同命令298/298、11文件、exit0、59.61秒，三包noEmit各exit0。没有提高原时限或盲改快照。
+
+root自建ignored `ownership-application-independent.ts` 在Sol/main实际各exit0：两SQL布局×空/非空排除规则×四真实索引题型，完成16次原公开application答题；核对原grade、调用方不变、双INSERT回滚/同题重试、重开ready及prepare-only历史边界、真实快照/源码旧行不变、全摘要重算的policy身份错配仍拒绝且零新写。该探针调用真实索引/构造器/事务/导航源码接口，不执行自建项目代码，不访问GUI/provider。生产源前后hash保持。开发298项报告不替代上述独立结果。
+
+本地S5接受，十文件精确提交 `18b6cbb9ac6ba31afe96e54b53beb7bb94283b59`（九文件与AGENTS一条经验）；git diff --cached --check exit0，普通push exit0，ls-remote origin/main精确同SHA。未纳入Luna未接受稿、旧UI/desktop接线或root协调记录。公共经验新增1：完整身份→strict DTO的生成/来源核验明确同字段投影，真实空/非空配置索引→SQL→重开及伪造摘要负例；已查重，已有捕获/预算门不替代此接缝验证。GUI、自然语言质量、远程/签名/干净Windows边界保持。
+
+O首稿不能接受：T要求每个candidate after变化数与race discard相等，但loader/admission失败或超限candidate仍会观察真实变化；终态不得伪装discard。根因属计数域协议错误，不是已实现缓存缺陷。批准Luna原O两文档加T计划/记录最小四文档修订：race逐类不超过after同类，剩余变化/不可比较观察总数不超过failed/rejected/cancelled；无这些终态时恢复精确相等，installed不超过unchanged。全部次数/11门/4708/1177/三同调用pair/schema/限额保持。聚合不能证明逐candidate绑定，产品回归仍须检查同候选前后配对。关系违例是协议failed，不由inconclusive豁免；失败/拒绝/取消非零拒绝优化通过；合法真实事件不能因存在失败就声称丢覆盖。原四文档尚在修订，非接受/性能结果。
+
+基于已接受3F及S5稳定，root形成 `docs/plans/2026-10-03-navigation-cache-token.md`：下一稳定切片C1仅GraphStore取样API/保存代数、原graph index测试和独立run三文件。与O/T聚合协议无依赖，Application缓存/observer/工具仍等待独立门。root本轮重型窗口结束，不与开发活动文件并测；定时器沿用原ACTIVE，无重启或电脑操作。
+
+C1开工两目标main/Sol实际hash相同：graph/index.ts 7376BF3594FBE9B91907D699297C51CB7B7235D0B3D7B539CEE43C2B382DAA7F、graph/index.test.ts 860487ED9AD9DB4E6FA8BA0AFB934BB39540712836FB0F6E4DAFDEB47048BAE3。原Sol续派后确认active新回合01a0ffd5-895f-7ca0-9c24-f834d3a4cdda，实际cursor1e17a25b-f2eb-45a8-971e-2de888443e95:15；Luna O/T四稿修订active回合01a0ffd0-0029-7a52-84f9-a90917e886ab，cursor03a3ef91-aa4d-463e-af01-2e1bfafc662c:17。实例之间数字可相等但不能跨比较已明确；端口不宣称数字本身携带store身份。当前新批未验收，游标仅本次实测状态。
