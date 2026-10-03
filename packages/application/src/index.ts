@@ -15,7 +15,7 @@ import {
 import { TypeScriptAnalyzer } from "@project-xray/analyzer-typescript";
 import { PythonAnalyzer } from "@project-xray/analyzer-python";
 import { captureComparison, cloneRepository, comparisonStateFingerprint, getGitHead, type CapturedSide } from "@project-xray/git";
-import { GraphStore, overviewFromSnapshot, queryFlow, searchNodes } from "@project-xray/graph";
+import { GraphStore, overviewFromSnapshot, queryFlow, searchNodes, type NavigationValiditySample } from "@project-xray/graph";
 import { buildOwnershipRubricCapsule, createQuestions, gradeAnswer, type OwnershipRubricSource } from "@project-xray/ownership";
 import { canonicalJson, ownershipQuestionSchema, ownershipSubmissionSchema } from "@project-xray/contracts";
 import { RemoteExplanationApplication, type RemoteProviderPort, type RemoteCredentialPort } from "./remote-explanation.js";
@@ -31,6 +31,170 @@ export interface IndexOptions { signal?: AbortSignal; onProgress?: (progress: In
 export interface ComparisonOptions { signal?: AbortSignal; onProgress?: (progress: { phase: "capturing" | "analyzing-left" | "analyzing-right" | "diffing" | "propagating" | "persisting"; completed: number; total: number; currentFile?: string }) => void; testOnlySecureReadHooks?: SecureReadTestHooks }
 
 interface IndexedSource { absolutePath: string; projectPath: string; content: string; contentHash: string; language: string }
+
+const navigationLimit = 4_194_304 as const;
+const navigationPhases = ["coldNavigation", "warmNavigation"] as const;
+const navigationDecisions = ["hit", "empty_build_installed", "external_rebuild_installed", "local_rebuild_installed", "combined_rebuild_installed", "build_discard_external", "build_discard_local", "build_discard_combined", "build_discard_unclassified", "projection_limit_fallback", "transaction_bypass", "token_unavailable_bypass", "invalid_token_bypass", "store_closed_error", "legacy_bypass", "build_error_fallback", "lookup_error"] as const;
+const navigationOutcomes = ["unchanged", "external_only", "local_only", "both_changed", "unavailable", "invalid_type", "in_transaction", "closed"] as const;
+const navigationCheckpoints = ["phase_start", "lookup_validity", "build_before", "build_after", "after_last_lookup"] as const;
+type NavigationPhase = typeof navigationPhases[number];
+type NavigationApi = "getEvidence" | "readSource";
+type NavigationDecision = typeof navigationDecisions[number];
+type NavigationOutcome = typeof navigationOutcomes[number];
+type NavigationCheckpoint = typeof navigationCheckpoints[number];
+type NavigationRace = "external_only" | "local_only" | "both_changed" | "unclassified";
+type ValidNavigationSample = Extract<NavigationValiditySample, { status: "valid" }>;
+export interface NavigationCachePhaseSummaryV1 {
+  lookupDecisions: Record<NavigationApi, Record<NavigationDecision, number>>;
+  candidateBuilds: { attempted: number; installed: number; discarded: number; rejectedByAdmission: number; failed: number; cancelled: number };
+  buildRaceReasons: Record<NavigationRace, number>;
+  externalObservations: Record<NavigationCheckpoint, Record<NavigationOutcome, number>>;
+  externalObservationCoverage: { complete: boolean; checkpoints: Record<NavigationCheckpoint, boolean> };
+  projectionAdmission: { evaluatedCount: number; acceptedCount: number; acceptedBytesTotal: number; maxAcceptedBytes: number; overLimitCount: number; invalidCount: number; limitBytes: typeof navigationLimit };
+}
+export interface NavigationCacheObserverSummaryV1 { contractVersion: "xray.navigation-cache-observer.v1"; phases: Record<NavigationPhase, NavigationCachePhaseSummaryV1> }
+export interface NavigationCacheObservationScopeV1 {
+  beginPhase(phase: NavigationPhase, ref: SnapshotRef): void;
+  endPhase(phase: NavigationPhase): void;
+  getSummary(): NavigationCacheObserverSummaryV1;
+  dispose(): void;
+}
+interface NavigationContext extends SnapshotRef { store: GraphStore; rootPath: string; evidenceIndex?: Map<string, Evidence>; evidenceList?: Evidence[] }
+interface NavigationSlot extends NavigationContext { sample: ValidNavigationSample; evidenceIndex: Map<string, Evidence> }
+type NavigationProjection = { status: "accepted"; bytes: number; evidenceIndex: Map<string, Evidence> } | { status: "over_limit" | "invalid" };
+interface NavigationProbe { sample: NavigationValiditySample; covered: boolean }
+interface NavigationTrace {
+  decision: NavigationDecision;
+  lookup?: { outcome: NavigationOutcome; covered: boolean };
+  candidate?: { before: NavigationOutcome; beforeCovered: boolean; after: NavigationOutcome; afterCovered: boolean; terminal: "installed" | "discarded" | "rejectedByAdmission" | "failed"; admission?: { status: "accepted"; bytes: number } | { status: "over_limit" | "invalid" }; race?: NavigationRace };
+}
+interface NavigationPhaseState { name: NavigationPhase; ref: SnapshotRef; calls: Record<NavigationApi, number>; pending: number; started: boolean; ended: boolean; invalid: boolean; missing: Set<NavigationCheckpoint> }
+interface NavigationObservationRequest { phase: NavigationPhaseState; api: NavigationApi; settled: boolean; trace: NavigationTrace }
+const zeroNavigation = <T extends string>(keys: readonly T[]): Record<T, number> => Object.fromEntries(keys.map(key => [key, 0])) as Record<T, number>;
+function navigationPhaseSummary(): NavigationCachePhaseSummaryV1 {
+  return { lookupDecisions: { getEvidence: zeroNavigation(navigationDecisions), readSource: zeroNavigation(navigationDecisions) }, candidateBuilds: { attempted: 0, installed: 0, discarded: 0, rejectedByAdmission: 0, failed: 0, cancelled: 0 }, buildRaceReasons: zeroNavigation(["external_only", "local_only", "both_changed", "unclassified"]), externalObservations: Object.fromEntries(navigationCheckpoints.map(key => [key, zeroNavigation(navigationOutcomes)])) as NavigationCachePhaseSummaryV1["externalObservations"], externalObservationCoverage: { complete: false, checkpoints: Object.fromEntries(navigationCheckpoints.map(key => [key, false])) as Record<NavigationCheckpoint, boolean> }, projectionAdmission: { evaluatedCount: 0, acceptedCount: 0, acceptedBytesTotal: 0, maxAcceptedBytes: 0, overLimitCount: 0, invalidCount: 0, limitBytes: navigationLimit } };
+}
+function freezeNavigation<T>(value: T): T { if (value && typeof value === "object") { for (const item of Object.values(value)) freezeNavigation(item); Object.freeze(value); } return value; }
+function compareNavigation(before: ValidNavigationSample, after: NavigationValiditySample): NavigationOutcome {
+  if (after.status !== "valid") return after.status;
+  const external = before.dataVersion !== after.dataVersion, local = before.localSnapshotGeneration !== after.localSnapshotGeneration;
+  return external ? local ? "both_changed" : "external_only" : local ? "local_only" : "unchanged";
+}
+
+/** Pull-only aggregation. Requests retain their phase; no product references enter summaries. */
+class NavigationObservation implements NavigationCacheObservationScopeV1 {
+  private readonly summary: NavigationCacheObserverSummaryV1 = { contractVersion: "xray.navigation-cache-observer.v1", phases: { coldNavigation: navigationPhaseSummary(), warmNavigation: navigationPhaseSummary() } };
+  private readonly phases = new Map<NavigationPhase, NavigationPhaseState>();
+  private readonly recent = new WeakMap<GraphStore, ValidNavigationSample>();
+  private active: NavigationPhaseState | null = null;
+  private next = 0;
+  private disposed = false;
+  private broken = false;
+  constructor(private readonly markerStore: (ref: SnapshotRef) => GraphStore | undefined, private readonly probe: (store: GraphStore) => NavigationProbe, private readonly detach: () => void) {}
+  private fault(): void { this.broken = true; for (const state of this.phases.values()) state.invalid = true; }
+  private add(target: Record<string, number>, key: string, amount = 1): void {
+    if (this.broken) return;
+    const value = target[key]; if (!Number.isSafeInteger(value) || value! < 0 || !Number.isSafeInteger(amount) || amount < 0 || !Number.isSafeInteger(value! + amount)) { this.fault(); return; }
+    target[key] = value! + amount;
+  }
+  private observe(state: NavigationPhaseState, checkpoint: NavigationCheckpoint, outcome: NavigationOutcome, covered: boolean): void {
+    if (!covered) state.missing.add(checkpoint);
+    this.add(this.summary.phases[state.name].externalObservations[checkpoint], outcome);
+  }
+  comparison(store: GraphStore, probe: NavigationProbe, establish = false): NavigationOutcome {
+    const before = this.recent.get(store);
+    const outcome = probe.sample.status !== "valid" ? probe.sample.status : before ? compareNavigation(before, probe.sample) : establish ? "unchanged" : "unavailable";
+    if (probe.sample.status === "valid") this.recent.set(store, probe.sample);
+    return outcome;
+  }
+  beginPhase(name: NavigationPhase, rawRef: SnapshotRef): void {
+    if (this.disposed) return;
+    try {
+      if (name !== navigationPhases[this.next] || this.active) { this.fault(); return; }
+      const ref = { repositoryId: rawRef.repositoryId, snapshotId: rawRef.snapshotId };
+      if (typeof ref.repositoryId !== "string" || typeof ref.snapshotId !== "string") { this.fault(); return; }
+      const state: NavigationPhaseState = { name, ref, calls: { getEvidence: 0, readSource: 0 }, pending: 0, started: true, ended: false, invalid: false, missing: new Set() };
+      this.phases.set(name, state); this.active = state;
+      const store = this.markerStore(ref);
+      if (store) { const probe = this.probe(store); this.observe(state, "phase_start", this.comparison(store, probe, true), probe.covered); }
+      else this.observe(state, "phase_start", "unavailable", true);
+    } catch { this.fault(); }
+  }
+  endPhase(name: NavigationPhase): void {
+    if (this.disposed) return;
+    try {
+      const state = this.active;
+      if (!state || state.name !== name || state.ended) { this.fault(); return; }
+      state.ended = true;
+      if (state.pending) { state.invalid = true; state.missing.add("after_last_lookup"); return; }
+      const store = this.markerStore(state.ref);
+      if (store) { const probe = this.probe(store); this.observe(state, "after_last_lookup", this.comparison(store, probe), probe.covered); }
+      else this.observe(state, "after_last_lookup", "unavailable", true);
+      this.active = null; this.next++;
+    } catch { this.fault(); }
+  }
+  capture(api: NavigationApi, ref: SnapshotRef): NavigationObservationRequest | undefined {
+    if (this.disposed || this.broken) return;
+    try {
+      const phase = this.active;
+      if (!phase || phase.ended) { this.fault(); return; }
+      if (phase.ref.repositoryId !== ref.repositoryId || phase.ref.snapshotId !== ref.snapshotId) phase.invalid = true;
+      if (!Number.isSafeInteger(phase.pending + 1) || !Number.isSafeInteger(phase.calls[api] + 1)) { this.fault(); return; }
+      phase.pending++; phase.calls[api]++;
+      return { phase, api, settled: false, trace: { decision: "lookup_error" } };
+    } catch { this.fault(); return; }
+  }
+  settle(request: NavigationObservationRequest): void {
+    if (this.disposed) return;
+    try {
+      if (request.settled) { this.fault(); return; } request.settled = true;
+      const { phase, api, trace } = request, target = this.summary.phases[phase.name];
+      this.add(target.lookupDecisions[api], trace.decision);
+      if (trace.lookup) this.observe(phase, "lookup_validity", trace.lookup.outcome, trace.lookup.covered); else phase.missing.add("lookup_validity");
+      if (trace.candidate) {
+        const c = trace.candidate; this.add(target.candidateBuilds, "attempted"); this.add(target.candidateBuilds, c.terminal);
+        this.observe(phase, "build_before", c.before, c.beforeCovered); this.observe(phase, "build_after", c.after, c.afterCovered);
+        if (c.race) this.add(target.buildRaceReasons, c.race);
+        if (c.admission) {
+          this.add(target.projectionAdmission, "evaluatedCount");
+          if (c.admission.status === "accepted") { this.add(target.projectionAdmission, "acceptedCount"); this.add(target.projectionAdmission, "acceptedBytesTotal", c.admission.bytes); target.projectionAdmission.maxAcceptedBytes = Math.max(target.projectionAdmission.maxAcceptedBytes, c.admission.bytes); }
+          else this.add(target.projectionAdmission, c.admission.status === "over_limit" ? "overLimitCount" : "invalidCount");
+        }
+      }
+      phase.pending--;
+      if (phase.ended && phase.pending === 0 && this.active === phase) { this.active = null; this.next++; }
+    } catch { this.fault(); }
+  }
+  getSummary(): NavigationCacheObserverSummaryV1 {
+    // Keep even a faulted observer's pull result within the fixed, safe numeric contract.
+    const result: NavigationCacheObserverSummaryV1 = { contractVersion: "xray.navigation-cache-observer.v1", phases: { coldNavigation: navigationPhaseSummary(), warmNavigation: navigationPhaseSummary() } };
+    const copy = (target: object, source: object): void => {
+      for (const key of Object.keys(target)) {
+        const output = target as Record<string, unknown>, input = source as Record<string, unknown>, value = input[key];
+        if (typeof output[key] === "number") {
+          if (Number.isSafeInteger(value) && (value as number) >= 0) output[key] = value;
+          else this.fault();
+        } else if (output[key] && typeof output[key] === "object") {
+          if (value && typeof value === "object") copy(output[key] as object, value); else this.fault();
+        }
+      }
+    };
+    try { copy(result.phases, this.summary.phases); } catch { this.fault(); }
+    for (const name of navigationPhases) {
+      const state = this.phases.get(name), target = result.phases[name], coverage = target.externalObservationCoverage;
+      if (!state) continue;
+      const expected: Record<NavigationCheckpoint, number> = { phase_start: 1, lookup_validity: state.calls.getEvidence + state.calls.readSource, build_before: target.candidateBuilds.attempted, build_after: target.candidateBuilds.attempted, after_last_lookup: 1 };
+      for (const checkpoint of navigationCheckpoints) coverage.checkpoints[checkpoint] = !state.missing.has(checkpoint) && Object.values(target.externalObservations[checkpoint]).reduce((a, b) => a + b, 0) === expected[checkpoint];
+      coverage.complete = state.started && state.ended && state.pending === 0 && !state.invalid && !this.broken && Object.values(coverage.checkpoints).every(Boolean);
+    }
+    return freezeNavigation(result);
+  }
+  dispose(): void {
+    if (this.disposed) return;
+    if (this.active) this.active.invalid = true;
+    this.disposed = true; this.detach();
+  }
+}
 
 // Inspect complete data without executing accessors before yielding to asynchronous work.
 function captureOwnershipData<T>(input: T): T {
@@ -64,6 +228,8 @@ export class XRayApplication {
   private readonly questions = new Map<string, OwnershipQuestion>();
   private readonly gradingQuestions = new Set<string>();
   private ownershipClosed = false;
+  private navigationSlot: NavigationSlot | null = null;
+  private navigationObservation: NavigationObservation | null = null;
 
   constructor(options: XRayApplicationOptions) {
     this.legacyStore = new GraphStore(options.databasePath, "global");
@@ -92,6 +258,120 @@ export class XRayApplication {
   }
 
   getCurrentProject(): ProjectOverview | null { return this.current; }
+
+  openNavigationCacheObservationV1(): NavigationCacheObservationScopeV1 | null {
+    if (this.ownershipClosed || this.navigationObservation) return null;
+    const observation = new NavigationObservation(ref => this.snapshotStores.get(ref.snapshotId) ?? this.stores.get(ref.repositoryId), store => this.navigationProbe(store), () => { if (this.navigationObservation === observation) this.navigationObservation = null; });
+    this.navigationObservation = observation;
+    // A facade exposes no internal counters, tokens, request contexts, or product references.
+    return Object.freeze({ beginPhase: (phase: NavigationPhase, ref: SnapshotRef) => observation.beginPhase(phase, ref), endPhase: (phase: NavigationPhase) => observation.endPhase(phase), getSummary: () => observation.getSummary(), dispose: () => observation.dispose() });
+  }
+
+  private navigationProbe(store: GraphStore): NavigationProbe {
+    try {
+      const sample = store.sampleNavigationValidity();
+      if (!sample || typeof sample !== "object" || !["valid", "unavailable", "invalid_type", "in_transaction", "closed"].includes(sample.status)) return { sample: { status: "invalid_type" }, covered: true };
+      if (sample.status === "valid") {
+        if (!Number.isSafeInteger(sample.dataVersion) || sample.dataVersion < 0 || !Number.isSafeInteger(sample.localSnapshotGeneration) || sample.localSnapshotGeneration < 0) return { sample: { status: "invalid_type" }, covered: true };
+        return { sample: { status: "valid", dataVersion: sample.dataVersion, localSnapshotGeneration: sample.localSnapshotGeneration }, covered: true };
+      }
+      return { sample: { status: sample.status }, covered: true };
+    } catch { return { sample: { status: "unavailable" }, covered: false }; }
+  }
+
+  /** One estimator for the serialized identity/evidence projection, never the full graph. */
+  private projectNavigationSnapshot(snapshot: ProjectSnapshot): NavigationProjection {
+    let bytes: number;
+    try { bytes = Buffer.byteLength(JSON.stringify({ repositoryId: snapshot.repositoryId, snapshotId: snapshot.snapshotId, rootPath: snapshot.rootPath, evidence: [] }), "utf8"); }
+    catch { return { status: "invalid" }; }
+    if (!Number.isSafeInteger(bytes) || bytes < 0) return { status: "invalid" };
+    if (bytes > navigationLimit) return { status: "over_limit" };
+    const evidenceIndex = new Map<string, Evidence>();
+    for (const item of snapshot.evidence) {
+      if (evidenceIndex.has(item.id)) continue; // Preserve Array.find's first occurrence semantics.
+      try { bytes += Buffer.byteLength(JSON.stringify(item), "utf8") + (evidenceIndex.size ? 1 : 0); }
+      catch { return { status: "invalid" }; }
+      if (!Number.isSafeInteger(bytes) || bytes < 0) return { status: "invalid" };
+      if (bytes > navigationLimit) return { status: "over_limit" };
+      evidenceIndex.set(item.id, structuredClone(item));
+    }
+    if (!Number.isSafeInteger(bytes) || bytes < 0) return { status: "invalid" };
+    if (bytes > navigationLimit) return { status: "over_limit" };
+    return { status: "accepted", bytes, evidenceIndex };
+  }
+
+  private requireNavigation(ref: SnapshotRef, observation?: NavigationObservation, request?: NavigationObservationRequest): NavigationContext {
+    const trace = request?.trace;
+    const decide = (decision: NavigationDecision): void => { if (trace) trace.decision = decision; };
+    // Preserve requireSnapshot's original selection, lazy opening, and fallback order.
+    const known = this.snapshotStores.get(ref.snapshotId);
+    if (!known && this.projectDatabaseRoot && !this.stores.has(ref.repositoryId)) {
+      const databasePath = join(this.projectDatabaseRoot, `${ref.repositoryId}.sqlite`);
+      if (existsSync(databasePath)) this.stores.set(ref.repositoryId, new GraphStore(databasePath, "project"));
+    }
+    const project = this.stores.get(ref.repositoryId), store = known ?? project ?? this.legacyStore;
+    const before = this.navigationProbe(store);
+    if (trace && observation) trace.lookup = { outcome: observation.comparison(store, before), covered: before.covered };
+    const old = this.navigationSlot;
+    const matches = old?.store === store && old.repositoryId === ref.repositoryId && old.snapshotId === ref.snapshotId;
+    const change = matches && before.sample.status === "valid" ? compareNavigation(old.sample, before.sample) : "unchanged";
+    if (matches && before.sample.status === "valid" && change === "unchanged" && !this.ownershipClosed) { decide("hit"); return old; }
+    this.navigationSlot = null;
+    const load = (): { snapshot: ProjectSnapshot; sameStore: boolean } => {
+      let loadedFrom: GraphStore | undefined;
+      const read = (candidate: GraphStore | undefined): ProjectSnapshot | null | undefined => { const value = candidate?.loadSnapshot(ref.snapshotId); if (value) loadedFrom = candidate; return value; };
+      const snapshot = read(known) ?? read(project) ?? read(this.legacyStore);
+      if (!snapshot || snapshot.repositoryId !== ref.repositoryId) throw new Error("项目或快照不存在");
+      this.snapshotStores.set(ref.snapshotId, store);
+      return { snapshot, sameStore: loadedFrom === store };
+    };
+    const context = (snapshot: ProjectSnapshot): NavigationContext => ({ store, repositoryId: snapshot.repositoryId, snapshotId: snapshot.snapshotId, rootPath: snapshot.rootPath, evidenceList: snapshot.evidence });
+    if (before.sample.status !== "valid" || this.ownershipClosed) {
+      decide(this.ownershipClosed || before.sample.status === "closed" ? "store_closed_error" : before.sample.status === "in_transaction" ? "transaction_bypass" : before.sample.status === "invalid_type" ? "invalid_token_bypass" : "token_unavailable_bypass");
+      return context(load().snapshot);
+    }
+    let snapshot: ProjectSnapshot | undefined, projection: NavigationProjection | undefined, sameStore = false, legacy = false;
+    let failed = false, loadError: unknown;
+    let after: NavigationProbe = { sample: { status: "unavailable" }, covered: false };
+    const candidate: NonNullable<NavigationTrace["candidate"]> = { before: "unchanged", beforeCovered: before.covered, after: "unavailable", afterCovered: false, terminal: "failed" };
+    try {
+      const loaded = load(); snapshot = loaded.snapshot; sameStore = loaded.sameStore;
+      legacy = snapshot.analysisIdentity.graphIrVersion.startsWith("legacy-");
+      if (!legacy && sameStore && snapshot.snapshotId === ref.snapshotId) {
+        try {
+          projection = this.projectNavigationSnapshot(snapshot);
+          if (projection.status === "accepted" && (!Number.isSafeInteger(projection.bytes) || projection.bytes < 0 || projection.bytes > navigationLimit || !(projection.evidenceIndex instanceof Map))) projection = { status: "invalid" };
+          candidate.admission = projection.status === "accepted" ? { status: "accepted", bytes: projection.bytes } : { status: projection.status };
+          if (projection.status === "invalid") failed = true;
+        } catch { failed = true; }
+      } else if (!legacy) failed = true;
+    } catch (error) { failed = true; loadError = error; }
+    finally {
+      // Every attempted candidate samples after, even when load/admission fails, with or without observation.
+      if (!legacy) after = this.navigationProbe(store);
+    }
+    if (legacy && snapshot) { decide("legacy_bypass"); return context(snapshot); }
+    if (observation && request) observation.comparison(store, after);
+    candidate.after = compareNavigation(before.sample, after.sample); candidate.afterCovered = after.covered;
+    if (trace) trace.candidate = candidate;
+    if (failed || !snapshot || !projection) {
+      decide("build_error_fallback");
+      if (!snapshot) throw loadError;
+      return context(snapshot);
+    }
+    if (projection.status === "over_limit") { candidate.terminal = "rejectedByAdmission"; decide("projection_limit_fallback"); return context(snapshot); }
+    if (projection.status !== "accepted") { decide("build_error_fallback"); return context(snapshot); }
+    if (candidate.after !== "unchanged" || after.sample.status !== "valid" || this.ownershipClosed) {
+      candidate.terminal = "discarded";
+      candidate.race = candidate.after === "external_only" || candidate.after === "local_only" || candidate.after === "both_changed" ? candidate.after : "unclassified";
+      decide(candidate.race === "external_only" ? "build_discard_external" : candidate.race === "local_only" ? "build_discard_local" : candidate.race === "both_changed" ? "build_discard_combined" : "build_discard_unclassified");
+      return context(snapshot);
+    }
+    const installed: NavigationSlot = { store, repositoryId: snapshot.repositoryId, snapshotId: snapshot.snapshotId, rootPath: snapshot.rootPath, evidenceIndex: projection.evidenceIndex, sample: after.sample };
+    this.navigationSlot = installed; candidate.terminal = "installed";
+    decide(!matches ? "empty_build_installed" : change === "external_only" ? "external_rebuild_installed" : change === "local_only" ? "local_rebuild_installed" : "combined_rebuild_installed");
+    return installed;
+  }
 
   /** Trusted worker wiring only. No provider or credential reader is configured by default. */
   createRemoteExplanations(ports: { provider?: RemoteProviderPort; credentials?: RemoteCredentialPort; onTask?: (task: import("@project-xray/contracts").RemoteTaskRecord) => void } = {}): RemoteExplanationApplication {
@@ -279,7 +559,11 @@ export class XRayApplication {
   getModuleRelationEdges(input: ModuleRelationEdgesRequest): ModuleRelationEdgesResponse { return this.requireStore(input).listModuleRelationEdges(input); }
   search(input: SearchRequest): SearchResponse { return this.requireStore(input).search(input); }
   queryGraph(input: GraphQueryRequest): GraphQueryResponse { return this.requireStore(input).queryGraph(input); }
-  getEvidence(input: SnapshotRef & { evidenceId: string }): IdentifiedEvidence { const { snapshot, store } = this.requireSnapshot(input); const item = store.getEvidence(input.snapshotId, input.evidenceId); if (!item) throw new Error("证据不存在于指定快照"); return { ...item, repositoryId: snapshot.repositoryId }; }
+  getEvidence(rawInput: SnapshotRef & { evidenceId: string }): IdentifiedEvidence {
+    const observation = this.navigationObservation, input = { ...rawInput }, request = observation?.capture("getEvidence", input);
+    try { const navigation = this.requireNavigation(input, observation ?? undefined, request); const item = navigation.store.getEvidence(input.snapshotId, input.evidenceId); if (!item) throw new Error("证据不存在于指定快照"); return { ...structuredClone(item), repositoryId: navigation.repositoryId }; }
+    finally { if (request) observation?.settle(request); }
+  }
   findEvidence(input: SnapshotRef & { span: Evidence["span"]; limit: number; cursor?: string | undefined }): EvidenceRangeResponse { return this.requireStore(input).findEvidence(input.repositoryId, input.snapshotId, input.span, input.limit, input.cursor); }
 
   getFlow(ref: SnapshotRef, nodeId: string, depth = 3): FlowResult { return queryFlow(this.requireSnapshot(ref).snapshot, nodeId, depth); }
@@ -426,25 +710,30 @@ export class XRayApplication {
     return { ...ref, attempts, concepts: [...concepts.values()].sort((a,b) => a.label.localeCompare(b.label)).map((concept) => { const all = attempts.filter((item) => item.concept.id === concept.id); const current = all.filter((item) => item.snapshotId === snapshot.snapshotId && item.questionVersion !== "legacy"); const latest = current.at(-1) ?? all.at(-1); const status = current.some((item) => item.passed) ? "passed" as const : current.length ? "review" as const : all.length ? "needs-revalidation" as const : "unpracticed" as const; const variants = new Set(all.filter((item) => item.snapshotId === snapshot.snapshotId).map((item) => item.variantKey)); const variantAvailable = candidates.some((item) => item.concept.id === concept.id && !variants.has(item.variantKey)); return { concept, status, attempts: all.length, ...(latest ? { lastAttemptAt: latest.completedAt, lastQuestionId: latest.questionId } : {}), variantAvailable }; }) };
   }
 
-  async readSource(location: EvidenceLocation): Promise<SourceFileResult> {
-    const { snapshot, store } = this.requireSnapshot(location); const stored = store.readSnapshotSource(snapshot.snapshotId, location.filePath);
+  async readSource(rawLocation: EvidenceLocation): Promise<SourceFileResult> {
+    const observation = this.navigationObservation, location = { ...rawLocation }, request = observation?.capture("readSource", location);
+    try {
+    const navigation = this.requireNavigation(location, observation ?? undefined, request), store = navigation.store;
+    const stored = store.readSnapshotSource(navigation.snapshotId, location.filePath);
     if (!stored) throw new Error("该快照没有保存此源码文件");
     const targetSpan = { filePath: location.filePath, startLine: location.startLine, startColumn: location.startColumn, endLine: location.endLine, endColumn: location.endColumn };
-    const item = location.evidenceId ? snapshot.evidence.find((candidate) => candidate.id === location.evidenceId) : undefined;
+    const selected = location.evidenceId ? navigation.evidenceIndex?.get(location.evidenceId) ?? navigation.evidenceList?.find(candidate => candidate.id === location.evidenceId) : undefined;
+    const item = selected ? structuredClone(selected) : undefined;
     if (location.evidenceId && (!item || item.span.filePath !== location.filePath)) throw new Error("证据不属于指定快照或文件");
     const opensEmptyFile = stored.content.length === 0 && item?.kind === "file" && sameSpan(targetSpan, item.span) && targetSpan.startLine === 1 && targetSpan.startColumn === 0 && targetSpan.endLine === 1 && targetSpan.endColumn === 0;
     if (!opensEmptyFile) assertSpanWithinContent(targetSpan, stored.content);
     let workspaceStatus: "current" | "stale" | "missing" | "unavailable" = "current"; let currentHash: string | undefined;
     try {
-      const policy = createIgnorePolicy(this.storeForRepository(snapshot.repositoryId).loadIgnoreSettings(snapshot.repositoryId).rules);
+      const policy = createIgnorePolicy(this.storeForRepository(navigation.repositoryId).loadIgnoreSettings(navigation.repositoryId).rules);
       if (["secret", "ignored"].includes(classifyProjectPath(location.filePath, policy))) workspaceStatus = "unavailable";
-      else { currentHash = contentFingerprint(await readProjectFile(snapshot.rootPath, location.filePath)); if (currentHash !== stored.contentHash) workspaceStatus = "stale"; }
+      else { currentHash = contentFingerprint(await readProjectFile(navigation.rootPath, location.filePath)); if (currentHash !== stored.contentHash) workspaceStatus = "stale"; }
     }
     catch (error) { workspaceStatus = error instanceof Error && (error as NodeJS.ErrnoException).code === "ENOENT" ? "missing" : "unavailable"; }
-    return { repositoryId: snapshot.repositoryId, snapshotId: snapshot.snapshotId, filePath: location.filePath, language: stored.language, content: stored.content, contentHash: stored.contentHash, workspaceStatus, ...(currentHash ? { currentHash } : {}), targetSpan, ...(item ? { evidence: item } : {}) };
+    return { repositoryId: navigation.repositoryId, snapshotId: navigation.snapshotId, filePath: location.filePath, language: stored.language, content: stored.content, contentHash: stored.contentHash, workspaceStatus, ...(currentHash ? { currentHash } : {}), targetSpan, ...(item ? { evidence: item } : {}) };
+    } finally { if (request) observation?.settle(request); }
   }
 
-  close(): void { this.ownershipClosed = true; this.questions.clear(); for (const store of new Set([this.legacyStore, ...this.stores.values()])) store.close(); }
+  close(): void { this.navigationSlot = null; this.navigationObservation?.dispose(); this.ownershipClosed = true; this.questions.clear(); for (const store of new Set([this.legacyStore, ...this.stores.values()])) store.close(); }
 
   private async analyzeComparisonSide(base: ProjectSnapshot, side: CapturedSide, policy: IgnorePolicy, ignoreRevision: number, signal?: AbortSignal, progress?: (completed: number, total: number, currentFile: string) => void): Promise<ProjectSnapshot> {
     const sources: IndexedSource[] = side.sources.map((item) => ({ absolutePath: resolve(base.rootPath, item.projectPath), projectPath: item.projectPath, content: item.content, contentHash: item.contentHash, language: item.language }));
