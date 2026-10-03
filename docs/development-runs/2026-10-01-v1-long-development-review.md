@@ -802,3 +802,27 @@ root23项/2文件（775ms）与同一完整严格类型命令通过。原三真�
 形成2026-10-04-windows-release-preparation.md，root审查当前实际字段与迁移10/11后仅派设计阶段：Luna主checkout新增artifact manifest两文档；Sol原worktree新增upgrade preservation两文档。无源码/依赖/build/GUI写操作授权，本阶段根计划先明确目标/依据/优先级/文件/完成门，后续设计独立接受再实施。只将此一新计划精准复制Sol，双侧hash88A46AFAC576033E732B2EBDC63B5812573EB0251DAB968AF78A9580486FB755；不覆盖规则/旧代码。GraphStore与capsule store双侧字节相同；remote storehash不同但git diff --no-index exit0无内容差异，换行差别已明确，不宣称三个字节hash均同。
 
 原Luna新回合01a102ab-f5ff-7793-9aa0-3a6226bb1904 active，实际cursor5f905603-9e05-4a70-bae4-5e6a5162a670:3；原Sol新回合01a102ab-f6fc-7b10-a650-296365cd52d0 active，实际cursorcfe7da2a-d1e4-4a1f-9168-182cb9c80d36:2。暂未交付，不读取/验收活动设计，不用已接受4A替代本轮真实材料。协调计划与当前记录另精确提交；未纳入任何开发中的新设计，原定时任务继续，不重复已接受T2或暂停可推进队列。
+
+最终协调计划四文件提交95ebbd3b0dc88107b5b54e172138cb8685bd1bcb，普通push exit0，ls-remote origin/main精确同SHA；核对时main干净。T2源码在前提交cc74483，未纳入两个活动设计。此实际收尾凭据补记留下一次稳定记录提交，无新产品验收或GUI结果。
+
+00:52后紧凑检查：两设计仍原回合active，实际Luna cursor5f905603-9e05-4a70-bae4-5e6a5162a670:4、Sol cursorcfe7da2a-d1e4-4a1f-9168-182cb9c80d36:3。分别确认当前发布脚本/基线和构造时迁移边界，尚无冻结交付；只保留原批，不运行重型检查或读取活动设计，不重复T2验收/通知。main仍95ebbd3，待提交仅root实际收尾补记，GUI/外部门保持。
+
+## 2026-10-04 01:09：升级保护设计首稿源码复审
+
+先读规则/当前队列/审查/交接与实际Git，main95ebbd3，待提交仅root记录。wait携最近实际cursor确认Sol首稿completed/idle，cursorcfe7da2a-d1e4-4a1f-9168-182cb9c80d36:4；Luna原manifest设计active，cursor5f905603-9e05-4a70-bae4-5e6a5162a670:5。不读Luna活动稿或把旧dist计数当本轮产物验收。
+
+root读取Sol实际两文件及Git/规则边界：windows-upgrade-preservation.md hash3F404EDF9BECEB79D75B4EF5CA8B9076F21C0E4970A00F47E46A4992DA15EC5C，run hash3BE1A15A3CADD6CCC35F77728A33DCD30DAD6BF29C24E1546DEBC12E5FF64AEB；原核心hash保持，旧未提交代码保留。独立main/Sol源码复查constructor三段迁移、8/9实际顺序、overview补写/global→project/catch/lazy-open、当前11与旧capsule回归依据，主体描述相符；没有运行数据库、测试、backup、native或GUI，不确认数据损坏。
+
+发现需要两项明确修订：文档把Sol未整体集成的startOwnedApplication/ExplanationPolicy/explanation-worker引用与main已有入口并列，复制main后会造成基线歧义；WAL真实child切片缺少明确两文件内实现及有限启动/总时限、退出等待、终止/取消/失败完成标记与清理门。已附实际main whenReady→broker→analysis-worker和Sol源码依据派回同两文档，保留其原保护/未来版本/角色门，不派产品实现或放宽断言。修订回合01a102bd-d38d-77d3-ad22-9218d9355913已active，Sol最新cursor:5；Luna仍原active:5。首稿未接受/未集成，暂无新产品验收、Git动作或AGENTS规则；GUI与外部门不变。
+
+## 2026-10-04 01:30：升级保护修订设计接受与4B-A派发
+
+本轮先读实际规则/队列/最新记录/Git，再以最近实际游标紧凑检查。Luna首稿与Sol修订稿均冻结idle，最新实际cursor分别5f905603-9e05-4a70-bae4-5e6a5162a670:6、cfe7da2a-d1e4-4a1f-9168-182cb9c80d36:6。main HEAD及实际origin/main仍95ebbd3b0dc88107b5b54e172138cb8685bd1bcb。没有重复T2回归或读取活动改动；当前只审查文档及对应稳定源码。
+
+root完整读查Sol两份修订稿，实际hash92EEE06846BB54D64F6D191E3D82CCF2D27425B63CA447273C7F8503F860974B /20EF15C94A89C3D3D4493583FAA6E1DF91127C7510F486A65454588109B5C583，核心GraphStore/application实际hash853DA337…/855105B4…保持。修订明确main whenReady→AnalysisBroker→analysis-worker及Sol待集成policy/ownership路径的不同；WAL child限定graph测试内固定代码，ready5秒/阶段15秒/终止close额外5秒/新测试25秒，committed后只本轮PID树强杀，确认close才复制，main-only负对照与完整恢复，异常无完成marker、未退出不删根。结合此前独立源码及本轮constructor/迁移/overview/current与打开路径核查，接受设计；未运行SQLite、child或backup，绝不称升级成功。复制main前确认目标不存在，精确复制两文件后hash一致，未覆盖其他成果。
+
+依据已接受设计新增2026-10-04-upgrade-preservation-fixtures-plan.md，hash62DD9C524613EDEA337258746EC7AAC4F284306DAE1285A02572C498206BF9A3，精确复制原Sol目录并核一致。明确仅两个新测试及一个记录、raw结构/当前11/三库/真实故障/WAL/还原/资源门及独立复验，核心/桌面/依赖/旧测试/AGENTS冻结。设计B的“新授权”解释为既有用户授权下root后续具体范围审查，不向用户重复请求开发许可。原Sol实施回合01a102d1-24c0-7c13-b520-db29f57b25a9已active，cursor:7；未验实现不提交。
+
+Luna首稿完整读查时hashA10E2E462A0CE7AF513462B573C80369CBD0F937136408371FA4E2B1E28AB7E4 /F58CD80FDE6034827C6F8D43E82FDE9EFF8171A3674D5BC308CEC52983C210E1。其两个artifact根、声明SHA/来源关联分离、逐文件/签名原Status/架构/未接线边界方向合适，但实施前置仍不完整：安全reader仅条件描述却未列依赖，缺实际签名子进程/扫描有限生命周期，出现未定义source-root及checkout比较隐含读取根。root实读secure-read.ts与secure_reader.cc确认两层2,000,000字节上限，native采用允许共享写/删除的源码句柄；不能复用为2GiB artifact/ASAR/Authenticode对应字节保证。派原两文档明确分阶段/reader前置、签名与ASAR对象对应、有限child时限/取消/输出上限、两root契约及实际sqlite候选选择规则；不授权新native/CLI，不用realpath前后检查替代根句柄约束。原Luna修订回合01a102cf-2e08-71f1-b762-cfde536f6761 active，cursor:7，首稿未接受/未提交。
+
+一次rg使用PowerShell未展开的glob路径导致读查exit1，随后以rg --files及精确路径找到/读取实际文件；是命令路径问题，不是产品或测试失败。此轮仅静态设计接受与实施派发，无新代码/回归/GUI/性能验证；AGENTS新增0。真实GUI及远程、生产库、安装升级卸载、签名/干净Windows/公开发布门保持未验。

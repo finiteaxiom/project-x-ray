@@ -165,3 +165,11 @@ Sol修正回合已确认active。Luna首稿root完整读后，继续原两文档
 已实现/独立代码与回归已验证：本地导航v2测量CLI及完整响应核验，工具四文件可精确收尾。用户可运行`pnpm exec tsx benchmarks/local-index-navigation-optimized.ts --pairs 3 --timeout-ms 180000`，仅固定自有样例，不执行样例代码。真实GUI已验证本轮0；原产品导航/当前性/取消恢复GUI、远程质量与隐私选择、安装升级卸载、签名和干净Windows仍未验。原两线程idle，最新真实游标Luna5f905603-9e05-4a70-bae4-5e6a5162a670:2、Solcfe7da2a-d1e4-4a1f-9168-182cb9c80d36:1；不重做已接受C2。AGENTS新增0，反馈闭环已有规则覆盖。Git实际SHA/推送与下批发布质量计划待本轮收尾补记，不提交未验UI。
 
 00:50实际版本：T2接受八文件提交cc74483ade71b715268dad0e93fa4e9713d0b4b2；普通push返回锁ref非零，但随后的ls-remote证实远端main已精确同SHA，未强推。不把失败码改写为成功，已核实远端具有此版本。下批计划2026-10-04-windows-release-preparation.md已按当前代码缺口派原双线程：Luna候选产物来源/结构/签名manifest设计，Sol当前schema11升级前数据保护设计，两者各两新文档，先独立审查再实施，安装/GUI仍未验。原两新回合已active，实际完整游标分别Luna5f905603-9e05-4a70-bae4-5e6a5162a670:3、Solcfe7da2a-d1e4-4a1f-9168-182cb9c80d36:2（回合/基线/hash见review）。协调方仅复制新根计划进Sol目录，保留所有旧实现；本批暂无新设计交付，未制造无依据重构或打包未验功能。
+
+本轮最终协调计划提交95ebbd3b0dc88107b5b54e172138cb8685bd1bcb已普通push exit0、远端精确同SHA，包含T2接受版本cc74483。原两设计继续active，未纳入活动成果或旧UI接线；真实GUI/外部未验清单不变。
+
+01:09：Sol升级保护设计首稿冻结后已由root逐项对照实际main/Sol源码，要求同两文档澄清已集成/待集成启动入口以及两测试文件内WAL child的有限生命周期；原修订回合已active，尚未接受或实施备份。Luna原manifest设计继续active、未冻结。两最新cursor均后缀5（完整及原稿hash见review）；main95ebbd3，只新增root审查补记，无测试/数据库操作/GUI/Git或规则新增，不重复T2通知。
+
+01:30：Sol升级保护修订设计经root实际两文件/对应源码复查后接受并精确复制main（hash/入口区别/WAL有限child门见review），不是backup/升级运行成功。新的4B-A具体计划已形成并精确复制Sol，原聊天继续仅两自有夹具测试及记录：真实迁移、WAL崩溃/还原、current/partial/ownership保留和三库失败现状；生产库和核心不改，交付后root独立复验。Lunamanifest首稿因安全reader依赖、签名child有限资源及隐含source读取根需修订，已派同两文档，不启动CLI/native/打包。两原聊天active，实际cursor均后缀7（完整见review），main及远端仍95ebbd3。
+
+本轮已实现：仅审查后的设计/实施计划；独立代码与回归验证：没有新增产品结果；真实GUI：0，继续暂缓。用户可查看2026-10-04-upgrade-preservation-fixtures-plan.md理解下一技术验证边界，尚无产品升级保护可操作路径。旧未验UI/安全接线保留，远程质量/隐私选择、生产数据保护、安装升级卸载、签名/干净Windows和公开发布仍未验。AGENTS无新增规则，当前仅源码调查/设计，尚无新复现实验；未纳入Luna未接受文档或Sol活动实现的Git范围。
