@@ -796,3 +796,9 @@ root23项/2文件（775ms）与同一完整严格类型命令通过。原三真�
 真实整工具预取消/运行中取消与原CLI5000ms超时通过；真实child关闭、剩余pair不启动、取消/超时不算性能通过。具体唯一runId与命令见专项独立记录。T2四文件独立接受，可精确Git收尾；GUI本轮0仍按用户暂缓，不提交未验界面，不执行远程/凭据/安装发布。AGENTS新增0，证据/完整结果门已有覆盖，具体反馈闭环保留。
 
 接下来先核对第四批当前源码差距：已有portable结构脚本没有源码提交/完整文件hash/Authenticode状态门，也没有Windows凭据模块检查；旧4A的schema9/无凭据实现描述已过时。root只读确认GraphStore构造顺序migrate→remote.migrate→ownershipCapsules.migrate，以及应用全局/项目库打开边界，当前无backup端口。依据这些可推进的发布质量缺口形成分目录设计/实施计划，不把未验安全接线或旧TODO转为已完成，重型窗口已结束。
+
+00:50实际Git与下批派发补记：T2接受八文件exact staged/check后提交cc74483ade71b715268dad0e93fa4e9713d0b4b2。普通push返回非零：remote lock预期5264f39但远端已为同一cc74483；随后独立ls-remote核对origin/main精确cc74483同本地、工作区干净。因此记录“远端已具有实际提交”，不把该push的失败码写成exit0，也不强推或重试覆盖。
+
+形成2026-10-04-windows-release-preparation.md，root审查当前实际字段与迁移10/11后仅派设计阶段：Luna主checkout新增artifact manifest两文档；Sol原worktree新增upgrade preservation两文档。无源码/依赖/build/GUI写操作授权，本阶段根计划先明确目标/依据/优先级/文件/完成门，后续设计独立接受再实施。只将此一新计划精准复制Sol，双侧hash88A46AFAC576033E732B2EBDC63B5812573EB0251DAB968AF78A9580486FB755；不覆盖规则/旧代码。GraphStore与capsule store双侧字节相同；remote storehash不同但git diff --no-index exit0无内容差异，换行差别已明确，不宣称三个字节hash均同。
+
+原Luna新回合01a102ab-f5ff-7793-9aa0-3a6226bb1904 active，实际cursor5f905603-9e05-4a70-bae4-5e6a5162a670:3；原Sol新回合01a102ab-f6fc-7b10-a650-296365cd52d0 active，实际cursorcfe7da2a-d1e4-4a1f-9168-182cb9c80d36:2。暂未交付，不读取/验收活动设计，不用已接受4A替代本轮真实材料。协调计划与当前记录另精确提交；未纳入任何开发中的新设计，原定时任务继续，不重复已接受T2或暂停可推进队列。
