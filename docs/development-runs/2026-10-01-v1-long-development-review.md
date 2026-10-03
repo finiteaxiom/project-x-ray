@@ -750,3 +750,21 @@ C2后台切片独立接受，核对exact三文件cached diff/check后提交db063
 root已形成T2实施计划2026-10-03-navigation-optimized-tool.md，有当前v1实际源码/固定hash/C2公开端口依据；只原Luna主目录三新工具+run，协议、隐私、计数域、资源/child关闭及真实验收窗口明确。待计划Git收尾派发；原Sol保持冻结待命，不给无依据新任务。main未验UI接线、远程模型质量/隐私选择、签名和干净Windows门保持开放。
 
 实际Git/派发补记（18:10）：C2三文件db0630edcf82dfab25478b1b156ca2f98c232717与六份接受/实施/协调文档ec40291b2400ed878ff4bb3bfa9e041240211c45已普通push exit0，ls-remote origin/main精确ec40291同本地，核对时main干净。原GitHub远端不变，无整体worktree合并或二进制公开。随后仅向原Luna派T2四新文件，实际新回合01a1013e-5aab-71c2-a3a0-e9af5f72486a已active，cursor a764dd3e-58c3-42dc-9d10-445092296241:5；Sol原冻结idle cursor b41d890d-ba14-44db-b63a-e0dcbec066a0:9。只派发未验工具，不制造Sol任务；本批重型窗口结束，开发普通协议回归可进行，正式测量待root窗口。
+
+## 2026-10-03 18:18：T2独立报告复算准备
+
+已读当前规则/队列/审查/交接；main实际HEAD 7a2e2b830bec85d3e8051acd18fd27ba768b3ae9（上轮三份派发记录提交普通推送及远端相同已实际核对），本轮检查时工作区干净。原Luna T2 active未冻结，最新cursor a764dd3e-58c3-42dc-9d10-445092296241:7，已核对当前Git前进仅登记提交且C2/v1冻结hash一致；Sol仍idle cursor b41d890d-ba14-44db-b63a-e0dcbec066a0:9。无新交付，不重派/中断或制造Sol任务；不读取/运行正在实施的工具文件。
+
+root只读接受O/T字段/计数域和旧v1源码，准备ignored navigation-optimized-report-independent.cjs，最终SHA256 5AE567036CED32CCAB51ACFBB5E80F1F4F4CBABCDC074271282B0E8FF33DC8A9。它不导入工具或产品，将来对真实三配对成功报告独立核对7个根计数、同环境/child关闭、原11门、每API1177/4708、真实storage load分项/≤2、observer/checkpoint/candidate唯一终态、O/R/Delta、admission预算、heap及空metric边界；只是额外算术复算，不能替代工具严格schema验证、实际源码/CLI/challenge/取消/超时验收。
+
+准备阶段纯控制数据检查：13个整体/summary正负例通过，随后新增根计数检查的8个纯正负例通过，最终node --check exit0且check-ignore确认ignored。所有数据明确synthetic，realReportChecked=false、productExecuted=false；没有运行产品、实际medium、三配对或GUI，不将21个控制例称工具回归通过。C2和五个v1冻结hash重新读取均保持。无本轮产品验收/性能结果、重型检查、Git动作或新AGENTS经验。两份root记录补记留待下一稳定收尾；T2工具和正式性能/GUI等原门仍开放。
+
+18:29紧凑检查：Luna T2仍active，最新实际cursor a764dd3e-58c3-42dc-9d10-445092296241:8；已开始新增parent/child两个工具文件，尚无测试/记录或稳定交付，未读取/运行活动源码。Sol保持idle cursor b41d890d-ba14-44db-b63a-e0dcbec066a0:9。main仍7a2e2b8，待提交范围为root两记录及上述Luna活动未跟踪文件；未提交未验工具。独立报告与SQLite验收准备已具备，无进一步具体不冲突动作，保持原批继续，不制造任务/重复测试；本轮无新验收、GUI、Git或规则，不另行用户播报。
+
+## 2026-10-03 19:04：旧baseline严格类型缺陷独立修正
+
+原Luna T2 active未冻结，最新cursor a764dd3e-58c3-42dc-9d10-445092296241:11；原Sol idle b41d890d-ba14-44db-b63a-e0dcbec066a0:9。开发方反馈旧helper TS2379后，root单独strict+exactOptionalPropertyTypes检查benchmarks/local-index-baseline.ts独立复现exit1，根因为759调用显式传入可undefined的signal。关闭该选项只能诊断，不接受为严格通过。
+
+先在T2计划记录精确协调方例外，通知Luna保持四新文件边界，然后仅一行改为缺省时省略signal、存在时原样传递。原类型不放宽、旧测试/计量/fixture/报告不改。root同命令exit0；baseline、samples、原navigation-diagnostic三文件24项回归通过（4.04s），diff/check通过，源码差异仅一行。helper新hash5F437278E5148EFFA662BC736B1704C8EB1BC1652D703F060C60F04B69BB9FE7，旧v1三文件及samples全部冻结hash保持，已通知Luna复验完整严格门。详见2026-10-03-baseline-signal-type-fix.md。
+
+此小切片独立接受，AGENTS新增0（严格类型/不得降门已有覆盖）。未读取或运行Luna活动工具，不以开发方22项测试或诊断检查改写T2接受；真实CLI/challenge/三配对性能、GUI等原开放门不变。Git仅安排接受helper和协调记录精确收尾，未纳入活动新工具或Sol旧界面。

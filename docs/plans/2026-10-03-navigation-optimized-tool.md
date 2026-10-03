@@ -25,6 +25,12 @@
 
 ## 完成门与运行窗口
 
+### 2026-10-03 严格类型门修正边界
+
+协调方独立对既有 `benchmarks/local-index-baseline.ts` 运行严格 TypeScript 检查，确认第759行调用中 `signal: AbortSignal | undefined` 显式赋给 `signal?: AbortSignal`，违反 `exactOptionalPropertyTypes`，TS2379。这是一处既有帮助函数的类型缺陷，T2只读复用将其带入完整检查；关闭该选项只作为诊断，不能作为通过。
+
+批准协调方单独仅修改这一调用：缺省signal时省略该属性，有signal时原样传递。不改变受控进程、取消、协议、样例或计量语义，不放宽类型或断言。Luna仍仅写上述四新文件；旧v1三文件、fixture、报告继续冻结。完成门为同一严格命令通过、baseline及samples与原v1工具回归通过、实际差异仅这一处行为等价修正。修正后的帮助函数hash由协调方复验记录并通知Luna，不以旧hash阻止已审查修正。记录见 `docs/development-runs/2026-10-03-baseline-signal-type-fix.md`；无新增工程经验规则。
+
 使用 schemaVersion 2 与 XRAY_NAVIGATION_OPTIMIZED_V2:，严格 exact-key 校验 child/summary/report。固定 medium128，每阶段两 API 各完整 1,177 次，单配对两阶段共 4,708 次调用；保留全部响应/source/span/hash/归属/顺序和原 11 语义门。只计实际导航 full-load，索引/current/replay/gate 另计。完整可比且无 external/both 的两轮 full-load 合计 ≤2；不通过平均数、抽样、漏调用或更改 v1 达门。
 
 begin/end 在导航 wall/API 计时外，使用真实 scope 聚合。保留候选唯一终态、封存 resolver 决定、O/R/Delta 与 admission 全关系，以及 failure 优先级：完整关系违例、语义失败或 failed/rejected/cancelled 非零均 failed；只有其余门成立且确实缺覆盖/可比较分类才观测不足；完整 external/both 为外部变化不可比较，不能抹去。真实聚合不证明逐 candidate 绑定，产品 C2 回归负责该门。

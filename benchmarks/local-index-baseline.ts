@@ -759,7 +759,7 @@ export async function runBaseline(options: CliOptions, signal?: AbortSignal): Pr
     const run = await runControlledChild(process.execPath, ["--import", "tsx", childPath, "--run-id", root.id, "--run-number", String(runNumber), "--sample-id", sample.id], {
       cwd: repoRoot,
       timeoutMs: Math.min(remainingMs, MAX_TIMEOUT_MS),
-      signal,
+      ...(signal === undefined ? {} : { signal }),
       protocol: true,
       expectedSample: sample.kind,
     });

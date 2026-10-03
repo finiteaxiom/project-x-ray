@@ -145,3 +145,9 @@ Sol修正回合已确认active。Luna首稿root完整读后，继续原两文档
 已实现/独立代码回归已验证：仅已有getEvidence/readSource后台私有缓存与可选只读观察端口，仍逐次取证据/源码/设置及工作区校验。真实GUI已验证：本轮0，用户临时暂缓仍有效。正式性能、用户实际导航交互、远程质量/隐私选择与Windows发布外部门继续未验收。root T2计划就绪，原Luna仅三新工具+run；正式CLI及三配对由协调窗口执行，不能把48响应小样例当1177门或泛化提速结论。用户可沿原导航路径使用当前源码成果，界面行为须恢复电脑操作后补验。
 
 18:10实际收尾：C2 db0630e及六份接受/实施文档ec40291b2400ed878ff4bb3bfa9e041240211c45已普通push成功，远端精确ec40291同main，核对时干净。原Luna T2新回合已active（cursor后缀5，完整见review）；Sol冻结idle后缀9。未验工具仅按四新文件实施，无其他新产品/重型任务；后续原15分钟heartbeat按当前实际队列收交付并独立验证，真实GUI和正式性能未验收清单保持。
+
+18:18：main实际7a2e2b830bec85d3e8051acd18fd27ba768b3ae9，原Luna T2 active未冻结、最新cursor后缀7；Sol idle后缀9，完整见review。root准备额外独立报告算术校验器，仅用13个整体/summary与8个新增根计数synthetic控制例检查自身，不运行产品/工具或真实报告，不称T2/性能通过。C2/v1冻结hash保持；无新产品验收、GUI、Git动作或工程规则，两份root补记待稳定收尾。下一步仍待T2冻结，再审查实际工具并安排真实CLI/三配对单窗口。
+
+18:29：Luna T2 active，最新cursor后缀8（完整见review），两工具活动文件已创建但未冻结；Sol仍idle后缀9。main仍7a2e2b8，root不运行/提交未验工具，不重复已通过回归或制造任务。现有独立准备等待稳定交付；GUI、正式性能及其他原未验门不变，本轮无新验收/Git/工程规则。
+
+19:04新增独立结果：旧baseline帮助函数signal可选属性的TS2379已独立复现并按T2计划精准例外修正，仅缺省时省略属性。strict/exactOptionalPropertyTypes原命令exit0，旧baseline/samples/v1导航三文件24项回归通过；冻结v1/fixture/报告保持。新helper hash5F437278…完整见review及2026-10-03-baseline-signal-type-fix.md，已通知Luna重新走完整严格门，不把关闭选项的诊断称通过。AGENTS新增0。Luna T2 active未冻结cursor后缀11，Sol idle后缀9；正式工具、CLI/challenge/三配对及GUI仍未验，未提交其活动实现。
