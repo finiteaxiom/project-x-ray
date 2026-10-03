@@ -632,3 +632,15 @@ Sol实际新增ownership-capsule.ts、semantic-rubric.ts及其测试已经落文
 prepare仍以完整原题/尝试强校验，私有一次receipt和同步权威保存强门不变。read为Promise，在短同步读事务捕获同源attempt/capsule/必要历史快照与节点/边/proof/源码私有一致材料，退出事务再用现有公开async rubric/limitation/answer/projection函数验证，不在SQL锁内await或复制私有normalize。重算实际持久attempt/capsule摘要、核列/关联/必要事实与精确来源，损坏固定拒绝；旧attempt缺胶囊返回legacy-capsule-absent，不回填。
 
 read内部返回明确questionBinding:'prepare-only'固定保证标签：完整原题指纹只在prepare时核验，历史读取不独立验证原题，也不提供对全部重写并重算摘要的数据库的认证保证。历史snapshot/analysis/manifest核验不代表当前activation/config/工作区仍有效；合法当前晋升或配置变化不能改写旧历史，未来外发必须重新核验当前性和授权。此标签仅内部graph端口，不改公共contracts/评分/UI/外发。没有原题时不能伪造原题复用S3validator；四文件实现范围不变。附加重开ready/not-evaluated/缺胶囊、当前状态变化下历史边界、损坏拒绝和零外发回归。这个源码依据的设计决定允许继续实施，不代表S4验收通过或新的AGENTS经验。
+
+## 2026-10-03 10:20：用户恢复原定时任务与双开发聊天
+
+用户明确所有开发聊天及定时任务已关闭，授权按原流程恢复。先读当前AGENTS、计划队列、审查与交接，main HEAD `a2d06f8146e5f288e3d9c0c780c21bdb51d7c7d2`；主checkout只有Luna原两协议文档未跟踪，Sol全部旧接线/S3/S4改动保留，没有重置或同步覆盖。紧凑快照确认两聊天上轮均usage-limit失败，不是完成或最终冻结交付。沿用Luna/max、GPT-6.1 Sol/medium。
+
+S4两生产源上轮已完整只读审阅并对照graph接缝、S3公开校验、普通保存/activation/settings事务，本次实际SHA256仍为ownership-capsule-store.ts `02DBA99E332D4F604065F80E4F0860559FA09EE10D60767755FD76ADA8D9BCF9`、graph/index.ts `7376BF3594FBE9B91907D699297C51CB7B7235D0B3D7B539CEE43C2B382DAA7F`。未确认新产品缺陷，本轮无root SQL/类型验收；22项及类型通过仍为开发自测，记录尚待补真实诊断与结果。恢复Sol原四文件收尾，核对四型builder到持久端口、大本地attempt、双连接/双库竞态、迁移重开/故障回滚/来源角色损坏；不改S3/应用/S5/性能/旧接线，不占重型窗口。
+
+3F-T首版原两文档已经实际复审，尚未接受：cache决定及同一准入estimator需要当前未实现的observer，三新工具文件不能凭推算或私有反射补报告；before/after变化只计build_race_discard会丢外部原因，缺external-miss不能证明无外部提交，可能让加载≤2且语义门通过的配对错误归为性能可比。此为设计缺口，非已实现缓存缺陷。恢复Luna原两文档修订，明确另行批准且稳定的只读observer依赖、每lookup一个最终决定、独立build-race原因/外部覆盖计数、首建/重建/末请求覆盖及覆盖未知拒绝可比，保留4708分母/11门/原v1；纠正每轮两个API及count0 metric null。产品缓存和新诊断工具未派。
+
+对原project-x-ray执行automation_update，保留完整prompt、名称、目标协调聊天及原15分钟周期，仅恢复ACTIVE；返回成功后实际automation.toml安全字段复核同id/目标/ACTIVE，不创建重复任务。原两聊天恢复后timeoutMs0确认均active：Luna turn `01a0ff8f-ee2f-7613-b7ae-ca095e5cd7f3`、cursor `03a3ef91-aa4d-463e-af01-2e1bfafc662c:2`；Sol turn `01a0ff8f-ef5d-7aa3-9ccf-f89fa1fe1971`、cursor `1e17a25b-f2eb-45a8-971e-2de888443e95:2`。旧epoch游标已重置。
+
+本轮未运行GUI、索引、构建、模型或产品回归。AGENTS新增0：恢复动作及未完成设计不属于已验证经验。协调文档一次patch因旧行不匹配失败且实际diff为空，改按实际行重试；这是编辑操作问题，非产品缺陷。冻结后继续独立复验，GUI/真实远程/Windows发布边界仍开放；不纳入开发中的源码或两协议文档。
