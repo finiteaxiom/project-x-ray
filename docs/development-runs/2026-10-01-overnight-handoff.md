@@ -181,3 +181,11 @@ Sol修正回合已确认active。Luna首稿root完整读后，继续原两文档
 已实现：隔离迁移/保留/WAL/还原验证，非产品backup；独立代码/回归已验证：上述主目录与独立探针；真实GUI已验证：0。生产升级保护/future-role拒绝/多库失败关闭/原生路径接线仍未实现或验收，真实旧安装版本/安装升级卸载、远程质量/隐私选择、签名/干净Windows/公开发布原门保持。极端taskkill失败/close不确认未实测。AGENTS新增0，不能把测试helper写成生产保证。
 
 下一批已依据实际源码/实验形成可审查计划并派原双线程：Luna4B-P仅纯observation协议/内存fixture/记录（修订设计阶段A已接受，B安全reader未验）；Sol4B-B0仅Windows生产文件边界两设计文档，先明确closed-only writer证据/root handle及原包/副本/生产打开门再实施。实际回合/游标见review：Luna:13 active、Sol:14 active；main仍60abf56，已接受范围Git收尾待本轮完成，不纳入活动新代码。没有询问重复开发许可、没有扫描/执行候选产物/真实DB或computer-use。
+
+实际版本f647b7907d86bfbadec73e9e363e5cab9c55a69c，已接受11文件普通提交/推送exit0，独立远端核对一致。包含4B-A两夹具及接受记录/后续计划，没有产品backup或未验GUI实现；Luna纯协议与SolB0设计继续活动。
+
+02:41：Sol B0首稿两文档已按实际源码/API独立读查，尚未接受或实施生产保护。原件零SQLite前没有独立项目登记材料，已派原Sol同两文件明确候选布局/物理身份与副本语义身份、legacy-only口径及未知恢复集合raw-only/拒绝矩阵。Luna纯协议活动三文件未冻结，22项自测报告未作为root结果；不运行/提交活动实现。main仍f647b79，本轮新产品/运行验收/GUI/Git动作/AGENTS规则均0；下一轮收新冻结稿再派具体实施，不重复旧夹具验收。完整hash/实际游标/依据见review最新节。
+
+03:02新增独立接受：4B-P产物清单纯协议22项回归、语法/desktop类型及94组独立合成状态/篡改/5000文件往返检查通过，详见2026-10-04-artifact-protocol-independent-review.md；模块导入只纯函数，调用者观察未认证、发布/构建关联/运行接线固定未评估。B0修订两设计文档经实际源码复审接受并精确复制主目录，raw-material只证明指定字节材料，不批准恢复/生产。
+
+已实现/独立代码与回归已验证：仅P纯协议；真实GUI验证0。用户可直接运行node node_modules/vitest/vitest.mjs run apps/desktop/src/windows-artifact-manifest-protocol.test.ts --fileParallelism=false核合成门，但无真实产物扫描路径。Sol后续S1a新计划已精确派发，仅原生根/整组源能力/分块读取/释放及自有Node/Electron技术试验；无产品原包/恢复/SQLite打开/GUI。Luna冻结待root收尾，不自行阶段B。新计划hash/实际线程/范围见review。AGENTS新增0，发布/远程/签名/干净Windows原未验项继续开放；Git实际版本待下文核对，活动实现不纳入。

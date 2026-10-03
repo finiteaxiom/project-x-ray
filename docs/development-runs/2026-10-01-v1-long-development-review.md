@@ -844,3 +844,29 @@ Luna修订hash896108DF233D5095A67683C1C3FE1D2D6693F266AB1DB2E4432ACBA207C91DC2 /
 据本轮真实未来/角色无拒绝与多库早期提交现状，形成upgrade-protection-boundary-plan（P1生产文件边界设计，非重复旧迁移表），hashC4A9F2DC106F34A53C580AD471AE2D0161145E79C305C4808D638CBD383CA7C3，确认新目标后精准复制Sol并核同hash。只两新设计文档，明确closed-only静止证据、Windows实际API/句柄/shared访问、原包→操作副本profile/迁移/还原→生产打开的能力与窗口、后续最小切片/失败门；不运行真实库/复制/native/GUI探针，不实施backup。原Sol B0回合01a102fd-46c0-7a43-878a-10292eae23d5 active cursor:14。两个新批次文件互不冲突，重型root窗口结束。
 
 本轮已实现/独立接受的是隔离夹具与协议设计，不是产品升级保护；真实GUI0仍暂缓，远程质量、真实库/安装升级卸载、签名/干净Windows/公开发布仍未验。Git仅安排已接受三文件、Luna冻结设计及root计划/记录精确收尾，不纳入任何新活动实现。
+
+本轮实际Git收尾：已接受4B-A三文件、独立记录、manifest冻结设计和root计划/协调记录共11文件，exact staged/diff检查后提交f647b7907d86bfbadec73e9e363e5cab9c55a69c；普通push exit0，ls-remote origin/main精确同SHA。核对时仅Luna新protocol过程记录未跟踪，未纳入活动实现、旧worktree修改或GUI。没有公开二进制发布；此收尾凭据留下一次稳定记录提交。
+
+## 2026-10-04 02:41：B0首稿独立读查与同范围修订
+
+main实际HEAD仍f647b7907d86bfbadec73e9e363e5cab9c55a69c，待提交仅root上次Git凭据及Luna活动三文件，不纳入活动实现。读取当前规则/队列/记录后，以保存游标紧凑检查：Sol B0回合01a102fd-46c0-7a43-878a-10292eae23d5完成，cursor cfe7da2a-d1e4-4a1f-9168-182cb9c80d36:16；Luna P active cursor5f905603-9e05-4a70-bae4-5e6a5162a670:16，开发报告22项/语法/desktop noEmit仍不是root验收，未冻结不运行其实现。
+
+root完整读查Sol两新文档，SHA256 A62CD708668D0C919712BD6C854049694F1BB5127DF04DCAE91C5BC4178D6B89 /5E5CB3E0D67B617A2E5BDBE4044D7D0840222D931BDC1D87AE20EB1C334CB288，与交付相符。实际核对main GraphStore构造可写/WAL/迁移、application global/项目扫描/懒打开、桌面main/worker入口及secure reader分享/2MB约束，官方NtCreateFile/CreateFileW/LockFileEx只读核查。普通HANDLE共享范围、映射例外和原包→副本→同SQLite受限打开三门区分成立，但设计未接受/未实施S1。
+
+已派原Sol同两文档收敛：当前loadProjectStores只有endsWith('.sqlite')/slice，新索引stableId生成，不存在原库零SQLite可读的独立受信注册组件。S1应只认证布局/安全候选文件名及物理集合，项目语义/注册身份放在隔离副本验证，缺权威材料不得晋升，明确legacy-only/global历史数据。另给有限表区分四类原始文件齐全但未知结构的raw-only材料与未知super-journal/外部依赖导致集合无法穷尽的拒绝；统一receipt/marker语义，不能原始保全完成即恢复/生产批准。修订不新增DB/copy/native/child/GUI实验、不对齐旧HEAD、不扩大文件范围。下一轮核新冻结hash后再决定设计接受及具体S1计划。
+
+本轮新增产品/运行验收0、GUI0，未重跑4B-A，未复制/提交B0首稿，AGENTS新增0；静态设计评审不沉淀成已验证工程经验。main发布/远程/真实升级外部门保持未验。
+
+修订已启动并确认active：Sol回合01a10311-2dff-7eb0-9d8a-286fdfeff196，cursor cfe7da2a-d1e4-4a1f-9168-182cb9c80d36:17；Luna原P回合active，cursor5f905603-9e05-4a70-bae4-5e6a5162a670:17。无新冻结交付，下一轮不重复已完成读查。
+
+## 2026-10-04 03:02：P纯协议独立接受、B0修订接受及S1a派发
+
+从当前实际队列/规则/Git开始，保存游标紧凑检查确认两交付idle：Luna P回合01a102f6-8ae1-7d40-9b7b-1851e89dda91、cursor5f905603-9e05-4a70-bae4-5e6a5162a670:18；Sol B0修订回合01a10311-2dff-7eb0-9d8a-286fdfeff196、cursorcfe7da2a-d1e4-4a1f-9168-182cb9c80d36:18。root实际读完P实现/测试/记录，三hash A6D9153D…/EEA2CF6A…/40843B58…相符；独立22项回归、语法/desktop noEmit及94组自有合成探针通过，最大5000文件/4534648字节规范报告往返成功，细节/完整hash/限制见2026-10-04-artifact-protocol-independent-review.md。仅接受纯协议，未运行真实产物/签名/ASAR或GUI。
+
+B0新hash5F6AAACAC39759177C3A622CCF5A0E55D1C11DD3598B5E561B34B71EE2F2D874 /A2DE374352C6581914B1667DCD39F88D3ADE3280844CFA8C0426D26A86D894A6，root完整复读确认候选布局/物理身份与副本语义身份分开、legacy-only明确、未知恢复集合raw-only/拒绝矩阵及raw-material.complete不批准恢复/生产。接受S1设计方向，S2恢复依赖解析/语义门和S3同实例VFS仍未实现/实测；确认主目录目标原不存在后仅复制两文档，hash一致。不复制任何旧worktree产品/AGENTS文件。
+
+形成upgrade-file-capabilities-plan，SHA256 C5FB702750EF9D85F44B565C36445925924F58797001940DD396C0D665EEE58A，确认新目标后精确复制Sol并核hash。按复杂度派原Sol 4B-S1a：8新文件及.gitignore单行例外，只做Windows真实根/整组源HANDLE/分块读/核验/生命周期与独立test target，不写原始包/marker、不改GraphStore/app/IPC/VFS/生产库。新native理由是现有reader共享写删除/2MB与路径copy无法满足门；复用已有node-gyp，无依赖/锁/package接线。native/无窗口Electron技术单窗口交Sol，root纯检查结束；交付冻结后root独立复验，GUI仍暂缓。Luna只确认P接受并保持冻结，B reader未经具体派发不得自动实施或制造任务。
+
+本轮AGENTS新增0：P纯协议规则已有覆盖，B0与新计划是设计/用户授权而非运行经验。已实现/独立代码回归：P；真实GUI本轮0；实际artifact/发布来源关联、生产数据保护/安装升级卸载、远程及签名/干净机器原未验门保持。下一Git只精确纳入已接受P三文件、独立审查、B0两文档及root计划/记录，未验S1a不提交。
+
+实际派发确认：Sol S1a回合01a10324-cae6-7bf2-8e28-d92608da1b58 active，cursor cfe7da2a-d1e4-4a1f-9168-182cb9c80d36:19；Luna交接回合01a10324-cbb5-7c21-bbea-6040002be30e完成idle，cursor5f905603-9e05-4a70-bae4-5e6a5162a670:19。旧活动文件未纳入Git。
