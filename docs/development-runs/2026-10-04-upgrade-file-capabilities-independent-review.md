@@ -35,3 +35,19 @@
 - 保留正确 file symlink EPERM 失败和未验边界；普通回归/类型/Node/Electron及新反例重新冻结后由 root 独立复验。修复通过仍不代表整套安全门、原始包、恢复、VFS、生产保护或 GUI 完成。
 
 AGENTS 新增0：输入捕获和失败清理已有规则覆盖；当前缺陷未修复，不把调查写成已验证经验。本记录只报告首稿审查和拒绝，开发后续交付另记。
+
+## 2026-10-04 06:26：修正后独立复验，整体安全门仍未接受
+
+原Sol回合01a103c7-32a5-7f31-a9f7-36ff72f11c61冻结完成，实际cursor26。四个修正文件实物hash：adapter `03B7A8F4C8BACF39F34E4A81F20EB9D8DB7713F5B1BFC6457035AD8FFF2FB1F9`，test `513E038777ACCA8C6B8E9974385ED5A880A54F2FD2948699F2F3049F9536CF21`，smoke `29271B1ED57C8D7529AE3BC5C7E1D005295FC3A34A8CD10D757B028E19B9437B`，记录 `05523299BD96A1828D603B8BD8DD376188D09E16DDB0BEF02FAB5C0A14155A79`。native/fixture/binding/build/ignore与首稿hash精确不变，未重新构建无变化native。
+
+真实源码修正使用isProxy在反射前拒绝，错误读取own data descriptor；signal只接受当前realm/prototype且无own字符串覆盖或accessor的支持对象。预先覆盖signal拒绝，绑定后同名覆盖使用捕获intrinsic；失败保留固定错误、native close优先，detach/finalizer不动态调用signal方法。实际读查新增tests和两smoke模式，未替换历史失败记录。
+
+本轮root实际复验：
+
+- 原独立probe重跑exit0：Proxy accepted=false/traps=0；原预覆盖signal反例现在INVALID_INPUT、sanitized=true、released=true，自有根正常清理。严格拒绝是支持契约变化，不能称该signal仍受支持。
+- 上一轮准备但未执行的独立`verify.ts`（hash `488A51604E77DBF3E95FAE828DFC6D472E84FD8C944B5A7F54073358E7E54F05`）本轮首次运行exit0，20个检查。直接真实adapter覆盖input/control/read Proxy零trap、revoked Proxy、绑定后signal方法/getter覆盖时acquired/read/verify progress固定失败、立即write重占用与新lease、普通取消、close幂等；自有根无需保留。不是开发helper或测试替身。
+- 同一原targeted suite：exit1，41通过/1 file symlink EPERM失败/0 skip，683ms；graph noEmit exit0。两已复现缺陷门通过，整套安全门非绿色。
+- 原Node smoke/queued GC/crash、新adapter、长期signal丢弃wrapper有界GC原模式：各exit0，原成功标记及新traps=0/shadows=0/listeners=0/writer=true标记均实际捕获。
+- 独立`electron.cjs`（hash `A140FF48FB33D6115CD50A1EDABF09917922BBC5D0E9340A7D5E0381ED6C97C3`）直接启动真实Electron44.4.3原脚本`--run`与`--adapter`，各status0/signal=null/stderr为空且精确标记匹配；另一个Node应用require该脚本只有自身INERT_IMPORT_OK，入口无自动运行。每次30秒界限/windowsHide，无BrowserWindow/安全参数修改/GUI。
+
+结论：两实质缺陷修正及上述技术部分独立通过；S1a整体仍因正确file symlink环境门未验而不接受，不复制或提交实现。原件零SQLite、容量/映射/驱动/断电/生产保护限制不变。AGENTS新增0，既有输入捕获和清理规则已覆盖，无需重复。下一步仅设计已形成的原始材料writer边界，先按新root计划审查两文档，未授权运行或实现S1b。

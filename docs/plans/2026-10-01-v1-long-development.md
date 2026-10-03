@@ -100,7 +100,7 @@ Sol 先测量当前全量索引/查询/内存基线，设计按语言的保守�
 | 3F-T2 优化测量工具 | 修正后独立接受，Git收尾见最新审查 | Luna/协调方 | root23项/严格类型、三错响应拒绝、三实际第二连接commit挑战、取消/原CLI超时及单次三配对通过；14124调用/33语义门，每对full-load2，报告206848字节。固定样例计数门，不外推真实项目或旧协议wall收益；GUI未验。详细原始值/限制见navigation-optimized-independent-review |
 | 2B-S2a 答题记录引用索引修正 | 独立核心及main集成整包通过，已提交/推送0eef658，远端18e5524包含 | Sol/协调方 | 111/111原门通过、ownership6/类型/真实SQL/多布局/重开/失败重试通过；新增17项。原分/历史不变；旧超时记录保留，GUI未验 |
 | 4A Windows发布链/验收设计 | 修订后设计已接受 | Luna/协调方 | 隔离共存/原始签名Status/迁移阶段已复审；仅文档，不代表安装、升级、卸载或GUI已验收 |
-| 4B Windows发布实现 | 4B-A/P及B0已接受；S1a首稿独立复验拒绝，原Sol修正输入/清理边界 | 双线程 | root新native构建/类型/Node/GC/crash/真实Electron技术smoke通过，30项中29通过/1 file symlink EPERM未验。独立真实adapter反例：Proxy被接受并执行14次trap；signal清理方法抛错掩盖固定原失败、整组未即时释放。仅原adapter/test/记录及必要原smoke修正，未复制/提交S1a；见upgrade-file-capabilities-independent-review。raw/恢复/生产、实际artifact/安装/GUI/签名/干净机器门保持 |
+| 4B Windows发布实现 | 4B-A/P及B0已接受；S1a两缺陷独立修正通过，整体EPERM门未验；后续仅S1b设计 | 双线程 | root修正后41/42通过（1 file symlink EPERM，0 skip）/类型/原Node、GC、crash及新adapter/wrapper-GC/真实Electron技术入口通过；独立原反例与20检查通过。S1a未整体接受、未复制/提交。依据实际只有read/verify而无目标写入/flush/材料marker，root已形成raw-material-design-plan，原Sol只两新文档，先审查不运行/实现。raw/恢复/生产、实际artifact/安装/GUI/签名/干净机器门保持 |
 
 3B-L的实施目标为可安全运行的普通本地索引测量工具，不是增量算法：仅benchmarks中新local-index-baseline入口及child、对应最小测试和本批记录；固定仓库自建样例/生成器，唯一新目录/数据库/报告，不调用旧benchmark、不下载项目、不清理共享目录。相同样例根配对冷库/无变化reindex，规范化事实/源码/身份等价是采样门禁；公开阶段计时和Node采样RSS明确标来源，不冒充Python/整应用内存。严格限额/总超时/取消后终止子进程，报告环境/原始样本/失败状态且不含源码/凭据/私人路径。该工具实施与小样例验证可不触碰Sol共享源码；规模性能测量待共享功能稳定、单协调窗口执行，后续优化设计仍由Sol承担。
 

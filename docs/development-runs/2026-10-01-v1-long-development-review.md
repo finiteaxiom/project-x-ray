@@ -888,3 +888,13 @@ root只读核对Sol旧HEAD455d4ad50830ee2495b70927e51caf830a4efbb8、本批.giti
 root独立自有真实adapter探针确认两产品缺陷：Proxy输入被接受并执行14次trap；真实AbortSignal覆盖removeEventListener抛错，acquired-progress原失败被任意文本掩盖并跳过api.close，实际write再占用失败。首稿不接受，原Sol仅adapter/test/记录及必要原smoke修正，其他文件冻结；完整原始结果/hash/命令/入口探针自身失败诊断见2026-10-04-upgrade-file-capabilities-independent-review.md。没有生产数据/GUI操作；原件零SQLite门保持，未纳入S1a Git。AGENTS新增0，已有输入/失败清理规则覆盖。main仍f0e9a79，仅协调记录/队列更新，Git回执保留待稳定收尾。
 
 修正派发实际确认：原Sol新回合01a103c7-32a5-7f31-a9f7-36ff72f11c61 active，cursor cfe7da2a-d1e4-4a1f-9168-182cb9c80d36:24；Luna5f905603-9e05-4a70-bae4-5e6a5162a670:19 idle。重型native/Electron窗口交回Sol，仅原adapter/test/记录和必要原smoke；root不与活动改动并发验证。当前只精确收尾四份协调审查/队列材料，不纳入未验实现。
+
+## 2026-10-04 06:26：S1a修正部分独立通过，完整安全门仍开放
+
+实际wait双目标因Luna notLoaded只返回其cursor20，随后单Sol timeout0取得冻结完成cursor26，原修正回合01a103c7-32a5-7f31-a9f7-36ff72f11c61。没有用未返回的对象推断状态。四修正hash/native等冻结hash已核对，root实际审查新增代码/tests/smoke并接管技术窗口：41/42回归（1原file symlink EPERM，0 skip）/graph类型、原Node/GC/crash、新adapter/wrapper GC及真实Electron两个入口通过；原独立反例和首次执行prepared verify20检查通过，普通应用require入口无副作用。详细命令/值/hash/范围见upgrade-file-capabilities-independent-review新节。
+
+两实质缺陷已独立修正，但S1a整体未接受，正确symlink安全门继续未验，不复制/提交实现或改安全设置。已实现为Sol冻结修正稿，独立代码/回归为上述部分，真实GUI0；未验原包/恢复/生产/外部质量门保持，AGENTS新增0。上一轮四协调文件已真实提交普通推送22be424fa8eae7780e3c481b7ccc724a2329d43b且远端精确相同；本轮只精确收尾新独立复验记录/队列/计划，不提交S1a。
+
+下一任务依据真实只有read/verify、无writer/flush/manifest/marker的能力缺口，已形成docs/plans/2026-10-04-upgrade-raw-material-design-plan.md：原Sol仅新增writer设计与开发记录两文档，既有全部实现冻结，不运行native/DB/Electron或先行实现。设计可在S1a未验边界下准备，不能作接受/提交豁免；Luna没有具体不冲突实施任务，保持冻结不为填槽派发。新设计须经root逐项审查才有下一具体实施计划。
+
+设计派发实际确认：root新计划精确复制至5170且SHA E45480A1664DDA74188EDFA2EF526DEDC4124FFEDB9C0F05672AEA7B021E7389一致。原Sol新回合01a103e1-dbe8-7023-a230-b2231b3d0415 active，cursor cfe7da2a-d1e4-4a1f-9168-182cb9c80d36:27；Luna5f905603-9e05-4a70-bae4-5e6a5162a670:20 notLoaded、原冻结任务completed。设计没有重型窗口需求，旧实现均冻结；当前Git只5份root协调文档，不纳入Sol实现或未验安全门。

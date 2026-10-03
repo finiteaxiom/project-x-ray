@@ -195,3 +195,5 @@ Sol修正回合已确认active。Luna首稿root完整读后，继续原两文档
 05:24：Sol原S1a因额度中断留下三份原生/构建草稿和ignore修改，尚未交付或验收。实际额度工具确认可用后已保留全部partial恢复原线程，新回合01a103a7-65f4-7573-9ccc-504754912522 active/cursor21；Luna冻结idle19。main仍f0e9a79，用户无需额外处理；不将partial或旧测试当完成，未运行/提交活动实现，生产数据保护/真实artifact/GUI原门保持。详见review最新节。
 
 05:57新实质缺陷：S1a冻结首稿经root真实源码/重构建/类型及Node、GC、crash、实际Electron技术smoke复验，普通29/30通过，file symlink EPERM仍未验。独立真实adapter反例确认Proxy执行14次trap且被接受；可覆盖signal清理方法抛错掩盖固定错误，实际整组未即时释放。因此S1a未接受/未复制/未提交，已交原Sol限定adapter/test/记录及必要原smoke修正，保持其余原生/core/UI冻结。完整证据见2026-10-04-upgrade-file-capabilities-independent-review.md。已实现是首稿文件能力，独立回归仅上述部分，真实GUI0；生产升级/原始包/恢复/VFS/实际artifact和原外部门保持。版本仍f0e9a799dc9c225aea212ceac900c4b223638a5f，AGENTS新增0。
+
+06:26：两实质缺陷修正已独立复验（Proxy零trap、固定错误/即时句柄释放、20项独立检查及真实Electron adapter入口）；原42项41通过/1 file symlink EPERM未验，不能称S1a整批完成，不复制/提交其实现。技术Node/queued GC/crash/wrapper GC/类型通过，GUI仍0。完整证据见upgrade-file-capabilities-independent-review修正节。实际上一版本22be424fa8eae7780e3c481b7ccc724a2329d43b仅协调记录已推送；本轮计划依据实际缺少目标写入/flush/原始材料marker，原Sol下一步只两文档设计，不运行或实现S1b、无生产/恢复许可。AGENTS新增0，原外部/安装/GUI等未验清单不变。
