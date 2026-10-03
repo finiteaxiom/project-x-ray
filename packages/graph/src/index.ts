@@ -20,6 +20,10 @@ interface PayloadRow { payload: string }
 interface CursorQueueItem { nodeId: string; depth: number; afterEdgeId?: string }
 interface CursorState { version: 2; repositoryId: string; snapshotId: string; queryKey: string; queue: CursorQueueItem[]; seenNodes: string[] }
 
+/** Compare only while retaining the same GraphStore instance; never an IPC or persistent identity. */
+export type NavigationValiditySample = { status: "valid"; dataVersion: number; localSnapshotGeneration: number }
+  | { status: "unavailable" | "invalid_type" | "in_transaction" | "closed" };
+
 function parseStoredSnapshot(payload: string): ProjectSnapshot {
   const raw: unknown = JSON.parse(payload);
   const parsed = projectSnapshotSchema.safeParse(raw);
@@ -40,6 +44,7 @@ export class GraphStore {
   private readonly database: Database.Database;
   readonly remote: RemoteExplanationStore;
   private readonly ownershipCapsules: OwnershipCapsuleStore;
+  private navigationGeneration: number | null = null;
 
   constructor(databasePath = ":memory:", role: GraphStoreRole = "project") {
     if (role !== "global" && role !== "project") throw new RemoteExplanationError("POLICY_INVALID");
@@ -50,7 +55,21 @@ export class GraphStore {
       this.database.pragma("busy_timeout = 250");
       this.database.pragma("journal_mode = WAL");
       this.migrate(); this.remote.migrate(); this.ownershipCapsules.migrate();
+      this.navigationGeneration = 0;
     } catch (error) { this.database.close(); throw error; }
+  }
+
+  /** A same-connection observation, not an atomic source/configuration freshness barrier. */
+  sampleNavigationValidity(): NavigationValiditySample {
+    try {
+      if (!this.database.open) return { status: "closed" };
+      if (this.database.inTransaction) return { status: "in_transaction" };
+      const generation = this.navigationGeneration;
+      if (generation === null || !Number.isSafeInteger(generation) || generation < 0 || generation >= Number.MAX_SAFE_INTEGER) return { status: "unavailable" };
+      const dataVersion: unknown = this.database.pragma("data_version", { simple: true });
+      if (typeof dataVersion !== "number" || !Number.isSafeInteger(dataVersion) || dataVersion < 0) return { status: "invalid_type" };
+      return { status: "valid", dataVersion, localSnapshotGeneration: generation };
+    } catch { return { status: "unavailable" }; }
   }
 
   getActiveReference(): { repositoryId: string; snapshotId: string; activation: string } | null {
@@ -304,7 +323,12 @@ export class GraphStore {
       if (makeCurrent) this.activateSnapshot(snapshot, activationAfter);
       return snapshot;
     });
-    return save.immediate();
+    const nested = this.database.inTransaction;
+    const saved = save.immediate();
+    // A nested savepoint does not establish the outer commit; permanently stop comparing.
+    const generation = this.navigationGeneration;
+    this.navigationGeneration = nested || generation === null || !Number.isSafeInteger(generation) || generation < 0 || generation >= Number.MAX_SAFE_INTEGER - 1 ? null : generation + 1;
+    return saved;
   }
 
   private activateSnapshot(snapshot: ProjectSnapshot, activationAfter = ""): void {

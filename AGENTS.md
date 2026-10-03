@@ -207,6 +207,8 @@ LLM 输出永远不是一级证据。LLM 可以对分析器返回的证据进行
 
 只按“执行反馈与规则沉淀”的门槛维护；详细过程保存在对应开发记录中。
 
+- 用 SQLite 保存成功驱动本地缓存代数时，先区分外层事务提交与嵌套 savepoint 释放；无法观察外层终态时停止该实例的 token 比较，不能在后续普通保存时恢复旧代数。真实回归同时覆盖外层 COMMIT/ROLLBACK、原返回值及源码、关闭重开和只读取样；相等数字不代表相同 store 实例。[导航取样记录](docs/development-runs/2026-10-03-navigation-cache-token.md) · [独立复验](docs/development-runs/2026-10-01-v1-long-development-review.md)
+
 - 完整本地分析身份转换为严格有限 DTO 时，生成与持久来源核验须使用相同的明确字段投影，嵌套配置只保留契约字段；不能直接展开完整对象、放宽 schema 或删除持久规则。回归使用真实索引的空/非空排除配置，覆盖构造、双行保存和重开，确认完整规则/指纹/源码不变，重算摘要的配置或来源错配仍拒绝且零写。[真实答题集成记录](docs/development-runs/2026-10-03-ownership-capsule-integration.md) · [独立复验](docs/development-runs/2026-10-01-v1-long-development-review.md)
 
 - 接入预算降级结果的持久化前，对每个非空辅助摘要核对完整原始材料并独立重算；容器摘要不替代内部投影验证。回归运行真实构造器“先算投影、后预算降级”分支，确认缺原提交拒绝、补足材料成功、重算容器摘要仍不能掩盖坏投影。历史未保存投影材料时，读取须明确其准备阶段保证，不能重造映射或升级为当前授权。[胶囊存储记录](docs/development-runs/2026-10-02-ownership-capsule-store.md) · [独立复验](docs/development-runs/2026-10-01-v1-long-development-review.md)

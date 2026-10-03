@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import Database from "better-sqlite3";
 import { mkdtemp, rm } from "node:fs/promises";
-import { join } from "node:path";
+import { join, resolve, sep } from "node:path";
 import { tmpdir } from "node:os";
 import { GRAPH_QUERY_VERSION, MODULE_OVERVIEW_VERSION, type GraphQueryRequest, type OwnershipAttempt, type ProjectSnapshot } from "@project-xray/contracts";
 import { GraphStore } from "./index.js";
@@ -30,6 +30,88 @@ const snapshot: ProjectSnapshot = {
     { id: "read", snapshotId: "snap", source: "a", target: "c", kind: "READS", confidence: "verified", evidenceId: "ev3", reason: "read" },
   ],
 };
+
+describe("navigation validity samples", () => {
+  const stores: GraphStore[] = [], connections: Database.Database[] = [], directories: string[] = [];
+  const open = (path?: string) => { const store = new GraphStore(path); stores.push(store); return store; };
+  const db = (store: GraphStore) => (store as unknown as { database: Database.Database }).database;
+  const valid = (store: GraphStore) => { const value = store.sampleNavigationValidity(); expect(value.status).toBe("valid"); if (value.status !== "valid") throw new Error("Expected valid sample"); return value; };
+  afterEach(async () => {
+    vi.restoreAllMocks(); for (const store of stores.splice(0)) if (db(store).open) store.close();
+    for (const connection of connections.splice(0)) if (connection.open) connection.close();
+    for (const directory of directories.splice(0)) { if (!resolve(directory).startsWith(resolve(tmpdir()) + sep)) throw new Error("Unsafe fixture cleanup"); await rm(directory, { recursive: true, force: true }); }
+  });
+  async function pair() {
+    const directory = await mkdtemp(join(tmpdir(), "xray-navigation-token-")); directories.push(directory);
+    const path = join(directory, "graph.sqlite"), store = open(path), second = new Database(path); connections.push(second); second.pragma("busy_timeout=10");
+    return { store, second };
+  }
+  it("initial and same-connection successful save/reuse/activation/noncurrent generations are stable", () => {
+    const store = open(), initial = valid(store); expect(valid(store)).toEqual(initial);
+    store.saveSnapshot(snapshot); const first = valid(store); expect(first.localSnapshotGeneration).toBe(initial.localSnapshotGeneration + 1); expect(first.dataVersion).toBe(initial.dataVersion);
+    const activation = store.getCurrentActivation(); store.saveSnapshot(snapshot); const reused = valid(store);
+    expect(reused.localSnapshotGeneration).toBe(first.localSnapshotGeneration + 1); expect(store.getCurrentActivation()).not.toBe(activation);
+    store.saveSnapshot(snapshot, [], false); expect(valid(store).localSnapshotGeneration).toBe(reused.localSnapshotGeneration + 1);
+    const side = structuredClone(snapshot); side.snapshotId = "side"; for (const item of [...side.nodes, ...side.edges, ...side.evidence]) item.snapshotId = "side";
+    const beforeSide = valid(store); store.saveSnapshot(side, [], false);
+    expect(valid(store).localSnapshotGeneration).toBe(beforeSide.localSnapshotGeneration + 1); expect(store.getActiveReference()?.snapshotId).toBe("snap");
+  });
+  it("failed actual SQLite INSERT rolls back without announcing a successful generation", () => {
+    const store = open(), before = valid(store);
+    db(store).exec("CREATE TRIGGER deny_navigation_snapshot BEFORE INSERT ON snapshots BEGIN SELECT RAISE(ABORT,'private fixture SQL'); END");
+    expect(() => store.saveSnapshot(snapshot)).toThrow(); expect(store.loadSnapshot("snap")).toBeNull(); expect(valid(store).localSnapshotGeneration).toBe(before.localSnapshotGeneration);
+    db(store).exec("DROP TRIGGER deny_navigation_snapshot"); store.saveSnapshot(snapshot); const saved = valid(store);
+    expect(() => store.saveSnapshot({ ...snapshot, name: "conflict" })).toThrow(); expect(valid(store)).toEqual(saved); expect(store.loadSnapshot("snap")?.name).toBe(snapshot.name);
+  });
+  it("another SQLite connection commit/delete changes dataVersion; rollback does not", async () => {
+    const { store, second } = await pair(); store.saveSnapshot(snapshot); const before = valid(store);
+    second.exec("BEGIN IMMEDIATE"); second.prepare("UPDATE snapshots SET root_path=? WHERE snapshot_id=?").run("changed", "snap"); second.exec("ROLLBACK"); expect(valid(store)).toEqual(before);
+    second.prepare("UPDATE snapshots SET root_path=? WHERE snapshot_id=?").run("changed", "snap"); const committed = valid(store);
+    expect(committed.dataVersion).not.toBe(before.dataVersion); expect(committed.localSnapshotGeneration).toBe(before.localSnapshotGeneration);
+    second.prepare("DELETE FROM snapshots WHERE snapshot_id=?").run("snap"); expect(valid(store).dataVersion).not.toBe(committed.dataVersion);
+  });
+  it("read transaction has zero PRAGMA; after ending it observes external commit", async () => {
+    const { store, second } = await pair(); store.saveSnapshot(snapshot); const before = valid(store);
+    db(store).exec("BEGIN"); db(store).prepare("SELECT count(*) FROM snapshots").get();
+    const pragma = vi.spyOn(db(store), "pragma"); second.prepare("UPDATE snapshots SET root_path=? WHERE snapshot_id=?").run("changed", "snap");
+    expect(store.sampleNavigationValidity()).toEqual({ status: "in_transaction" }); expect(pragma).not.toHaveBeenCalled();
+    db(store).exec("COMMIT"); expect(valid(store).dataVersion).not.toBe(before.dataVersion); expect(pragma).toHaveBeenCalledTimes(1);
+  });
+  it("samples only one pragma with no snapshot/source/config reads or SQL writes", () => {
+    const store = open(), prepare = vi.spyOn(db(store), "prepare"), exec = vi.spyOn(db(store), "exec"), pragma = vi.spyOn(db(store), "pragma");
+    valid(store); expect(pragma).toHaveBeenCalledExactlyOnceWith("data_version", { simple: true }); expect(prepare).not.toHaveBeenCalled(); expect(exec).not.toHaveBeenCalled();
+  });
+  it.each([undefined, NaN, Infinity, -Infinity, "1", -1, 1.5, Number.MAX_SAFE_INTEGER + 1, null, 1n, true, {}, []])("invalid pragma type/value (%#) fails closed", value => {
+    const store = open(); vi.spyOn(db(store), "pragma").mockReturnValueOnce(value as never); expect(store.sampleNavigationValidity()).toEqual({ status: "invalid_type" });
+  });
+  it("safe dataVersion endpoints remain valid; exceptions reveal no SQLite error", () => {
+    const store = open(), pragma = vi.spyOn(db(store), "pragma");
+    for (const value of [0, Number.MAX_SAFE_INTEGER]) { pragma.mockReturnValueOnce(value as never); expect(valid(store).dataVersion).toBe(value); }
+    pragma.mockImplementationOnce(() => { throw new Error("private SQL text"); }); expect(store.sampleNavigationValidity()).toEqual({ status: "unavailable" }); expect(valid(store).status).toBe("valid");
+  });
+  it("closed store samples without pragma; new instance may have identical numbers", () => {
+    const a = open(), b = open(), first = valid(a); expect(valid(b)).toEqual(first); expect(a).not.toBe(b);
+    first.localSnapshotGeneration = 999; first.dataVersion = 999; expect(valid(a)).toEqual(valid(b));
+    a.close(); const pragma = vi.spyOn(db(a), "pragma"); expect(a.sampleNavigationValidity()).toEqual({ status: "closed" }); expect(pragma).not.toHaveBeenCalled();
+  });
+  it("generation upper bound never wraps or resumes comparability", () => {
+    const store = open(); Reflect.set(store, "navigationGeneration", Number.MAX_SAFE_INTEGER - 2);
+    store.saveSnapshot(snapshot); expect(valid(store).localSnapshotGeneration).toBe(Number.MAX_SAFE_INTEGER - 1);
+    store.saveSnapshot(snapshot); expect(store.sampleNavigationValidity()).toEqual({ status: "unavailable" });
+    store.saveSnapshot(snapshot, [], false); expect(store.sampleNavigationValidity()).toEqual({ status: "unavailable" });
+  });
+  it.each(["COMMIT", "ROLLBACK"] as const)("nested savepoint cannot announce outer %s; only a new store can compare again", async terminal => {
+    const { store } = await pair(), path = db(store).name, source = { filePath: "a.ts", contentHash: "hash", language: "TypeScript", content: "abc" };
+    db(store).exec("BEGIN IMMEDIATE"); expect(store.saveSnapshot(snapshot, [source])).toEqual(snapshot);
+    expect(store.sampleNavigationValidity()).toEqual({ status: "in_transaction" }); db(store).exec(terminal);
+    expect(store.sampleNavigationValidity()).toEqual({ status: "unavailable" });
+    if (terminal === "ROLLBACK") { expect(store.loadSnapshot("snap")).toBeNull(); expect(store.readSnapshotSource("snap", "a.ts")).toBeNull(); }
+    else { expect(store.loadSnapshot("snap")).toEqual(snapshot); expect(store.readSnapshotSource("snap", "a.ts")?.content).toBe(source.content); }
+    store.saveSnapshot(snapshot, [source]); expect(store.sampleNavigationValidity()).toEqual({ status: "unavailable" });
+    store.close(); const reopened = open(path); expect(reopened).not.toBe(store); expect(valid(reopened).localSnapshotGeneration).toBe(0);
+    expect(reopened.loadSnapshot("snap")).toEqual(snapshot); expect(reopened.readSnapshotSource("snap", "a.ts")?.content).toBe(source.content);
+  });
+});
 
 describe("graph", () => {
   it("事务化保存并读取快照", () => {
