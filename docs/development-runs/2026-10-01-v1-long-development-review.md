@@ -718,3 +718,33 @@ root形成C2三文件可审查计划：application/index.ts、新navigation-cach
 本轮原定时器乱码已由用户请求修复名称/全部中文prompt，automation API成功后ASCII JSON回读逐字相等且无U+FFFD，ACTIVE/原15分钟/原目标保持；本次heartbeat中文正常证明新的指令已恢复可读。此是协调配置修正，非仓库工程经验。一次查找非GUI文件名错误后按rg定位，属工具命令问题，不改产品门。
 
 实际Git：C1四文件7071ae42f7c8c9be82a560a38cc5ef67ed6e369a及十份接受设计/协调文档2d386dfbdafec753ec96a1eb9044f9418629d0a6已普通push exit0；ls-remote origin/main精确2d386df同本地HEAD，核对时main干净。远端URL为原https://github.com/deeplearner-ui/project-x-ray.git，未合并Sol整checkout、未公开二进制。派发后timeoutMs0确认Sol新C2回合active（turn01a10112-d6ac-7f91-a60d-c8ce61f7c5d8，cursor b41d890d-ba14-44db-b63a-e0dcbec066a0:3）；Luna仅交接待命确认回合active（turn01a10112-d8cb-7de3-8439-9ca24c465244，cursor a764dd3e-58c3-42dc-9d10-445092296241:3），没有新工具实施派发。新回合状态不作C2验收，root不与其活动文件并测。
+
+最终Git补记：三份派发/推送结果协调文档提交75b0228d78d352919827bc03ffe4add2d35aa1b7并普通push exit0，ls-remote精确同SHA，核对时main干净。随后timeoutMs0确认Luna仅交接完成idle，cursor a764dd3e-58c3-42dc-9d10-445092296241:4；Sol仍active C2，cursor b41d890d-ba14-44db-b63a-e0dcbec066a0:4。没有新交付，不重复测试或制造任务。本行作为后续稳定文档收尾补记，避免自引用提交SHA循环。
+
+## 2026-10-03 17:28：C2非冲突验收准备
+
+读当前规则/队列/最新记录/交接，main仍75b0228，仅root两记录补记未提交。原两聊天紧凑检查：Luna idle（cursor a764dd3e-58c3-42dc-9d10-445092296241:4）；Sol C2 active未冻结，最新cursor b41d890d-ba14-44db-b63a-e0dcbec066a0:6，已确认应用/C1基线一致。单次read_thread核对failed command marker实为git diff --no-index返回1表示规则版本差异，不是产品或回归失败；未因此中断/重复派发。未读取或测试其正在修改的应用源，不只按状态标完成。
+
+root只读main已接受源码/SQLite schema/O契约，准备ignored navigation-cache-independent.ts（SHA256 33A28CED5C3CEF0333DEF0E4820EB17DC25A99A849EA750672948BD625BC6AEA），尚未执行。该root自有探针拟在冻结后通过真实索引/两SQL布局验证满额小样例导航、fresh行/源码/设置、单槽加载、marker两probe零其他SQL、O聚合/摘要隔离、调用者变异、错身份、实际外部回滚/损坏/删除及原持久源码不变/close。现代快照的legacy库布局不称旧legacy快照；该小样例也不替代v2正式三配对/1177/11门与性能测量，其他竞态仍由针对性回归及独立检查覆盖。准备文件不是已运行或已验收证据。
+
+本轮无新实现验收、无GUI/build/native/Electron/provider或产品回归；AGENTS新增0。维持C2三文件与原重型窗口约束，Luna继续等待稳定接口，未制造任务或重复旧C1测试。后续冻结交付后审查实际三文件/hash并运行probe；当前main版本/GUI/远程/发布未验边界保持。上述两份root记录补记留待下一稳定文档收尾，未执行新Git动作。
+
+## 2026-10-03 17:49：C2竞态独立验收准备
+
+当前队列/规则/记录及main差异已核对，main仍75b0228，仅两份root记录补记；原Sol仍active未冻结，最新实际cursor b41d890d-ba14-44db-b63a-e0dcbec066a0:8，Luna idle cursor a764dd3e-58c3-42dc-9d10-445092296241:4。Sol报告首轮22项定向测试通过且继续补边界；这是开发方报告，root尚未运行或接受C2，不复派任务、不测试其活动文件。
+
+root依据已接受C2共同finally/封存disposition契约，补准备ignored navigation-cache-race-independent.ts，SHA256 7FEFDF412E4C17FBD33DA57F81B6A3DFF8FBE317F9C148EF86936D15CA43410C。拟在明确冻结后，用真实应用索引和第二SQLite连接，在两SQL布局×两API×三切点验证：有效load后实际提交应discard且不增加全量读取；load失败后实际提交仍记录after变化但保持failed终态；安装后fresh API失败不改已封存installed disposition。各场景还核对原payload和保存源码不变；现代快照的legacy数据库布局不称旧格式快照。该探针尚未执行，预期12场景不是已通过数量。
+
+仅对自有探针用现有TypeScript transpileModule做语法诊断，syntaxErrors为空、exit0，未导入/执行application；git check-ignore确认准备文件被忽略。语法检查不替代类型检查、真实SQLite运行或产品验收。不新增依赖、不触碰Sol源码、不启动重型验证/GUI/网络；本轮规则新增0，未执行Git收尾。后续须先核对稳定三文件及hash，再运行两份root探针与适用回归；正式三配对性能和GUI等原门仍开放。
+
+## 2026-10-03 18:07：C2后台独立接受与T2实施门
+
+原两聊天紧凑检查确认Sol冻结后idle，最新cursor b41d890d-ba14-44db-b63a-e0dcbec066a0:9；Luna仍idle a764dd3e-58c3-42dc-9d10-445092296241:4。root核对实际worktree HEAD455d4ad与原未提交边界，冻结三文件hash与交付完全匹配，C1/S5七个冻结源码hash保持。相对main已接受版本独立审查完整导航/observer差异及43回归，未接受其旧桌面/UI等其他修改。
+
+root实际Sol43定向（9.80s）/225应用（95.43s）/111图（5.09s）、两包noEmit与两份SQLite探针通过。精确三文件复制main并核对hash后，main整包229应用（108.79s）/114图（5.36s）、两包noEmit、双布局48导航响应及12竞态探针通过。main原既有额外回归纳入整包，实际数量区别于旧部分切片记录；不改旧测试时限或断言。完整命令、源码/投影/来源/current/legacy/fresh/异步/coverage及候选终态复审见本批2026-10-03-navigation-cache-application.md的root节。
+
+root竞态探针首轮exit1属测试缺陷：同值payload UPDATE未产生data_version变化。真实WAL双连接控制实验分别确认false/true，改为自有fixture root_path实际变更且原payload/source不变，保持原断言复验12/12。修正后ignored probe hash 1D40B7EC3456AE33A8B2AC2EF90B5055A4654BAE83DC12A9C7CC4EC3D293EF8D；不是产品失败或降低门。一般probe33A28CED…不变。本批公共AGENTS新增0，相关预防门已在既有规则/专项契约，不为条目数量新增。
+
+C2后台切片独立接受，核对exact三文件cached diff/check后提交db0630edcf82dfab25478b1b156ca2f98c232717，未整体合并worktree。远程目标仍原GitHub origin/main；本节写入时推送待公共接受文档一并执行。GUI/Electron/native/build/dist/provider/正式benchmark本轮0，后续实际性能门仍为三同调用配对、每轮两API1177、原11门、完整可比观察下两轮full-load≤2，不以小样例缓存复用称收益。
+
+root已形成T2实施计划2026-10-03-navigation-optimized-tool.md，有当前v1实际源码/固定hash/C2公开端口依据；只原Luna主目录三新工具+run，协议、隐私、计数域、资源/child关闭及真实验收窗口明确。待计划Git收尾派发；原Sol保持冻结待命，不给无依据新任务。main未验UI接线、远程模型质量/隐私选择、签名和干净Windows门保持开放。

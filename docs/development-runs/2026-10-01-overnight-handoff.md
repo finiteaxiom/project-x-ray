@@ -133,3 +133,13 @@ Sol修正回合已确认active。Luna首稿root完整读后，继续原两文档
 定时器乱码已通过原automation API重建中文名称和完整prompt，回读逐字相等且无替换字符，启用/15分钟/原目标保持，本次heartbeat中文正常。该配置修正不是工程经验。用户恢复电脑操作后仍须补真实导航、当前性、取消恢复与界面交互；远程兼容/质量、签名与干净Windows保持未验收，不将后台或设计通过改写为产品全批完成。
 
 本轮普通push已核实：C1 7071ae4与十份设计/协调文档2d386dfbdafec753ec96a1eb9044f9418629d0a6均在origin/main，ls-remote精确同SHA、main干净。Sol新C2回合已确认active；Luna仅确认已接受设计交接后待命，工具未派。完整新回合游标见review最新节；此补记不是新验收或新工程经验。
+
+最终协调文档75b0228d78d352919827bc03ffe4add2d35aa1b7已普通push，远端精确同SHA；Luna交接完成idle、Sol C2 active，最新实测游标均后缀4（完整见review）。暂无C2实现交付；后续按稳定hash审查，不并发验证其活动源码。
+
+17:28：Sol C2仍active未冻结、最新cursor后缀6，Luna idle后缀4，完整值见review。root已准备自有ignored双布局真实SQLite/导航/observer验收探针，尚未执行、不称通过；未运行活动源码回归或GUI。main仍75b0228，仅root记录补记待后续稳定收尾，本轮无新验收、Git动作或AGENTS规则。
+
+17:49：Sol C2 active未冻结、最新cursor后缀8，报告首轮22项定向测试并继续补边界；该报告未作root验收。Luna仍idle后缀4，完整游标见review。root补准备独立竞态探针，拟验证两布局/两API的load后提交、load失败后提交以及安装后fresh失败三切点；只有自有脚本语法检查通过，12场景尚未运行。两份ignored探针须待明确冻结才执行，不测试活动源码；main仍75b0228，未新增Git动作或工程规则，GUI/正式性能未验收边界保持。
+
+18:07新增实际成果：C2后台导航单槽/observer三文件独立接受、精确集成提交db0630edcf82dfab25478b1b156ca2f98c232717。root Sol43定向/225应用/111图，main229应用/114图，两边两包noEmit、双布局48导航响应和12真实SQLite竞态探针通过。root探针同值UPDATE未改变token的测试缺陷已控制实验诊断并修正，全部原断言保持；无产品红测或新AGENTS条目。Sol最新cursor后缀9已冻结idle，Luna后缀4idle（完整见review）。Git普通推送待接受计划/协调文档本轮收尾核对。
+
+已实现/独立代码回归已验证：仅已有getEvidence/readSource后台私有缓存与可选只读观察端口，仍逐次取证据/源码/设置及工作区校验。真实GUI已验证：本轮0，用户临时暂缓仍有效。正式性能、用户实际导航交互、远程质量/隐私选择与Windows发布外部门继续未验收。root T2计划就绪，原Luna仅三新工具+run；正式CLI及三配对由协调窗口执行，不能把48响应小样例当1177门或泛化提速结论。用户可沿原导航路径使用当前源码成果，界面行为须恢复电脑操作后补验。
