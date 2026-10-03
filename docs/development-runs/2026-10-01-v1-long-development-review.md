@@ -716,3 +716,5 @@ O/T四文档冻结hash全部与Luna交付匹配（计划O CC73D99C…、记录O 
 root形成C2三文件可审查计划：application/index.ts、新navigation-cache.test.ts与独立run，窄单槽与可选pull-only observer一起实施。main/Sol application实际SHA均A2ABD80A9350B42B0AA91FABA3B400E4E17684880C23A0F7A908DB245C3FCCCE；C1两源码对齐，原S5不重做。普通测试窗口本轮已结束；Sol可在该精确范围开工，Luna保持idle等稳定接口后再派v2三文件工具，不制造额外准备或同文件竞争。正式收益仍等待后续工具/三配对；真实GUI仍暂缓，远程/Windows外部门保持。
 
 本轮原定时器乱码已由用户请求修复名称/全部中文prompt，automation API成功后ASCII JSON回读逐字相等且无U+FFFD，ACTIVE/原15分钟/原目标保持；本次heartbeat中文正常证明新的指令已恢复可读。此是协调配置修正，非仓库工程经验。一次查找非GUI文件名错误后按rg定位，属工具命令问题，不改产品门。
+
+实际Git：C1四文件7071ae42f7c8c9be82a560a38cc5ef67ed6e369a及十份接受设计/协调文档2d386dfbdafec753ec96a1eb9044f9418629d0a6已普通push exit0；ls-remote origin/main精确2d386df同本地HEAD，核对时main干净。远端URL为原https://github.com/deeplearner-ui/project-x-ray.git，未合并Sol整checkout、未公开二进制。派发后timeoutMs0确认Sol新C2回合active（turn01a10112-d6ac-7f91-a60d-c8ce61f7c5d8，cursor b41d890d-ba14-44db-b63a-e0dcbec066a0:3）；Luna仅交接待命确认回合active（turn01a10112-d8cb-7de3-8439-9ca24c465244，cursor a764dd3e-58c3-42dc-9d10-445092296241:3），没有新工具实施派发。新回合状态不作C2验收，root不与其活动文件并测。
