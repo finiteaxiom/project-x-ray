@@ -155,3 +155,11 @@ Sol修正回合已确认active。Luna首稿root完整读后，继续原两文档
 19:08实际推送：baseline精准修正与六份计划/记录ce1b9b547ebd29a5eab8c98110a2412aea12eb58已普通push，远端精确同SHA。未提交活动T2工具/GUI，仅接受后台类型修正；工具正式验收与三配对仍待冻结。此补记留待后续稳定记录收尾。
 
 19:17新增确认缺陷：T2首版真实索引后错源码content/targetSpan行号/source.evidence范围三型仍被工具误报全11门通过。root普通22项/严格类型/正常CLI单对虽通过，当前不接受T2或性能结论。已交原Luna四文件修正完整响应核验，active cursor后缀14，Sol保持idle后缀9；完整复现/hash/预期见2026-10-03-navigation-optimized-independent-review.md及review。正式三配对/challenge/cancel/timeout待修正冻结后独立复验，未验工具未提交，main仍ce1b9b5；GUI继续暂缓，本轮无新增规则。
+
+拒绝验收与修正计划五份文档已推送5264f39b1d195c84c8510f2d4ed0dcc664d023c1，远端精确相同；未验T2四文件保留未跟踪，Luna原修正active cursor后缀15。此记录提交不代表实现/性能验收，后续仍待冻结和三反例独立复验。
+
+19:32：Luna T2修正仍active未冻结，最新cursor后缀17（完整见review）；开发报告23项/严格类型通过尚未作root复验。root准备独立第二连接真实child挑战脚本，覆盖首建/重建/末次返回前提交及原材料不变，只语法检查通过、尚未执行，不计性能门。正式验收仍待新冻结，Sol原idle后缀9；main5264f39，无新实现接受/GUI/Git/规则，记录待稳定收尾。
+
+2026-10-04 00:43新增独立接受：T2完整导航结果修正通过原三真实反例复验、23项回归和严格类型。原CLI正式三配对各4708调用/11门/full-load2，总14124调用/33门，独立报告算术复核通过；第二SQLite提交首建/重建/末次返回前挑战均保持证据并标不可比较。真实取消/超时关闭child并停止后续组。完整原始值、hash、runId及命令见2026-10-03-navigation-optimized-independent-review.md。cold/warm wall median1354.5231/1340.0910ms是固定medium样例本轮值；没有相同协议旧wall或缓存净内存对照，不声称通用提速倍数。
+
+已实现/独立代码与回归已验证：本地导航v2测量CLI及完整响应核验，工具四文件可精确收尾。用户可运行`pnpm exec tsx benchmarks/local-index-navigation-optimized.ts --pairs 3 --timeout-ms 180000`，仅固定自有样例，不执行样例代码。真实GUI已验证本轮0；原产品导航/当前性/取消恢复GUI、远程质量与隐私选择、安装升级卸载、签名和干净Windows仍未验。原两线程idle，最新真实游标Luna5f905603-9e05-4a70-bae4-5e6a5162a670:2、Solcfe7da2a-d1e4-4a1f-9168-182cb9c80d36:1；不重做已接受C2。AGENTS新增0，反馈闭环已有规则覆盖。Git实际SHA/推送与下批发布质量计划待本轮收尾补记，不提交未验UI。

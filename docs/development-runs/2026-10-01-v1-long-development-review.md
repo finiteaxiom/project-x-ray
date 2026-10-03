@@ -776,3 +776,23 @@ root只读接受O/T字段/计数域和旧v1源码，准备ignored navigation-opt
 Luna首版冻结idle cursor后缀13，三源码hash完全匹配。root实际22项/2文件（675ms）、完整strict+exactOptionalPropertyTypes、原help/正常CLI单对通过；真实报告4708调用、两次导航full-load、child安全关闭。随后root原受控child+真实medium索引，公共readSource返回后分别改错content但留声明hash、targetSpan起止行、source.evidence范围，三型均误报completed/OK、11门true、optimization passed。确认resolveNavigation只核声明hash/部分ID/filePath，cold/warm同错一致不能证明正确。详见2026-10-03-navigation-optimized-independent-review.md，原单对不作性能接受。
 
 已派原Luna继续同四文件完整响应核验和定向回归，实际新回合01a1017c-052c-73c3-9975-1d78514aebef active，cursor a764dd3e-58c3-42dc-9d10-445092296241:14；Sol原idle b41d890d-ba14-44db-b63a-e0dcbec066a0:9。冻结v1/application/contracts/fixture不改，重型窗口结束，不并发运行活动工具。正式三配对、challenge、cancel/timeout待新冻结复验；GUI/其他外部门保持未验，不提交T2实现。本轮规则新增0，根因与修正门记录已写计划/队列。
+
+实际协调Git收尾：五份计划/拒绝验收/交接记录提交5264f39b1d195c84c8510f2d4ed0dcc664d023c1并普通push exit0，ls-remote origin/main精确同SHA；核对时仅Luna四活动文件未跟踪，未提交T2实现。最新紧凑检查原Luna修正active cursor a764dd3e-58c3-42dc-9d10-445092296241:15，已确认具体根因与四文件边界。此补记留后续稳定记录收尾，非产品验收或新工程经验。
+
+## 2026-10-03 19:32：第二连接实际child验收准备（未执行）
+
+原Luna继续T2完整响应修正active未冻结，最新实际cursor a764dd3e-58c3-42dc-9d10-445092296241:17；报告23项/严格类型已通过是开发方结果，root尚未运行修正版。Sol仍原idle后缀9。root不读取/运行活动T2源码，只读已接受C2应用/公开scope与SQLite schema，应用hash855105B4…保持。
+
+准备ignored t2-external-commit.ts（97ECC267E7D6954405DFC054A635000A6E38170EDC24FDE6AC98D53B6D0C29F3）及child（B0431F5B6B23AB1A8CEE9382A42D79CAF5BE6CB11C4B08F46E9CFB3C75FC2166）。拟在新冻结后原runControlledOptimizedChild/真实medium索引中，通过公开应用scope/getEvidence/readSource与GraphStore.loadSnapshot边界控制首建、外部重建和最后API返回前第二连接实际commit。写点仅自有临时库snapshots.root_path追加字符，避免同值UPDATE；即时核对其他所有表和payload/createdAt不变，cold末核对全材料，warm reindex后核对旧payload/事实/保存源码/createdAt不变（不把合法current晋升误判为坏写）。断言完整1177/4708及原11门、观察外部变化/不可比较、首建/重建discard后下一lookup实际reload和child关闭；三个challenge独立于正式--pairs3，不进入性能汇总。
+
+仅TypeScript transpileModule语法检查exit0、两文件syntaxErrors空，check-ignore确认ignored，未导入/执行工具或产品、未运行SQLite挑战。准备脚本及预期计数不称通过；后续须待修正版明确冻结/hash后实际验证，失败仍诊断原记录。无新产品验收/性能/GUI/Git或AGENTS规则，不制造Sol任务。
+
+## 2026-10-04 00:43：T2完整结果修正与固定样例测量独立接受
+
+核对当前队列、规则、审查与交接，main实际5264f39b1d195c84c8510f2d4ed0dcc664d023c1；原两聊天idle，wait cursorReset后实际Luna5f905603-9e05-4a70-bae4-5e6a5162a670:1、Solcfe7da2a-d1e4-4a1f-9168-182cb9c80d36:1。重置返回旧C2交付不重复接受。通知Luna冻结并独占root真实运行窗口后，其确认回合01a102a2-2454-7551-a113-ba77b559ecab completed，最新Luna:2。三修正源码及开发记录hash全部匹配，C2/v1/helper/fixture冻结hash再核保持；仅四T2新文件与root记录，Sol原未提交desktop/UI等改动不动。
+
+root23项/2文件（775ms）与同一完整严格类型命令通过。原三真实错响应均failed/EQUIVALENCE_GATE_FAILED、navigationResolved=false、optimization failed、childclosed，确认漏检已修复。三真实第二SQLite连接commit挑战通过，首建/重建丢弃并reload、末次返回前变化被捕获，原11门和完整调用保持、原材料不变，均明确外部变化不可比较。原CLI单次三配对run0d053717-b015-4b4a-a96a-6dc5e391a7a1 exit0：三组各4708 API/11门/两次full-load，全部closed无强杀/协议错误；206848字节报告由独立非产品校验器复算O/R/Delta/准入/coverage及七根计数通过。原始wall/API/heap及median/min/max见2026-10-03-navigation-optimized-independent-review.md，完整返回核验增加wall开销，不与旧v1不同口径宣称提升倍数，也不外推真实项目。
+
+真实整工具预取消/运行中取消与原CLI5000ms超时通过；真实child关闭、剩余pair不启动、取消/超时不算性能通过。具体唯一runId与命令见专项独立记录。T2四文件独立接受，可精确Git收尾；GUI本轮0仍按用户暂缓，不提交未验界面，不执行远程/凭据/安装发布。AGENTS新增0，证据/完整结果门已有覆盖，具体反馈闭环保留。
+
+接下来先核对第四批当前源码差距：已有portable结构脚本没有源码提交/完整文件hash/Authenticode状态门，也没有Windows凭据模块检查；旧4A的schema9/无凭据实现描述已过时。root只读确认GraphStore构造顺序migrate→remote.migrate→ownershipCapsules.migrate，以及应用全局/项目库打开边界，当前无backup端口。依据这些可推进的发布质量缺口形成分目录设计/实施计划，不把未验安全接线或旧TODO转为已完成，重型窗口已结束。
