@@ -870,3 +870,21 @@ B0新hash5F6AAACAC39759177C3A622CCF5A0E55D1C11DD3598B5E561B34B71EE2F2D874 /A2DE3
 本轮AGENTS新增0：P纯协议规则已有覆盖，B0与新计划是设计/用户授权而非运行经验。已实现/独立代码回归：P；真实GUI本轮0；实际artifact/发布来源关联、生产数据保护/安装升级卸载、远程及签名/干净机器原未验门保持。下一Git只精确纳入已接受P三文件、独立审查、B0两文档及root计划/记录，未验S1a不提交。
 
 实际派发确认：Sol S1a回合01a10324-cae6-7bf2-8e28-d92608da1b58 active，cursor cfe7da2a-d1e4-4a1f-9168-182cb9c80d36:19；Luna交接回合01a10324-cbb5-7c21-bbea-6040002be30e完成idle，cursor5f905603-9e05-4a70-bae4-5e6a5162a670:19。旧活动文件未纳入Git。
+
+本轮真实Git：精确10个已接受文件及协调材料提交f0e9a799dc9c225aea212ceac900c4b223638a5f，普通push exit0，独立ls-remote origin/main精确同SHA，核对时main干净。未合并旧worktree实现，未提交S1a活动文件/原生产物/未验GUI，没有公开二进制。此Git回执待下一稳定记录提交，避免为回执无限提交。
+
+## 2026-10-04 05:24：额度中断后的原S1a恢复
+
+先读当前规则/队列/review/handoff/Git，main仍f0e9a799dc9c225aea212ceac900c4b223638a5f，仅root两Git回执待提交。实际wait_threads携上次cursor19：Luna idle/unchanged；Sol S1a回合01a10324-cae6-7bf2-8e28-d92608da1b58 failed systemError，提示额度及05:18重试，cursor cfe7da2a-d1e4-4a1f-9168-182cb9c80d36:20。该事件是资源中断，不是产品缺陷，不把已保存部分当交付。
+
+root只读核对Sol旧HEAD455d4ad50830ee2495b70927e51caf830a4efbb8、本批.gitignore修改及新binding.gyp512字节/windows_upgrade.cc24904字节/build-windows-upgrade.cjs1320字节；尚无adapter/test/fixture/smoke或新开发记录交付，未运行活动源码、未复制或提交partial。实际usage工具ordinaryUsageAllowed=true，五小时已用2%，表明可恢复；未使用购买或reset credit。原授权下发送恢复消息保留partial与原文件边界，原S1a唯一native/Electron技术窗口继续交Sol。
+
+恢复新回合01a103a7-65f4-7573-9ccc-504754912522已确认active，实际cursor cfe7da2a-d1e4-4a1f-9168-182cb9c80d36:21；Luna5f905603-9e05-4a70-bae4-5e6a5162a670:19 idle冻结。无新产品/GUI验收、测试或Git动作、AGENTS新增0；后续待明确冻结交付独立复验，不重复旧P/4B-A检查。
+
+## 2026-10-04 05:57：S1a首稿独立反例拒绝
+
+实际双线程快照Luna idle cursor19、Sol冻结完成cursor23（完整分别5f905603-9e05-4a70-bae4-5e6a5162a670:19和cfe7da2a-d1e4-4a1f-9168-182cb9c80d36:23）。核对八文件/ignore一行与冻结hash/core基线后，root接管唯一native技术窗口。重构建、graph noEmit、Node/GC/crash原smoke及真实Electron44.4.3技术入口复验通过；targeted30项29通过/1真实file symlink EPERM环境失败，保留断言与未验门。
+
+root独立自有真实adapter探针确认两产品缺陷：Proxy输入被接受并执行14次trap；真实AbortSignal覆盖removeEventListener抛错，acquired-progress原失败被任意文本掩盖并跳过api.close，实际write再占用失败。首稿不接受，原Sol仅adapter/test/记录及必要原smoke修正，其他文件冻结；完整原始结果/hash/命令/入口探针自身失败诊断见2026-10-04-upgrade-file-capabilities-independent-review.md。没有生产数据/GUI操作；原件零SQLite门保持，未纳入S1a Git。AGENTS新增0，已有输入/失败清理规则覆盖。main仍f0e9a79，仅协调记录/队列更新，Git回执保留待稳定收尾。
+
+修正派发实际确认：原Sol新回合01a103c7-32a5-7f31-a9f7-36ff72f11c61 active，cursor cfe7da2a-d1e4-4a1f-9168-182cb9c80d36:24；Luna5f905603-9e05-4a70-bae4-5e6a5162a670:19 idle。重型native/Electron窗口交回Sol，仅原adapter/test/记录和必要原smoke；root不与活动改动并发验证。当前只精确收尾四份协调审查/队列材料，不纳入未验实现。

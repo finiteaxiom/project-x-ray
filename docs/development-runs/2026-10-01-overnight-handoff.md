@@ -189,3 +189,9 @@ Sol修正回合已确认active。Luna首稿root完整读后，继续原两文档
 03:02新增独立接受：4B-P产物清单纯协议22项回归、语法/desktop类型及94组独立合成状态/篡改/5000文件往返检查通过，详见2026-10-04-artifact-protocol-independent-review.md；模块导入只纯函数，调用者观察未认证、发布/构建关联/运行接线固定未评估。B0修订两设计文档经实际源码复审接受并精确复制主目录，raw-material只证明指定字节材料，不批准恢复/生产。
 
 已实现/独立代码与回归已验证：仅P纯协议；真实GUI验证0。用户可直接运行node node_modules/vitest/vitest.mjs run apps/desktop/src/windows-artifact-manifest-protocol.test.ts --fileParallelism=false核合成门，但无真实产物扫描路径。Sol后续S1a新计划已精确派发，仅原生根/整组源能力/分块读取/释放及自有Node/Electron技术试验；无产品原包/恢复/SQLite打开/GUI。Luna冻结待root收尾，不自行阶段B。新计划hash/实际线程/范围见review。AGENTS新增0，发布/远程/签名/干净Windows原未验项继续开放；Git实际版本待下文核对，活动实现不纳入。
+
+本轮版本f0e9a799dc9c225aea212ceac900c4b223638a5f：P纯协议及接受文档/下批计划共10文件普通提交推送成功，origin/main精确同SHA；main核对时干净，随后仅本Git回执待下一稳定记录提交。Sol S1a继续active，Luna接受交接idle，实际完整游标均后缀19见review；生产保护/真实artifact/GUI仍未验。
+
+05:24：Sol原S1a因额度中断留下三份原生/构建草稿和ignore修改，尚未交付或验收。实际额度工具确认可用后已保留全部partial恢复原线程，新回合01a103a7-65f4-7573-9ccc-504754912522 active/cursor21；Luna冻结idle19。main仍f0e9a79，用户无需额外处理；不将partial或旧测试当完成，未运行/提交活动实现，生产数据保护/真实artifact/GUI原门保持。详见review最新节。
+
+05:57新实质缺陷：S1a冻结首稿经root真实源码/重构建/类型及Node、GC、crash、实际Electron技术smoke复验，普通29/30通过，file symlink EPERM仍未验。独立真实adapter反例确认Proxy执行14次trap且被接受；可覆盖signal清理方法抛错掩盖固定错误，实际整组未即时释放。因此S1a未接受/未复制/未提交，已交原Sol限定adapter/test/记录及必要原smoke修正，保持其余原生/core/UI冻结。完整证据见2026-10-04-upgrade-file-capabilities-independent-review.md。已实现是首稿文件能力，独立回归仅上述部分，真实GUI0；生产升级/原始包/恢复/VFS/实际artifact和原外部门保持。版本仍f0e9a799dc9c225aea212ceac900c4b223638a5f，AGENTS新增0。
