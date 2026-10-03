@@ -1,6 +1,6 @@
 # 3F-T：快照导航优化测量协议 v2
 
-状态：2026-10-03协调方独立接受修订设计；本文件只定义后续诊断工具，不授权实现产品缓存或运行测量。
+状态：2026-10-03 17:18 协调方独立接受 O/T 四文档同步修订，原计量门保持。本文件只定义后续诊断工具；实现等待 C2 产品端口稳定，不授权运行测量。
 
 ## 目标与版本边界
 
@@ -122,17 +122,41 @@ optimizationGate: {
 }
 ```
 
-实际 v2 JSON 必须通过 exact-key 验证；数值必须是有限、非负、安全整数或按 v1 规则校验的有限时长。每个 cold/warm 阶段的每个 API 调用必须且只能取得一个 observer 最终决定：`lookupDecisions` 按阶段和 API 分开计数，其分布总和必须各为 1,177；每阶段为 2,354、每个配对为 4,708。最终决定不能先计 `miss`、随后又把同一次请求的 `build_discard_*` 当作第二个 lookup 决定。
+实际 v2 JSON 必须通过 exact-key 验证；数值必须是有限、非负、安全整数或按 v1 规则校验的有限时长。每个 cold/warm 阶段的每个 API 调用必须且只能取得一个 observer 最终决定：`lookupDecisions` 按阶段和 API 分开计数，其分布总和必须各为 1,177；每阶段为 2,354、每个配对为 4,708。该最终决定表示 Application cache resolver 的 disposition，不代表后续 API 操作是否成功。resolver 封存 disposition 后，在 API settle 时只发布一次；后续 `getEvidence` fresh row、`readSource` 范围/配置/workspace 检查失败由 API `errors` 与语义门单独记录，不能把已封存的 hit/installed/bypass 改写成 `lookup_error`。resolver 尚未封存 disposition、且没有 candidate 时发生的 resolver error 才计 `lookup_error`；store 在 resolver 入口已关闭时计 `store_closed_error`。不得先计 miss 再将同一 lookup 的 discard 计作第二个决定。
 
 `observer.status === "enabled"` 时必须有非空 `contractVersion`，且所有 observer 计数可用；其他状态的 `contractVersion`、lookup/build/race/admission/external outcome 数据必须为 `null`，coverage 各 checkpoint 均为 `false` 且 `complete=false`，不能用零值伪装“没有事件”。任何非 enabled 状态均不可性能比较。
 
-build、admission 和 token-change observations 是独立计数域，并执行以下交叉核验：`candidateBuilds.attempted = installed + discarded + rejectedByAdmission + failed + cancelled`；`installed` 等于最终决定 `empty_build_installed` 与三类 `*_rebuild_installed` 之和；`discarded` 等于四类 `buildRaceReasons` 之和，并与最终决定中的 `build_discard_*` 次数一致；`rejectedByAdmission` 等于 `projection_limit_fallback` 决定数。`failed` 等于 `build_error_fallback` 决定数，`lookup_error` 仅计不属于 candidate build 的 API 失败。每阶段 `projectionAdmission.evaluatedCount = acceptedCount + overLimitCount + invalidCount`，`rejectedByAdmission = overLimitCount`，`invalidCount` 只能对应 candidate `failed` 终态；acceptedCount 至少覆盖 installed 与 race-discarded 候选数，因已准入候选之后再失败/取消时仍计入 admission accepted bytes。`acceptedBytesTotal`/`maxAcceptedBytes` 使用产品 observer 实际准入 estimator 的 accepted 结果，不另行重算。完整加载数由真实 full-load 边界直接计数，并与阶段化 `storage.*.*.loadSnapshot.count` 交叉核对，不能由 `lookupDecisions` 反推，反之亦然。
+build、admission 和 token-change observations 是独立计数域，并执行以下交叉核验：`candidateBuilds.attempted = installed + discarded + rejectedByAdmission + failed + cancelled`；`installed` 等于最终决定 `empty_build_installed` 与三类 `*_rebuild_installed` 之和；`discarded` 等于四类 `buildRaceReasons` 之和，并与最终决定中的 `build_discard_*` 次数一致；`rejectedByAdmission` 等于 `projection_limit_fallback` 决定数；`failed` 等于 `build_error_fallback` 决定数。`lookup_error` 只计 resolver 尚未封存 cache disposition 且没有 candidate 时的 resolver error；封存后的 API error 由 `navigation.counts.errors` 独立计数。
 
-`externalObservations` 是固定检查点与 token comparison outcome 的有界聚合，不输出原始 token。每阶段须覆盖 `phase_start`、每个 API 的 `lookup_validity`、每次建槽/重建的 `build_before` 和 `build_after`，以及全部响应完成后的 `after_last_lookup`；对应事件计数必须分别为 1、2,354、`candidateBuilds.attempted`、`candidateBuilds.attempted`、1。每个 `build_after` outcome 必须相对同一次 candidate 的 `build_before` 分类；`external_only`、`local_only`、`both_changed` 分别与 `buildRaceReasons` 同类 discard 计数相等，unavailable/invalid/transaction/closed 等不可分类 outcome 与 `unclassified` reason 相等。phase-start/lookup/end 的外部变化计数另行保留；同一提交可能在多个 checkpoint 被观察到，这些是观察次数而非唯一提交次数，不能相加成“提交数”。observer 版本/覆盖状态缺失、任一检查点不全、token 无效/不可用、事务/关闭状态无法排除、或 build race 原因 `unclassified` 时，性能比较必须拒绝，不能由“没有 external enum”推断无外部提交。无外部变化只可在完整覆盖且所有边界 outcome 均无 external/both change 时成立。比较窗口在 `after_last_lookup` 结束；之后发生的提交不声称能被本次观察捕获，且多表读取仍非原子视图。
+每阶段一个 candidate 至多调用一次 admission estimator，故 `evaluatedCount <= candidateBuilds.attempted` 且 `evaluatedCount = acceptedCount + overLimitCount + invalidCount`；`rejectedByAdmission = overLimitCount`，`invalidCount <= candidateBuilds.failed` 且每个 invalid estimator outcome 都对应 failed candidate。不得把完整 load 在 estimator 前失败的 candidate 算作 invalid；该 candidate 计 failed，但不产生 admission evaluation。acceptedCount 至少覆盖 installed 与 race-discarded 候选；任何已准入候选即使后来因 race、failed 或 cancelled 终止仍计 admission accepted bytes。`acceptedBytesTotal`/`maxAcceptedBytes` 使用产品 observer 实际准入 estimator 的 accepted 结果，不另行重算。完整加载数由真实 full-load 边界直接计数，并与阶段化 `storage.*.*.loadSnapshot.count` 交叉核对，不能由 `lookupDecisions` 反推，反之亦然。
 
-优化门仅在语义门通过、observer 覆盖完整、token 可比较、未观察到 external/both change、且 `navigationTotal ≤ 2` 时为 `passed`。完整观察且无外部变化但加载数大于 2 为 `failed`；语义门失败始终使配对失败；观测到外部变化时为 `inconclusive_external_write`；observer 覆盖/分类不足时为 `inconclusive_external_observation`。失败或部分 child summary 不可被修补成通过。
+race reason `R` 与 candidate `build_after` token outcome `O` 使用有界但分离的计数域。`O` 仅指 `build_after` checkpoint，不包含 phase start、lookup 或 phase end observations。每个 attempted candidate 恰有一个 `build_before` 与一个 `build_after`；完整覆盖时 `sum(O) = candidateBuilds.attempted`。对 `external_only`、`local_only`、`both_changed`，各自 `R_x <= O_x`；`R_unclassified <= O_unavailable + O_invalid_type + O_in_transaction + O_closed`。令 `V` 为右侧四种不可比较 outcome 的总数，则
 
-root report 使用分开的可重算计数：`terminalSummaryPairCount`、`semanticValidPairCount`、`performanceComparablePairCount`、`optimizationPassPairCount`、`externalWriteInconclusivePairCount`、`externalObservationInconclusivePairCount` 与 `notStartedPairCount`。pair status 固定为 `completed`、`failed`、`cancelled`、`timed_out`、`inconclusive_external_write`、`inconclusive_external_observation` 或 `not_started`：`completed` 代表 child summary、11 门、响应数、observer 覆盖和优化门全部通过；`failed` 代表已运行但语义/优化/协议门失败；两个 inconclusive 状态仅表示语义完整通过但分别存在外部变化或观测覆盖不足。性能可比较要求完整执行、11 门通过、响应数正确、observer 覆盖完整、所有 token observation 可分类且没有 external/both change，并在同一调用的环境记录下；优化通过是性能可比较的子集，另要求 `navigationTotal ≤ 2`。计数只从逐对状态及对应summary重算。
+```text
+Delta = (O_external_only - R_external_only)
+      + (O_local_only - R_local_only)
+      + (O_both_changed - R_both_changed)
+      + (V - R_unclassified)
+0 <= Delta <= candidateBuilds.failed
+                    + candidateBuilds.rejectedByAdmission
+                    + candidateBuilds.cancelled
+installed <= O_unchanged
+```
+
+当 `failed = rejectedByAdmission = cancelled = 0` 时 `Delta=0`，所有非负差项均为 0，故每种变化的 `R_x=O_x`、`R_unclassified=V`，且 `installed=O_unchanged`。这些关系允许 failed、准入拒绝或取消的 candidate 在共同 finally after sample 中真实观察到变化/不可比较状态，同时保留 failed/rejected/cancelled 终态；它们不能被改写成 race discard。安装只能在 after outcome unchanged 时发生。完整事件采集且计数互相矛盾是协议失败，不能用任何 inconclusive 状态覆盖。若 checkpoint 实际缺采集，coverage bool 必须为 false，缺失 outcome 不参与这些不等式；只有 coverage 不足、其余可验证的协议关系无违例且语义门完整通过时才可能 inconclusive。若报告声称 checkpoint/coverage 完整但事件分布数量不符、或跨字段关系违例，属于协议失败，不按缺采集豁免。汇总计数不证明 before/after 属于同一个候选；Application 回归必须用私有 candidate 关联检查一一配对，不能为此添加逐请求报告或暴露原 token。
+
+`externalObservations` 是固定检查点与 token comparison outcome 的有界聚合，不输出原始 token。每阶段须覆盖 `phase_start`、每个 API 的 `lookup_validity`、每个 attempted candidate 的 `build_before` 和 `build_after`，以及全部响应完成后的 `after_last_lookup`；对应事件计数必须分别为 1、2,354、`candidateBuilds.attempted`、`candidateBuilds.attempted`、1。Application 产品 cache path 在共同 finally 点为每个 candidate attempt 取得 after 样本，不论 load/admission 成败且不论 observer enabled；observer 只接收该实际样本。不能为补 coverage 而启动 observer-only pragma probe。每个 `build_after` outcome 必须相对同一次 candidate 的 `build_before` 分类。对 external/local/both，race reason `R_x` 满足 `R_x <= O_x`；`R_unclassified <= O_unavailable + O_invalid_type + O_in_transaction + O_closed`。difference 的 aggregate bound 与 installed-after-unchanged 约束见前节；变化/不可比较 outcome 可来自 failed/rejected/cancelled candidates，所以不再要求与 discard 数一律相等。phase-start/lookup/end 的外部变化计数另行保留；同一提交可能在多个 checkpoint 被观察到，这些是观察次数而非唯一提交次数，不能相加成“提交数”。observer 版本/覆盖状态缺失、任一检查点事件缺项时 coverage 不完整；token 无效/不可用、事务/关闭状态、或合法的 unclassified outcome 表示事件已覆盖但不可比较。性能比较必须拒绝这些状态，不能由“没有 external enum”推断无外部提交。无外部变化只可在完整覆盖且所有边界 outcome 均无 external/both change 时成立。比较窗口在 `after_last_lookup` 结束；之后发生的提交不声称能被本次观察捕获，且多表读取仍非原子视图。
+
+优化门优先级固定如下，且不增删 summary/report 字段：
+
+1. 语义门失败、完整观测数据上的任何 protocol relation 违例、或 candidate `failed`/`rejectedByAdmission`/`cancelled` 任一非零，令 optimizationGate 为 `failed`。这包括 fallback API 语义成功但候选构建失败或容量拒绝；不得用外部写入/观测不足的 inconclusive 状态覆盖。
+2. 仅在语义门完整通过、无 protocol relation 违例且 failed/rejected/cancelled 均为 0 时，事件缺采集或 token classification 不足可令 `inconclusive_external_observation`。coverage 不足优先于同时存在的 external/both observation。
+3. 协议关系成立、完整覆盖和 token 可比，但存在 external/both change 时令 `inconclusive_external_write`。
+4. 仅当语义门、协议关系、coverage、token 可比性均通过，无 external/both change，failed/rejected/cancelled 均为 0 且 `navigationTotal ≤ 2` 时为 `passed`。覆盖完整、无外部变化而加载数大于 2 为 `failed`。
+
+完整采集下的 R/O、admission、terminal relation 违例是 protocol failure，不能降为 inconclusive。事件确实缺采集时必须用 checkpoint coverage false/complete false 表示，缺失 outcome 不得填零或伪造；仅其余可验证关系无违例且语义门通过时才可 observation-inconclusive。pair `failed` 优先于两个 inconclusive status；inconclusive 只用于语义门通过且 protocol relations 合法的外部写入或观察不足配对。失败或部分 child summary 不可被修补成通过。
+
+root report 使用分开的可重算计数：`terminalSummaryPairCount`、`semanticValidPairCount`、`performanceComparablePairCount`、`optimizationPassPairCount`、`externalWriteInconclusivePairCount`、`externalObservationInconclusivePairCount` 与 `notStartedPairCount`。pair status 固定为 `completed`、`failed`、`cancelled`、`timed_out`、`inconclusive_external_write`、`inconclusive_external_observation` 或 `not_started`：`completed` 代表 child summary、11 门、响应数、observer coverage 和优化门全部通过；`failed` 代表已运行但语义/优化/protocol gate 失败，包括协议关系违例及 candidate failed/rejected/cancelled 非零；两个 inconclusive status 仅在语义门完整通过、协议关系无违例时分别表示外部变化或观察采集/分类不足。观察不足优先于同时发现的外部变化。性能可比较要求完整执行、11 门通过、响应数正确、observer coverage 完整、所有 token observation 可分类且没有 external/both change，并在同一调用的环境记录下；优化通过是性能可比较的子集，另要求 `navigationTotal ≤ 2` 且 failed/rejected/cancelled 均为 0。计数只从逐对状态及对应summary重算。
 
 ## Cache 观测、容量及外部写入
 
@@ -140,7 +164,7 @@ v2 不由 child 自行观察 cache 私有状态。future 产品 observer 必须�
 
 `hit`、`empty_build_installed`、`external_rebuild_installed`、`local_rebuild_installed`、`combined_rebuild_installed`、`build_discard_external`、`build_discard_local`、`build_discard_combined`、`build_discard_unclassified`、`projection_limit_fallback`、`transaction_bypass`、`token_unavailable_bypass`、`invalid_token_bypass`、`store_closed_error`、`legacy_bypass`、`build_error_fallback`、`lookup_error`。
 
-这些值是互斥的 lookup **最终结果**：例如 before/load/build/after 检查发现 external commit，且因此丢弃候选时，该 API 请求只记 `build_discard_external`；不得先加 `empty_miss` 或 `external_invalidation_miss` 再加 discard。每阶段按 `getEvidence` 和 `readSource` 分表，决策数各自总和必须是 1,177；阶段总和 2,354、每配对总和 4,708。完整加载仍由真实持久化 full-load 边界单独计数；不能用 `API calls - full loads` 计算 hits。事务中、token 无效/不可用、store 关闭、legacy、超限和请求失败都不能归作 `hit`。
+这些值是互斥的 cache resolver **最终 disposition**：例如 before/load/build/after 检查发现 external commit，且因此丢弃候选时，该 API 请求只记 `build_discard_external`；不得先加 `empty_miss` 或 `external_invalidation_miss` 再加 discard。每阶段按 `getEvidence` 和 `readSource` 分表，决策数各自总和必须是 1,177；阶段总和 2,354、每配对总和 4,708。完整加载仍由真实持久化 full-load 边界单独计数；不能用 `API calls - full loads` 计算 hits。事务中、token 无效/不可用、store 在 resolver 入口关闭、legacy 和超限路径不能被记作 `hit`。决定一旦封存，之后 fresh `getEvidence` row、`readSource` 范围/配置/workspace 检查的 API 失败仍保留原 disposition；实际 API error 另计并使 11 项语义门失败。只有 resolver 未封存任何 disposition 且没有 candidate 时才记 `lookup_error`；store 在 resolver 入口关闭记 `store_closed_error`。
 
 build race 原因使用独立固定 union `external_only`、`local_only`、`both_changed`、`unclassified`。独立的 `candidateBuilds` 结果必须是互斥终态 `installed`、`discarded`、`rejectedByAdmission`、`failed`、`cancelled`，`attempted` 等于其总和；race reason 各计数总和等于 `discarded`，并须和 `build_discard_*` 最终 lookup 决策计数逐类相等。此独立计数不会为同一个 API lookup 增加第二个 final decision。
 
@@ -148,7 +172,14 @@ build race 原因使用独立固定 union `external_only`、`local_only`、`both
 
 `projectionAdmission` 报 `evaluatedCount`、`acceptedCount`、`overLimitCount`、`invalidCount`、accepted 字节总量/最大值与 `limitBytes: 4_194_304`；必须由 observer 透传**产品实际使用的同一 estimator**。交叉核验 `evaluatedCount = acceptedCount + overLimitCount + invalidCount`，且 `candidateBuilds.rejectedByAdmission = overLimitCount`；准入 bytes 统计所有 estimator 判定 accepted 的候选，即使该候选随后因 token race 被丢弃。无效 estimator 结果失败关闭，不准入、不报 guessed bytes。不得为诊断临时 stringify/复制整个图，也不得访问私有 cache 对象、token 或原始数据。准入估算不是 V8 heap 限制。另记录 cold/warm navigation 前后 `process.memoryUsage().heapUsed` 字节读数；说明这是整个 child 的 heap、未经强制 GC、受导航结果和索引等对象影响，不能称为 cache 净占用。
 
-常规性能配对期间应无其他连接的提交。观察到外部变化时，允许安全额外 full-load 并仍须运行全部 11 项语义门；11 门通过但确有 external/both change 的配对标为 `inconclusive_external_write`，不计入性能可比较数。若覆盖不完整、observer 缺失/不兼容或变化原因无法分类，标为 `inconclusive_external_observation`，同样不计入性能可比较数，不能当作无外部写入。任何 11 门失败仍是语义失败，不能由外部变化状态豁免。
+常规性能配对期间应无其他连接的提交。结果状态按以下优先级确定，report/schema 字段形状不变：
+
+1. 11 项语义门失败，任何完整采集数据上的协议计数关系违例，或 `candidateBuilds.failed`、`rejectedByAdmission`、`cancelled` 任一非零，均为 `failed`。candidate 失败/准入拒绝即使 uncached fallback 返回语义正确结果，也不能通过优化门；外部变化或 coverage 不足不能覆盖这些 failure。
+2. 仅当语义门通过且没有已知协议关系违例时，实际 checkpoint 缺采集、token classification 不足或 observer 不可用/不兼容，才为 `inconclusive_external_observation`。coverage 不足优先于同一配对中已观察到的外部变化。
+3. 若语义门和协议关系均通过、事件覆盖完整/分类可用，但观察到 external/both change，则为 `inconclusive_external_write`。运行了第二连接挑战但无外部变化计时样本仍单独排除。
+4. 只有语义门与协议关系通过、coverage/token 均可比、无 external/both change、failed/rejected/cancelled 均为 0 且 `navigationTotal ≤ 2` 才为 `passed`。完整无外部变化且加载数大于 2 为 `failed`。
+
+checkpoint count 与 expected count 不符时，不能把 missing event 填成某个 outcome。若事件真实缺采集且 checkpoint coverage false/complete false，归到观测不足；若 observer 宣称完整但报告 count 不符，或完整事件数据违反 R/O、admission 或 terminal 等式，归为协议 `failed`。只有语义门完整通过且协议关系可验证且无违例时，缺覆盖/分类不足才可走 inconclusive。任何 11 门失败仍是语义失败，不能由外部变化状态豁免。
 
 此外，v2 回归套件必须有受控的第二 SQLite 连接 commit 场景：在临时、工具拥有的 store 内提交一个不改 graph payload、current、createdAt 或 ignore configuration 的安全 fixture 写入；验证下一次事务外 lookup 观察 external invalidation、触发至少一次安全完整 reload，随后重新计算且通过全部 11 项原语义门。此 challenge 与无写入计时配对分开，不纳入 4,708 分母或 wall/performance aggregation。具体安全 fixture 写入点必须由实现任务按实际 schema 选定，不在本设计中猜表名。
 
@@ -171,11 +202,20 @@ observer 由 future Sol cache task 单独批准并稳定后，后续协议工具
 1. exact v2 schema、unknown-key 拒绝、错误计数/错分母/不安全数字拒绝、报告字节上限；v1 parser/report 的现有测试和文件保持原样。
 2. 每轮（cold 或 warm）有两个 API 计数：`getEvidence=1,177`、`readSource=1,177`；每配对有四个 phase/API 分项、最终 lookup decisions 总数 4,708；evidence 全部 attempted/resolved、errors=0；原 11 项 gates 名称和语义未变。
 3. 两个阶段 observer 覆盖完整且没有观察到 external/both change 时，四分项求和等于导航总数且 `≤2`；3E 对应 baseline 则为 4,708；index/current/replay 加载不能影响该算式。此门不表述为观测窗外没有外部提交。
-4. 在受控第二连接 commit 场景中分别覆盖首建 race、缓存重建 race 和最后 API 返回前的变化；确认最终 lookup decision 各恰一条，build race external reason 单独计数，external checkpoint 观察到变化。即使总加载 `≤2` 且 11 门通过，仍标为外部写入不可比较；无任何外部 miss 决策不能覆盖或冲掉 build race reason。
-5. observer 对每阶段固定边界完整覆盖：phase start、每一 API lookup、每次 build before/after、最后 API 后；注入缺项、unavailable、invalid type、unclassified race，均拒绝性能可比。逐项交叉核对 final decisions、build outcomes、race reasons、admission outcomes 与真实 full-load 计数，不能双计一次 miss/discard。
+4. 在受控第二连接 commit 场景中分别覆盖首建 race、缓存重建 race 和最后 API 返回前的变化；确认每个 API 只有一个 cache resolver disposition，build race external reason 单独计数，external checkpoint 观察到变化。即使总加载 `≤2` 且 11 门通过，仍标为外部写入不可比较；无任何 external miss 决策不能覆盖或冲掉真实 build-after outcome。
+5. observer 对每阶段固定边界完整覆盖：phase start、每一 API lookup、每次 build before/after、最后 API 后。缺少实际采集事件时令对应 checkpoint false、coverage incomplete，不能补造 outcome；若报告声称 complete 而事件数不匹配，或完整采集数据违反任一 R/O、terminal、admission 关系，必须为 protocol failure `failed`。有效但不可比较的 token classification 才进入 observation-inconclusive，且只能在协议关系和 11 门其余通过时使用。逐项交叉核对 final decisions、build outcomes、race reasons、admission outcomes 与真实 full-load 计数，不能双计一次 miss/discard。
 6. 在 observer 缺失/版本不兼容时不访问私有状态，不用 full-load 差推 hit，也不输出性能可比结果；token 原值、源码/路径/evidence ID/hash 均不可能进入报告。
 7. admission limit 边界和实际同一 estimator bytes、heap 字段边界、超过限额的 fallback；不得把 estimate 当实际 heap；`count=0` metrics 的 min/max 均为 `null`。
 8. 取消、timeout、协议错、child close、强杀升级、剩余配对 `not_started`、唯一目录及独占写入保留 V1 生命周期门。
 9. 三对同环境摘要可核算；单对或不同环境明确为 exploratory/inconclusive，不给出泛化结论。
+10. 计数回归必须覆盖并精确核算以下固定组合：
+    - 正常 unchanged 安装：`attempted=installed=1`、`O_unchanged=1`、`R=0`、`Delta=0`，其余候选终态为 0。
+    - admission 前 load 失败且 finally after 观察 external：`failed=1`、无 admission evaluation、`O_external=1`、`R_external=0`、`Delta=1<=failed`；保留 failed 与 token outcome，不能改成 discard。
+    - admission rejection 且 after 观察 external：`rejectedByAdmission=1`、`overLimitCount=1`、`O_external=1`、`R_external=0`、`Delta=1<=rejectedByAdmission`；优化 gate 是 failed，即使 fallback 语义成功。
+    - installed 后 fresh evidence row 读取失败：`installed=1`、`O_unchanged=1`、lookup decision 仍为 installed，API error 独立计数且 11 门失败。hit 后 API 错误、bypass 后 load 错误同理保留 resolver disposition。
+    - 可完成 build 但 after token unavailable：`discarded=1`、`R_unclassified=1`、`V=1`、`Delta=0`；完整采集的关系成立但 token 不可比，语义门通过时为 observation-inconclusive。失败 candidate 的 unclassified after 则 `failed=1`、`R_unclassified=0`、`V=1`、`Delta=1<=failed`，优化 gate 仍 failed。
+    - 完整 coverage 中构造 `R_external=1, O_external=0` 或 `Delta>failed+rejectedByAdmission+cancelled`，必须 protocol-failed；不能用 inconclusive 覆盖。实际缺采集则另由 checkpoint coverage false 表示。
+
+每个 candidate 的 before/after 同一性须由 Application 产品回归基于内部 candidate 关联验证；summary 只保留聚合计数，不增加逐请求矩阵或原 token。任何关系违例、候选 failed/rejected/cancelled 非零均不能优化通过；candidate 错误即使 fallback 响应正确仍报告 failed。以上仅是后续工具的设计验收门，本轮不运行。
 
 本轮只提交本计划与配套设计记录，未运行任何测量/回归。产品 cache、诊断工具、测试与性能收益均未实现或验收。

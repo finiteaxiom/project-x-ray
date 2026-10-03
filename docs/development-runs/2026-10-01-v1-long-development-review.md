@@ -698,3 +698,21 @@ O首稿不能接受：T要求每个candidate after变化数与race discard相等
 基于已接受3F及S5稳定，root形成 `docs/plans/2026-10-03-navigation-cache-token.md`：下一稳定切片C1仅GraphStore取样API/保存代数、原graph index测试和独立run三文件。与O/T聚合协议无依赖，Application缓存/observer/工具仍等待独立门。root本轮重型窗口结束，不与开发活动文件并测；定时器沿用原ACTIVE，无重启或电脑操作。
 
 C1开工两目标main/Sol实际hash相同：graph/index.ts 7376BF3594FBE9B91907D699297C51CB7B7235D0B3D7B539CEE43C2B382DAA7F、graph/index.test.ts 860487ED9AD9DB4E6FA8BA0AFB934BB39540712836FB0F6E4DAFDEB47048BAE3。原Sol续派后确认active新回合01a0ffd5-895f-7ca0-9c24-f834d3a4cdda，实际cursor1e17a25b-f2eb-45a8-971e-2de888443e95:15；Luna O/T四稿修订active回合01a0ffd0-0029-7a52-84f9-a90917e886ab，cursor03a3ef91-aa4d-463e-af01-2e1bfafc662c:17。实例之间数字可相等但不能跨比较已明确；端口不宣称数字本身携带store身份。当前新批未验收，游标仅本次实测状态。
+
+本轮六份root协调文档精确提交85a68e16b8b194677ae8d7bc28ff73f68ef5d5d1，普通push exit0，ls-remote origin/main精确同SHA，包含已接受S5提交18b6cbb。推送后main仅Luna两未接受observer稿untracked；未纳入O/T进行中修订或Sol新C1。此Git结果补记供下一稳定记录提交，不能据此把新批变成完成。
+
+## 2026-10-03 17:13–17:20：C1 独立接受与 O/T 设计收敛
+
+先读当前 AGENTS、队列、最新审查与交接；main 起点85a68e1。timeoutMs0使用上轮实际游标，Luna O/T四文件已冻结idle：cursor a764dd3e-58c3-42dc-9d10-445092296241:2；Sol C1原三文件已冻结idle：cursor b41d890d-ba14-44db-b63a-e0dcbec066a0:2。Sol此前只读确认保留旧455d4ad与hash，不把恢复回合当验收。上次用户打断的执行无完整返回，未列通过；本轮确认无遗留相关Node任务后重跑。
+
+C1三文件最终hash与开发冻结一致：graph/index.ts 853DA33765953DC5803EFDB692583C37CDED7F13E7266545F1724395DCE4B4AB；index.test.ts 3CA2248832CA336EA4C138C6FC7020744CF3EFE5B20050822C64D65FC75F3F61；run A71C9C2FE49B46358828AC152DC9C8E6898400C4F40E4C4F3E6BAC930FAF8A16。root核对main原两源码hash/逐文件diff、新23项取样回归、保存/关闭行为、全部开发记录及独立probe代码；没有迁移或旧桌面接线混入。
+
+root Sol graph全包5文件98/98（3.91s）、graph/application noEmit及ignored navigation-token-independent.ts均exit0；真实两连接提交/回滚/删除、读事务零PRAGMA、同内容/激活但payload/source不变、冲突拒绝、嵌套外层COMMIT/ROLLBACK永久停比较、源hash不变通过。精确三文件复制main并核对hash后，相同graph98/98（3.94s）、probe与两包noEmit均exit0，原application全包6文件147/147（58.87s）通过。取样仅1 PRAGMA、无其他SQL，坏类型/故障/关闭/整数上界失败关闭，实例数字相等不充当身份。C1仅后台端口，无缓存或收益结论；未执行GUI/native/Electron/远程调用。
+
+main查重后新增公共经验1条：嵌套savepoint释放不证明外层提交，无法观察终态时停止实例代数比较，并实际双终态/重开回归。四文件精确提交7071ae42f7c8c9be82a560a38cc5ef67ed6e369a，cached diff check exit0；推送待本轮接受文档一并核对。保留Sol旧UI/desktop与其他未验收改动。
+
+O/T四文档冻结hash全部与Luna交付匹配（计划O CC73D99C…、记录O 2BFC0076…、计划T A978E1AD…、记录T F54C62C8…）；root复审当前实际application requireSnapshot/getEvidence/readSource/close、原3F方案与完整修订域。接受设计：candidate终态与真实after outcome分域；R各类不超过O、Delta≤failed+rejected+cancelled、installed≤unchanged；F/R/C全0时恢复精确等式，estimator至多每candidate一次且invalid只是failed子集。封存resolver决定与后续API失败独立，完整矛盾/候选失败优先failed，真实缺采集才可拒绝可比，不由inconclusive豁免。原4708/每API1177、≤2、11门、三同调用pair、schema/容量/资源门保持。聚合不证明逐candidate绑定，仍要求私有关联回归；此为设计接受，无新产品运行或性能证据。
+
+root形成C2三文件可审查计划：application/index.ts、新navigation-cache.test.ts与独立run，窄单槽与可选pull-only observer一起实施。main/Sol application实际SHA均A2ABD80A9350B42B0AA91FABA3B400E4E17684880C23A0F7A908DB245C3FCCCE；C1两源码对齐，原S5不重做。普通测试窗口本轮已结束；Sol可在该精确范围开工，Luna保持idle等稳定接口后再派v2三文件工具，不制造额外准备或同文件竞争。正式收益仍等待后续工具/三配对；真实GUI仍暂缓，远程/Windows外部门保持。
+
+本轮原定时器乱码已由用户请求修复名称/全部中文prompt，automation API成功后ASCII JSON回读逐字相等且无U+FFFD，ACTIVE/原15分钟/原目标保持；本次heartbeat中文正常证明新的指令已恢复可读。此是协调配置修正，非仓库工程经验。一次查找非GUI文件名错误后按rg定位，属工具命令问题，不改产品门。

@@ -92,10 +92,11 @@ Sol 先测量当前全量索引/查询/内存基线，设计按语言的保守�
 | 2B-S2 本地rubric与提交胶囊设计 | 设计已接受，S3/S4已集成，S5已派 | Sol/协调方 | 两分支完整数据不裁剪；历史read明确questionBinding为prepare-only，完整原题仅prepare核验；S5待独立验收，不接模型 |
 | 2B-S3 有限rubric纯构造器 | 独立接受并集成提交1da4d8191265e741096278b37b2eeb1f8577f323 | Sol/协调方 | 原身份缺陷独立修正探针通过；Sol161/main159纯回归，main三包类型通过；新公共经验1条。纯准备无FS/SQL/provider/UI，非语义质量或GUI通过 |
 | 2B-S4 本地胶囊事务端口 | 独立接受并集成提交133686217903e854e24dbdc76af9203cf3e1fd23 | Sol/协调方 | Sol227/main225核心回归、main111应用回归及两包类型通过；独立四型builder→SQL重开和非空降级投影负例通过。prepare-only历史限制保持；新增经验1条，无GUI/模型 |
-| 3F-T 优化后测量协议设计 | 前版接受；失败计数接缝修订中，工具未实施 | Luna/协调方 | O首稿暴露after变化与非discard失败的计数域冲突，原T计划/记录并入精确四文档修订；原4708/11门/schema/限额保持。C1仅安全取样基础已派，Application缓存及新工具未派 |
+| 3F-T 优化后测量协议设计 | O/T 同步修订独立接受，工具等待 C2 | Luna/协调方 | O/R 分域及失败优先级复审通过；原4708/11门/schema/限额保持，新工具仅待稳定缓存/observer端口后派发 |
 | 2B-S5 本地答题集成 | 修正后独立接受、精确集成提交并推送18b6cbb | Sol/协调方 | Sol/main各11文件298项、三包noEmit及root各16次真实索引答题探针通过；双布局/空非空配置、SQL回滚重试重开及重算摘要错配拒绝。新增明确DTO投影经验1条；只本地材料准备，GUI/模型仍未验收 |
-| 3F-O 缓存observer接缝设计 | 初稿协议冲突未接受；O/T原四文档修订中 | Luna/协调方 | 失败或拒绝candidate真实after变化与race discard属于独立计数域；协调方派条件交叉约束和失败优先级最小修订，不伪造事件或inconclusive豁免协议失败。缓存/observer/新工具未实施 |
-| 3F-C1 导航有效性取样端口 | 已批准精确三文件，续派Sol | Sol/协调方 | 依据已接受3F及4,708次完整load诊断，先同连接data_version/本地generation生命周期；详见2026-10-03-navigation-cache-token.md。不改Application/聚合/工具，性能收益和GUI未验收 |
+| 3F-O 缓存observer接缝设计 | 修订设计独立接受 | Luna/协调方 | root 四文档/当前源码复审，O/R 及 estimator/terminal 关系、真实缺采集与协议矛盾区分、后续API错误独立；非实现/收益通过 |
+| 3F-C1 导航有效性取样端口 | 独立接受、精确集成提交7071ae4 | Sol/协调方 | Sol/main各98 graph回归、两包noEmit与真实SQLite探针通过，main原application147通过；嵌套COMMIT/ROLLBACK保守停比较、新实例身份明确。新增经验1，缓存/性能/GUI未验 |
+| 3F-C2 应用导航缓存/observer | 计划形成；向原Sol派发三文件后台切片 | Sol/协调方 | 详见2026-10-03-navigation-cache-application.md；保留全部fresh校验、窄单槽/4MiB/O/T聚合，冻结后独立复验。Luna工具须等稳定产品接缝进入main |
 | 2B-S2a 答题记录引用索引修正 | 独立核心及main集成整包通过，已提交/推送0eef658，远端18e5524包含 | Sol/协调方 | 111/111原门通过、ownership6/类型/真实SQL/多布局/重开/失败重试通过；新增17项。原分/历史不变；旧超时记录保留，GUI未验 |
 | 4A Windows发布链/验收设计 | 修订后设计已接受 | Luna/协调方 | 隔离共存/原始签名Status/迁移阶段已复审；仅文档，不代表安装、升级、卸载或GUI已验收 |
 | 4B Windows发布实现 | 待设计审查及功能稳定 | 双线程 | 产物版本稳定，签名证书待决定，干净机器用户跳过不改写 |

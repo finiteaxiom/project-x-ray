@@ -124,3 +124,5 @@ Luna 3F-O只新增plans/2026-10-03-navigation-cache-observer.md与development-ru
 2026-10-03 11:12：S5首版冻结未通过，root独立五项失败确认四型真实索引身份投影缺陷及旧SQL消息断言冲突。按rubric-capsule计划最新精确九文件继续Sol同批修正S3/S4有限DTO接缝，保留完整source/config门和旧回滚/重试断言。未复制或提交S5；Luna原两文档继续，缓存和新测量工具尚未实施。GUI暂缓与远程/发布未验收不变。
 
 2026-10-03 11:35：S5九文件修订独立接受、main精确集成及十文件提交/推送18b6cbb，远端同SHA；main/Sol各298/298、三包类型、独立真实索引16次答题SQL探针通过。不是GUI或模型验收。root新C1三文件计划先建立GraphStore同连接token/本地代数，不触Application/observer或工具；O/T失败计数冲突另由Luna原四文档修订，保持全部语义/计数/性能门，不以inconclusive覆盖协议错误。重型窗口已释放，按冻结切片继续。
+
+2026-10-03 17:20：C1独立接受集成7071ae4，Sol/main各98 graph、两包noEmit与真实SQLite探针、main原application147通过；O/T同步修订设计接受。C2计划仅application/index.ts、新navigation-cache.test.ts及独立run，单槽和pull-only scope完整后台路径由原Sol实施；Luna暂idle，v2工具仍须等其接口稳定进入main，原基线冻结。无GUI操作、模型/性能新结论，重型验证窗口结束；新公共savepoint经验1条有真实双终态依据。

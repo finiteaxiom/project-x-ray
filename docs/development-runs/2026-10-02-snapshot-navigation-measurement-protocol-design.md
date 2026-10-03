@@ -2,14 +2,16 @@
 
 日期：2026-10-02（2026-10-03 复审修订）
 任务：3F-T，只读审阅冻结的 3E 测量合约，并设计独立 post-change v2 协议。
-状态：两份设计文档供协调审查；未派发产品或诊断工具实现。
+状态：2026-10-03 17:20 协调方独立接受 O/T 四文档同步修订。未派发协议工具实现，等待 C2 应用端口稳定；设计/计量门接受不是性能通过。
 
 ## 目标与授权边界
 
-本任务仅限以下两份文档（2026-10-02 创建，本次复审只修订这两份原文件）：
+最初 3F-T 任务限于以下两份文档（2026-10-02 创建，本次复审曾修订这两份原文件）：
 
 - `docs/plans/2026-10-02-snapshot-navigation-measurement-protocol.md`
 - `docs/development-runs/2026-10-02-snapshot-navigation-measurement-protocol-design.md`
+
+之后协调方明确批准 O/T 两份计划和各自 development-run 共四份文档的最小同步修订。新增范围及最终状态记录见文末“第二次协调方批准的 O/T 同步复核”。
 
 没有改动 application、GraphStore、SQLite、3E parent/child/test、fixture、依赖、AGENTS 或其他文件；没有运行测量、测试、索引、构建、native、dist、Electron 或 GUI。2026-10-02 起草时没有运行 Git；2026-10-03 恢复时按 root 要求只读核对 Git 状态，未做 Git 写操作或收尾。冻结的 v1 工具和原 medium128 报告继续作为原始基线。
 
@@ -63,7 +65,7 @@
 | 保留空 Metric null 规则 | MetricSummary 段和测试验收清单 | `count=0` 时 min/max 都为 null |
 | 继续保留原 11 门、4,708 baseline、有界无外部变化观察下 `≤2` 及非原子限制 | 基线、分母、语义 gate 和 token 边界章节 | 仍明确 3E 冻结，观察窗结束后不声称捕获后续提交 |
 
-复核前 `git status --short` 仅显示本任务两份目标文档为 untracked；这两文件未纳入 tracked diff，未对其或其他路径执行任何 Git 写操作。当前只读 status 中没有其他变更。此处状态不等同于提交或冻结接受；两文档待 root 再次独立复审。
+该次复核前 `git status --short` 仅显示 T 两份目标文档为 untracked；这两文件未纳入 tracked diff，未对其或其他路径执行任何 Git 写操作。该历史状态不等同于提交或冻结接受。
 
 ## 反馈闭环与验证状态
 
@@ -75,6 +77,63 @@
 
 本轮无新增或修订 `AGENTS.md` 规则（0 条）。独立 v2 诊断器与明确分母是有代码契约支持的本轮设计选择，但工具尚未实现、测试或测量，暂不提升为已验证的通用工程经验。
 
-## 2026-10-03 root独立复审
+## 2026-10-03 root 独立复审（同步修订前）
 
-冻结计划hash EB9DCCEE...F05FCE23E、记录3F560C46...BF14803D实际相符。root完整读取两文档，对照已接受3F与原3E计数/11门/Metric空分布：observer先稳定依赖、最终决定与独立build/race/admission计数交叉核对、首建/重建/末请求覆盖及未知拒绝可比已补齐，接受设计。当前未实现observer、cache或新工具，未运行性能测量；规则0。下一步只读3F-O设计实际observer接缝，不重复本协议，不与Sol S5写应用源码。
+冻结计划hash EB9DCCEE...F05FCE23E、记录3F560C46...BF14803D实际相符。root完整读取两文档，对照已接受3F与原3E计数/11门/Metric空分布：observer先稳定依赖、最终决定与独立build/race/admission计数交叉核对、首建/重建/末请求覆盖及未知拒绝可比已补齐，当时接受设计。其后复审发现 `build_after` 对所有 candidate attempt 均在 finally 采样，而旧关系要求所有变化 outcome 必须对应 race discard，故该接受版需要最小同步修订；本节结论为历史状态，不代表当前四文档修订已复核。
+
+## 2026-10-03 第二次协调方批准的 O/T 同步复核
+
+### 缺口与修订
+
+旧规则要求 `build_after` 中每种 external/local/both/unclassified outcome 的数量与 race discard 数完全相等。但产品设计要求所有已开始的 candidate attempt（包括 load/admission 失败、准入拒绝和取消终态）都在共同 `finally` 点采集真实 after sample。失败或拒绝的 candidate 可因此观察到变化，却仍须保留 `failed`/`rejectedByAdmission` 终态，不能伪造为 race discard。协议把真实 outcome 强行改为 discard、隐去已采样变化，或将完整且合法的数据判成采集缺失，都会混淆独立计数域。因此本轮改为有界的 O/R reconciliation，不改 summary/schema 字段。
+
+令 `O` 为仅来自 `build_after` checkpoint 的 outcome 计数，`R` 为 candidate race reason 计数，`V = O_unavailable + O_invalid_type + O_in_transaction + O_closed`：
+
+```text
+R_external_only <= O_external_only
+R_local_only    <= O_local_only
+R_both_changed  <= O_both_changed
+R_unclassified  <= V
+
+Delta = (O_external_only - R_external_only)
+      + (O_local_only - R_local_only)
+      + (O_both_changed - R_both_changed)
+      + (V - R_unclassified)
+0 <= Delta <= failed + rejectedByAdmission + cancelled
+installed <= O_unchanged
+```
+
+当 `failed = rejectedByAdmission = cancelled = 0` 时，`Delta=0` 迫使各非负差项为零，从而恢复原有精确关系：各 `R_x=O_x`、`R_unclassified=V`，并且 `installed=O_unchanged`。若完整覆盖数据违反这些关系，则为协议失败；实际未采到 checkpoint 必须报告 coverage false/complete false，不填零、不伪造 outcome。聚合关系不能证明 before/after 是同一个 candidate，故同 candidate 配对留在产品私有回归中验证，不添加事件矩阵或原 token 到报告。
+
+每个 candidate 最多运行一次 admission estimator：`evaluatedCount <= attempted`、`evaluatedCount = acceptedCount + overLimitCount + invalidCount`、`rejectedByAdmission = overLimitCount`、`invalidCount <= failed`。load 在 estimator 前失败时只计 failed，不生成 admission evaluation。接受估算 bytes 由产品实际 estimator 给出。
+
+cache final decision 是 resolver disposition。决定在 API settle 时只发布一次；之后 fresh evidence row、source/config/workspace 检查等 API error 另计并使语义门失败，不重写已封存的 hit/installed/bypass。`lookup_error` 只用于没有 candidate 且 resolver 尚未封存决定前的错误；入口已关闭单独记 `store_closed_error`。
+
+状态优先级同步为：语义门失败、完整数据的协议关系违例，或 failed/rejected/cancelled 任一非零，均令 pair/optimization 为 `failed`；只有语义门通过且协议关系无违例时，实际 coverage 缺失或 token 分类不足才可为 observation-inconclusive；coverage 不足优先于外部写入 inconclusive；数据完整且可比并检测到 external/both 才为 external-write inconclusive；所有门通过、无 external/both、无候选失败/拒绝/取消且 full-load `<=2` 才可通过。真实缺采集与“声称完整但计数不一致”因此分别走 inconclusive 与 protocol failure。
+
+### 固定边界组合核算
+
+| 情形 | 计数关系与结论 |
+|---|---|
+| load 在 estimator 前失败，after 观察 external | `failed=1`、`evaluatedCount=0`、`O_external=1`、`R_external=0`、`Delta=1<=failed`；保留 build failure 和 observation，pair failed。 |
+| admission rejection 后，after 观察 external | `rejectedByAdmission=1`、`overLimitCount=1`、`O_external=1`、`R_external=0`、`Delta=1<=rejectedByAdmission`；fallback 语义成功也不能通过优化门。 |
+| installed 后 fresh evidence row 读取失败 | `installed=1`、`O_unchanged=1`，decision 仍为 installed；API error 单独计，语义门失败。 |
+| 正常 unchanged install | `installed=1`、`O_unchanged=1`、`R=0`、`Delta=0`；其余门通过后才可能 pass。 |
+| 完成 build 但 after 不可比较并 discard | `R_unclassified=1`、`V=1`、`Delta=0`；覆盖可完整但 token 不可比较，语义门通过时 observation-inconclusive。 |
+| failed candidate 的 after 不可比较 | `failed=1`、`R_unclassified=0`、`V=1`、`Delta=1<=failed`；仍由 failed 优先判失败。 |
+| 完整数据中 `R_external=1, O_external=0` 或 `Delta` 超上界 | 协议 failed，不得以 inconclusive 覆盖；真实缺采集另由 coverage 标志表示。 |
+
+以上固定组合均满足修订后的关系；未发现需要放宽边界、改变 schema 或伪造 outcome 的反例。既有 4,708 分母、每 API 1,177、导航 full-load `<=2`、11 个语义门、三个同调用配对、summary/report 字段、fixture 与资源限制均未改变。
+
+### 本次范围、证据与状态
+
+本次批准范围是以下四份文档，不包含实现文件：
+
+- `docs/plans/2026-10-03-navigation-cache-observer.md`
+- `docs/development-runs/2026-10-03-navigation-cache-observer-design.md`
+- `docs/plans/2026-10-02-snapshot-navigation-measurement-protocol.md`
+- `docs/development-runs/2026-10-02-snapshot-navigation-measurement-protocol-design.md`
+
+最终主 checkout 基线核对为 `85a68e16b8b194677ae8d7bc28ff73f68ef5d5d1`。协调方报告 S5 已由 `18b6cbb` 接受；C1 GraphStore 三文件冻结在 Sol worktree 等待验收。本轮不读 S5/C1 活动源码，源码设计依据仍固定在 `133686217903e854e24dbdc76af9203cf3e1fd23`。只修改上述四份文档；没有更改 `AGENTS.md`、代码、测试、fixture、工具或依赖，没有执行 Git 写操作或提交，也没有运行测试、构建、索引、benchmark、Electron 或 GUI。文件 SHA-256 和最终只读 `git status` 在交付核对中记录。
+
+本轮无新增或修订 `AGENTS.md` 工程规则：修订属于协议设计推理，没有新增代码或复现实验可证明通用工程经验；既有证据、失败关闭及 development-run 规则已覆盖。
