@@ -140,3 +140,15 @@ S4已独立接受并集成133686217903e854e24dbdc76af9203cf3e1fd23。下一批�
 异步准备后独立重新检查工作区current与题目/应用生命周期，随后S4事务权威核对activation/配置/source；不声称文件系统与SQL为原子屏障。成功双INSERT后才按原passed规则删除题目；失败/关闭/旧配置零新写、题目可安全重提。同题并发提交采用范围狭窄的单次占用且finally释放，不让等待中的旧问题产生重复成功；不同题正常独立。无新幂等协议、不改变旧attempt或评分版本。
 
 验收从真实自建TS索引四题型开始，覆盖原submission迟到变化、重复角色引用、相交但非精确引用仅降级、错结构/越界失败attempt、空答案/孤立代理/长variant及实际晚期预算分支、保存失败重试、同题竞争、两连接配置/activation变化、prepare后工作区变化、legacy跨库门与重开。主原S2a17测试及所有权/GraphStore回归保持，缺模型时只有本地准备，不给自然语言正确性结论；原passed仅确定性结果，不因胶囊ready升级语义分。root负责独立验收，GUI继续开放。
+
+## 2026-10-03 11:12 S5冻结后的身份投影修正范围
+
+首版四文件冻结，application源A2ABD80A9350B42B0AA91FABA3B400E4E17684880C23A0F7A908DB245C3FCCCE；root在Sol真实目录串行运行四型索引与旧SQL故障五项，5项失败/44跳过。四型即时grade及双行保存断言先通过，但胶囊统一错误降级analysis-identity-unavailable。正常索引的ignorePolicy包含version/rules/hash，而S3直接交给仅接受version/hash的strict DTO。已有llm/evidence-package.ts使用明确字段投影；不能删除持久snapshot.rules、放宽schema、伪造source或将正常输入判未评估。S4的ready来源比较也直接对完整identity比较有限DTO，源码确认存在相同接缝，修复前须另加真实SQL红测，不把此源码判断当作运行验收。
+
+继续原Sol S5，仅在原四文件之外增加以下五文件：ownership/src/semantic-rubric.ts及semantic-rubric.test.ts；graph/src/ownership-capsule-store.ts及ownership-capsule-store.test.ts；application/src/ownership-citation-index.test.ts。合计九文件，不另建任务或改其他checkout。S3生成、S4准备及历史来源比较明确投影相同六字段graphIrVersion/analyzerVersions/configurationHash/sourceFingerprint/ignorePolicy/analysisResult；ignorePolicy只保留version/hash或真实null。完整本地analysisIdentity、rules、analysisResult指纹、capture和事务current/config校验保持，不能把DTO投影作为持久身份或删规则后重算快照。remote strict schema、预算、摘要domain、评分及分析器版本不变；不是改rubric模板。
+
+S3/S4增加空规则与非空真实规则的正常准备/保存/重开、精确投影及不泄出rules回归；准备输入、投影hash或policy version/hash错配，即使重算完整capsuleHash也拒绝且零写；完整source身份与第二连接配置门不能被有限投影放宽。S5既有四型真实索引、相交范围、空答案、晚期source/variant预算非空投影等原红断言必须全部通过，旧历史不回填或重写。
+
+旧S2a SQL故障测试唯一许可改动是第137行错误断言：实际触发器继续注入，期待S4固定OwnershipCapsuleStoreError/固定消息与有限code，并明确不含fixture原SQL文本。零attempt、移除触发器后同题重试、规范角色索引及成功后题目删除等断言全部保持；不得转发SQL原文或只删失败期待。这是已接受安全契约下的测试错误语义迁移，非取消正确回滚门。两INSERT新故障回归仍须同时检查两表零写及重试。
+
+记录原始失败、S4红测、修正和串行复验；运行完整application/ownership/两契约/胶囊SQL及三包noEmit，未授权native/build/Electron/GUI/模型。此前S3/S4接受证据仍是对应历史切片，新增接缝未修正前不声称真实索引端到端通过。九文件冻结hash后由root独立复验；AGENTS本批仍冻结，只在记录提出候选，root核对后决定。

@@ -120,3 +120,5 @@ S4独立接受并提交133686217903e854e24dbdc76af9203cf3e1fd23，main225核心/
 Sol S5仅application/index、ownership/index单行builder导出、新application/ownership-capsule.test.ts及2026-10-03-ownership-capsule-integration.md。严格边界/完成门见rubric-capsule计划新增S5节；保留S2a/原分/旧历史，真实索引、异步输入/同题竞争、SQL/配置/activation/工作区切点、重开与失败重试。Sol先核对main1336862对应文件一致，不整体同步旧worktree。
 
 Luna 3F-O只新增plans/2026-10-03-navigation-cache-observer.md与development-runs/2026-10-03-navigation-cache-observer-design.md。依据已接受3F/T及当前Application导航缺少observer的实际接缝，设计内部版本化可选只读observer API/事件/phase start-end覆盖、唯一最终决定、同准入estimator、回调异常/重入/禁用隔离和明确未来文件门。只读已提交1336862源码，避免与Sol S5活动文件竞争；不修改任何生产源码、T两文档、旧工具/fixture/AGENTS或运行索引/build。设计接受并且S5稳定后才可派Sol缓存；Luna新v2工具仍等待observer实现冻结。
+
+2026-10-03 11:12：S5首版冻结未通过，root独立五项失败确认四型真实索引身份投影缺陷及旧SQL消息断言冲突。按rubric-capsule计划最新精确九文件继续Sol同批修正S3/S4有限DTO接缝，保留完整source/config门和旧回滚/重试断言。未复制或提交S5；Luna原两文档继续，缓存和新测量工具尚未实施。GUI暂缓与远程/发布未验收不变。

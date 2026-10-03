@@ -660,3 +660,23 @@ Luna3F-T两文档冻结hash实际匹配，root完整复审接受修订设计：o
 续派timeoutMs0已确认原双聊天均active：Sol新turn01a0ffa9-b30d-7c50-923a-8e55fa4366f2、cursor1e17a25b-f2eb-45a8-971e-2de888443e95:5；Luna新turn01a0ffa9-b3d2-7c20-a2bb-8318d1d0dcdc、cursor03a3ef91-aa4d-463e-af01-2e1bfafc662c:7。原模型/目录保持，新回合未交付不称已实现。未重复修改定时器或运行其活动文件回归。
 
 实际Git收尾：S4五文件提交133686217903e854e24dbdc76af9203cf3e1fd23；3F-T接受设计和协调七文档提交d429cc93155e5f94925a5c7c87c62bab80b992df。普通git push origin main exit0，ls-remote精确d429cc93155e5f94925a5c7c87c62bab80b992df，与main HEAD一致，核对时工作区干净。未纳入Sol新S5或Luna新O设计/旧接线，未公开产物。明确automation.toml安全字段复核project-x-ray ACTIVE、原15分钟、原协调目标，无需再次重启或创建。两接受协议文档行末空白在暂存检查中发现，去除后diff --cached --check exit0；无语义变更。
+
+## 2026-10-03 10:51：S5非冲突验收准备
+
+先读当前队列/AGENTS/审查/交接，main d6fb625、工作区干净；两聊天均active无新交付，不运行其活动文件测试或重复S4验收。实际游标Luna03a3ef91-aa4d-463e-af01-2e1bfafc662c:7、Sol1e17a25b-f2eb-45a8-971e-2de888443e95:6。
+
+root只读main既有gradeOwnershipAnswer与S2a17回归，核对两项接入门：真实第二配置连接在withIgnoreRevision保存切点改变配置，应仍固定“配置已变化”且零attempt；内部grade丢引用映射应仍SafeDiagnosticError/TASK_FAILED且零写。S4内部端口会归一化底层冲突，S5需保留应用层语义或报告具体契约冲突；提醒已发Sol，不修改原测试、不将设计风险称为已复现缺陷。双INSERT故障验证须进入新保存边界，不能以旧saveOwnershipAttempt插桩冒充新路径失败。当前无新验收或新规则，GUI/模型仍未验收。仅为后续冻结验收准备，不派第三任务或启动重型窗口。
+
+## 2026-10-03 11:06–11:12 S5冻结审查与独立失败复现
+
+先读规则/当前队列/交接，main d6fb625，仅既有审查文档未提交。Sol最终四文件冻结，原目录HEAD455d4ad；application源A2ABD80A9350B42B0AA91FABA3B400E4E17684880C23A0F7A908DB245C3FCCCE、ownership导出9B4CF19572CA2C07A7F1C648F278660B2B2167C055FD923768AA3703037CD91D、新测试3C6837CBDFAD67846C9AFD6FBE157E15DEAB8314C3182AA254D5E42B851A588F已实际核对。开发283项274通过/9失败为交付报告，不改写独立结果。Luna仍设计原两文档，无冻结交付；最新实际游标Luna03a3ef91-aa4d-463e-af01-2e1bfafc662c:9，Sol1e17a25b-f2eb-45a8-971e-2de888443e95:9 idle。
+
+root读实际S5差异、S3完整捕获/身份转换、S4来源/current比较、严格remoteAnalysisIdentitySchema与既有LLM明确投影。Sol完成后串行独立执行 `node node_modules/vitest/vitest.mjs run packages/application/src/ownership-capsule.test.ts packages/application/src/ownership-citation-index.test.ts -t '真实TS索引|rolls back an actual SQL insert failure' --fileParallelism=false`：exit1，5失败/44跳过，约2.66秒。四型先通过即时grade/双行计数，随后错误降级analysis-identity-unavailable；同一strict DTO接缝真实复现。旧故障期待fixture insert denied，实际固定所有权胶囊存储失败，独立确认安全错误语义冲突。未执行导入样例代码，不操作GUI或模型。
+
+根因：正常indexProject含ignorePolicy完整version/rules/hash，S3直接spread到只允许version/hash的DTO。S4 ready来源比较同样将有限DTO与完整rules身份比较，源码确认不等但未做绕过S3的生产运行，不冒充S4运行复现。按已有LLM字段投影规范修正，两模块仍保留完整source/快照指纹与事务身份门。root形成九文件精确修订计划后续派原Sol；S2a仅移除原SQL文本错误期待，改为固定错误/code且不含原文，所有真实故障/零写/角色/重试/删题断言保持。其余已接受契约/摘要/评分/UI冻结；新SQL红测与串行绿测后再独立验收，不提交本批。
+
+本轮无新增AGENTS经验：失败接缝待修正复验；此前S4纯SQL/合成事实通过不等于真实索引身份投影已通过。一次只读搜索猜测不存在project-settings.test.ts导致rg exit1，实际rg --files定位ignore-settings.test.ts后纠正，无产品失败。旧Git超时/EBUSY只记录与并行安排相关的观察，未确认资源根因。GUI、模型、签名及干净Windows未验收保持。
+
+Sol续派后紧凑检查确认active新回合01a0ffc1-a804-7de0-86e5-b98207e784a6，实际cursor1e17a25b-f2eb-45a8-971e-2de888443e95:10；root本轮测试窗口已结束，允许其串行定向验证，未并发重型检查。
+
+root完整读Luna3F-O两个首稿并逐条对照冻结T：pull-only聚合避免回调/对象别名、lookup/build复用产品样本和计时外两marker可继续；未最终接受。已要求原两文档澄清lookup决定与安装后fresh API错误的区别，不能因API失败重写installed/hit/bypass事实而破坏等式；每个candidate失败时build_after实际样本与disabled行为一致，未采样必须显式缺覆盖而不补造unchanged；构建失败同时after外部变化不能把未准入失败改成discard来迁就T计数，必要协议冲突先报告；invalid admission只为failed子集，不能等同所有load失败。两首稿仍在最终复核/修订，未改冻结T或产品。实际cursor03a3ef91-aa4d-463e-af01-2e1bfafc662c:11。未跟进新第三批或重复已通过检查。

@@ -93,8 +93,8 @@ Sol 先测量当前全量索引/查询/内存基线，设计按语言的保守�
 | 2B-S3 有限rubric纯构造器 | 独立接受并集成提交1da4d8191265e741096278b37b2eeb1f8577f323 | Sol/协调方 | 原身份缺陷独立修正探针通过；Sol161/main159纯回归，main三包类型通过；新公共经验1条。纯准备无FS/SQL/provider/UI，非语义质量或GUI通过 |
 | 2B-S4 本地胶囊事务端口 | 独立接受并集成提交133686217903e854e24dbdc76af9203cf3e1fd23 | Sol/协调方 | Sol227/main225核心回归、main111应用回归及两包类型通过；独立四型builder→SQL重开和非空降级投影负例通过。prepare-only历史限制保持；新增经验1条，无GUI/模型 |
 | 3F-T 优化后测量协议设计 | 修订两文档独立接受，工具未实施 | Luna/协调方 | observer明确依赖，唯一lookup决定、独立build/admission/race及边界覆盖计数均已复审；覆盖不足不得性能通过。原4708分母/11门保持；缓存与新工具未派 |
-| 2B-S5 本地答题集成 | 本轮派Sol，待冻结及独立验收 | Sol/协调方 | 四文件：application/index、ownership/index单行builder导出、新application胶囊测试和记录；完整捕获、后置工作区检查、配置/activation原子门、保存成功才删题；不改评分/GUI/模型 |
-| 3F-O 缓存observer接缝设计 | 本轮派Luna只读设计，非产品实施 | Luna/协调方 | 两新设计文档；补当前缺失的可选只读诊断observer版本/API/事件/coverage及失败隔离，后续缓存须等S5稳定；不改生产源码或旧测量工具 |
+| 2B-S5 本地答题集成 | 首版冻结未通过；退回精确身份投影接缝修正 | Sol/协调方 | root真实索引四型均错误降级analysis-identity-unavailable；另独立确认旧SQL原文断言与固定错误契约冲突。仅增加S3/S4两源及各测试、S2a一条错误断言的九文件范围，详见rubric-capsule计划最新节；未集成、未提交、未验收GUI/模型 |
+| 3F-O 缓存observer接缝设计 | 首稿已读，原两文档澄清失败计数接缝 | Luna/协调方 | pull-only及两marker方案待最终冻结；需明确lookup事实与后续API失败、失败candidate的after采样/覆盖及invalid admission子集。非实现或接受，缓存仍等S5稳定 |
 | 2B-S2a 答题记录引用索引修正 | 独立核心及main集成整包通过，已提交/推送0eef658，远端18e5524包含 | Sol/协调方 | 111/111原门通过、ownership6/类型/真实SQL/多布局/重开/失败重试通过；新增17项。原分/历史不变；旧超时记录保留，GUI未验 |
 | 4A Windows发布链/验收设计 | 修订后设计已接受 | Luna/协调方 | 隔离共存/原始签名Status/迁移阶段已复审；仅文档，不代表安装、升级、卸载或GUI已验收 |
 | 4B Windows发布实现 | 待设计审查及功能稳定 | 双线程 | 产物版本稳定，签名证书待决定，干净机器用户跳过不改写 |
