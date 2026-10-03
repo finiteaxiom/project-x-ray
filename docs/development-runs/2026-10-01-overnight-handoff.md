@@ -203,3 +203,9 @@ Sol修正回合已确认active。Luna首稿root完整读后，继续原两文档
 已实现：仅S1b设计与具体下一实验计划；独立代码/回归已验证：本轮无新增，原已接受结果保持；真实GUI已验证：本轮0。当前实际主版本8c3b95dc7a324fd4e20626945990b02858a9ddfe为上一五协调文档，普通push与远端已核一致；本轮仅准确接受文档安排Git收尾，不提交S1a。用户可查看upgrade-write-permissions-probe-plan了解技术验收路径，当前无产品备份入口可操作。
 
 下一原Sol回合01a10401-1b32-7843-a1de-ca166aef5f9f active/cursor30：仅独立probe五新文件+一ignore行，自有材料验证真实同父写根/FILE_CREATE/share/flush/同HANDLE读回/确定释放，单重型窗口。既有实现与设计全部冻结，无source借用/full writer/SQLite/marker/启动/GUI；Luna原交接completed/notLoaded cursor20无新任务。全部生产/重开/恢复、实际artifact/安装升级卸载、远程质量/隐私控件、签名/干净机器门仍未验；AGENTS新增0。完整游标/冻结hash见review最新节，不用历史报告补门。
+
+07:23新增独立结果：原隔离build与原CLI Node24.17.0/真实Electron44.4.3复验，两个CLI仍exit1，确认只读目录HANDLE可以创建子目录（Nt=0/FILE_CREATED），main writer设计已补有证据更正。两mask写/flush/读回/hash及分享拒绝、碰撞、rename、确定close/立即重占用局部通过；此为本机API实验，非产品原包或ACL/GUI通过。
+
+root又确认实验工具的清理缺陷：在本轮自有target注入未登记普通child，递归rm删除它且harness仍报告已验证清理。没有用户文件参与。整批未接受/未复制提交，已按准确cleanup-fix-plan交原Sol同五文件/ignore修正，修正回合01a1041b-a3e6-7f23-83af-ee28c693b0f2 active/cursor34；Luna仍completed/notLoaded20无新任务。默认保留自有fixture、分离固定测试子目录、未知对象不递归删除及错误终态门是当前预期，不放宽原红门。详见upgrade-write-permissions-independent-review及review完整hash/命令。
+
+已实现：仅Sol隔离实验首稿；独立代码/回归已验证：上述局部真实API结果和清理负例，整批不接受；真实GUI已验证：0。主实际版本acf076b70fbd046537f9e465b29e47f2855fd4de已普通推送并独立核远端同SHA，仅接受设计/计划文档；用户可查看清理修正计划，当前无产品备份入口。S1a/file symlink EPERM、ACL拒绝、取消/timeout、生产writer/重开/恢复/SQLite及原外部质量门均未验。AGENTS新增0，下一步待修正冻结后独立复验；本轮Git只精确收尾root六份文档，不提交活动实验实现。

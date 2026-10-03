@@ -908,3 +908,15 @@ root完整读查两文档并核81B4DC55B2910E0765B99F3CC1BEF3A0FF26F62D9A2C0D92F
 依据这些新API可行性缺口，先形成upgrade-write-permissions-probe-plan，SHA766A76DD45891685577218B27A535524D880A053349F8038AE0C74F5A3F38226，精确复制5170核一致。原Sol下一批只有独立addon/原CLI/过程记录五新文件与一ignore行，自有固定字节验证同父相对写根/完整ID/FILE_CREATE/share/flush/读回/checked close与受控替换拒绝；不修改既有S1a/native/core/UI/AGENTS或两设计，不实施source-loan/full writer/SQLite/marker。ACL缺可控条件明确未验，read-only HANDLE拒绝不冒充ACL门；symlink EPERM保持。新回合01a10401-1b32-7843-a1de-ca166aef5f9f已active，实际cursor cfe7da2a-d1e4-4a1f-9168-182cb9c80d36:30，单技术窗口交Sol，root不并发重型检查。Luna无新具体任务，保持冻结。
 
 本轮新增接受只有设计，源码/运行/GUI验收0，旧回归未重复；AGENTS新增0，官方API说明不等于本机运行经验。S1a整体、原始材料writer/重开/恢复/生产、实际artifact/安装升级卸载、远程质量/隐私选择、签名/干净Windows以及暂缓GUI仍开放。Git只纳入七份接受设计/准确下一计划/协调材料，不纳入任何未验实现。
+
+## 2026-10-04 07:23：S1b-P独立实测与清理缺陷退回
+
+上一七份接受文档实际提交acf076b70fbd046537f9e465b29e47f2855fd4de，普通push exit0、远端main独立精确同SHA，当前清潔，无S1a或实验实现提交。先读规则/队列/记录/Git，双目标只返回Luna，单Sol取得冻结完成cursor33（完整cfe7da2a-d1e4-4a1f-9168-182cb9c80d36:33），Luna原P交接completed/notLoaded cursor5f905603-9e05-4a70-bae4-5e6a5162a670:20。
+
+root完整读查本批五文件及ignore，hash/原核心冻结保持，独立原隔离build exit0（7.26秒）、两个CLI语法exit0、ignored独立review调用原CLI并对JSON逐项/逐块重算。Node24.17.0与真实Electron44.4.3两个原CLI均exit1/stderr空，read-only目录HANDLE创建子目录真实Nt=0/FILE_CREATED，原假设失败断言保留。两mask空/3145745字节实际写/flush/读回/hash、12分享拒绝/6碰撞/4rename拒绝/4即时重占用及checked close等局部结果通过。只本机普通NTFS技术实验，不是ACL策略/生产writer/GUI验收；main设计追加有证据更正，未修改Sol冻结设计。
+
+另执行root自有unknown-child注入反例：在原CLI根ID/无reparse核后首次target递归删除前，加入协调方自己生成、未被harness登记的普通文件，真实rm删除且仍报告REMOVED_VERIFIED_OWN_FIXTURE。确认工具清理缺陷，整批不接受/不复制提交；不是用户数据损失或测试错误。完整命令、所有hash及结果见2026-10-04-upgrade-write-permissions-independent-review.md，两个ignored独立脚本不提交。原S1a/native/UI/SQLite旧回归未重复。
+
+新cleanup-fix-plan hashBEAD8FBFDBADCD588AE0B59F236C1DF9AF26295FB153909CF2817060E0045C7C及root独立审查hash3F5BDA4E66745AC596ADE77C716BD22EB1AAA03BCECAF4392C08D50BFF5A67A9精确复制5170核相同；原Sol限定同五文件/ignore修正，停止字符串recursive未知清理、分离normal/junction固定子目录，默认保留fixture可接受但文件保留/句柄释放须明确，native意外outcome不能靠positive rows冒充完成。原read-only假设红门及所有旧边界不改。修正回合01a1041b-a3e6-7f23-83af-ee28c693b0f2已active/cursor cfe7da2a-d1e4-4a1f-9168-182cb9c80d36:34，单技术窗口交Sol，root停止同批运行；Luna无新具体任务。
+
+本轮已实现为Sol冻结实验首稿；独立验证为上述真实局部API/反例，整批接受0、GUI0。未知清理及正确symlink/ACL/取消timeout未验门保留，生产source-loan/raw包/重开/恢复/启动、实际artifact/安装升级卸载、远程质量/隐私选择、签名/干净Windows仍开放。AGENTS候选暂不纳入（0），Git只安排六份root拒绝审查/修正计划/有证据设计更正/队列交接，不纳入实验代码或ignore。

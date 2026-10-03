@@ -120,3 +120,9 @@ S2在任何SQLite副本open之前仍要恢复依赖固定格式预检、已知pr
 ## 官方API与未实验项
 
 本轮只读核查：[NtCreateFile](https://learn.microsoft.com/en-us/windows/win32/api/winternl/nf-winternl-ntcreatefile) 的RootDirectory/访问与FILE_CREATE，[WriteFile](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-writefile) 的实际字节结果，[FlushFileBuffers](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-flushfilebuffers) 的flush接口，以及 [ReOpenFile](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-reopenfile) 的原句柄前提。官方说明不是本机writer运行证据；未实验同根写权限、各target共享/no-follow组合、flush/处置/close失败、所有marker退出切点或包重开。AGENTS新增0，本设计没有新已验证工程经验。
+
+## 2026-10-04 07:23协调方实测更正
+
+以上为Sol冻结设计原稿，不是main已有writer/source能力；对应源码链接指向Sol尚未整体集成的S1a文件。协调方随后在本机Node24.17.0及真实Electron44.4.3独立重构建、原CLI实测：parent read mask0x1000a1仍能用NtCreateFile RootDirectory创建子目录（Nt=0、FILE_CREATED）。因此“source根未申请目录写权限”只描述已有HANDLE访问掩码，不能推出它对所有相对创建操作具有OS拒绝保证。后续最小私有接口必须明确允许操作、保留实际根/成员身份与可调用端口约束；根write reopen身份实验仍有价值，但额外权限申请不是read-only父HANDLE必然不能创建的证明，也不代表ACL绕过。原假设失败/CLI exit1保留；具体权限/分享/flush正结果仅限该本机普通NTFS条件。
+
+同轮实验工具的字符串递归清理已被root自有unknown-child反例证实删除未登记普通文件，尚未接受或集成。按照本文未知对象不递归删除门退回原范围修正，完整证据与后续门见[独立复验](../development-runs/2026-10-04-upgrade-write-permissions-independent-review.md)。不以这些局部API实验放宽S1a/file symlink门或source-loan/full writer/恢复/生产定义。
