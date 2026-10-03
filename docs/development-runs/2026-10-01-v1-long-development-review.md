@@ -768,3 +768,11 @@ root只读接受O/T字段/计数域和旧v1源码，准备ignored navigation-opt
 先在T2计划记录精确协调方例外，通知Luna保持四新文件边界，然后仅一行改为缺省时省略signal、存在时原样传递。原类型不放宽、旧测试/计量/fixture/报告不改。root同命令exit0；baseline、samples、原navigation-diagnostic三文件24项回归通过（4.04s），diff/check通过，源码差异仅一行。helper新hash5F437278E5148EFFA662BC736B1704C8EB1BC1652D703F060C60F04B69BB9FE7，旧v1三文件及samples全部冻结hash保持，已通知Luna复验完整严格门。详见2026-10-03-baseline-signal-type-fix.md。
 
 此小切片独立接受，AGENTS新增0（严格类型/不得降门已有覆盖）。未读取或运行Luna活动工具，不以开发方22项测试或诊断检查改写T2接受；真实CLI/challenge/三配对性能、GUI等原开放门不变。Git仅安排接受helper和协调记录精确收尾，未纳入活动新工具或Sol旧界面。
+
+19:08实际Git补记：上述接受helper精准修正及六份计划/记录提交ce1b9b547ebd29a5eab8c98110a2412aea12eb58，普通push exit0，ls-remote origin/main精确同SHA；核对时仅Luna三活动工具未跟踪。原GitHub目标不变，未整体合并worktree、未纳入未验工具/GUI，无二进制发布。已通知Luna按新helper hash完成严格冻结，本补记留待后续稳定协调记录收尾。
+
+## 2026-10-03 19:17：T2首版独立验收发现错响应漏检
+
+Luna首版冻结idle cursor后缀13，三源码hash完全匹配。root实际22项/2文件（675ms）、完整strict+exactOptionalPropertyTypes、原help/正常CLI单对通过；真实报告4708调用、两次导航full-load、child安全关闭。随后root原受控child+真实medium索引，公共readSource返回后分别改错content但留声明hash、targetSpan起止行、source.evidence范围，三型均误报completed/OK、11门true、optimization passed。确认resolveNavigation只核声明hash/部分ID/filePath，cold/warm同错一致不能证明正确。详见2026-10-03-navigation-optimized-independent-review.md，原单对不作性能接受。
+
+已派原Luna继续同四文件完整响应核验和定向回归，实际新回合01a1017c-052c-73c3-9975-1d78514aebef active，cursor a764dd3e-58c3-42dc-9d10-445092296241:14；Sol原idle b41d890d-ba14-44db-b63a-e0dcbec066a0:9。冻结v1/application/contracts/fixture不改，重型窗口结束，不并发运行活动工具。正式三配对、challenge、cancel/timeout待新冻结复验；GUI/其他外部门保持未验，不提交T2实现。本轮规则新增0，根因与修正门记录已写计划/队列。

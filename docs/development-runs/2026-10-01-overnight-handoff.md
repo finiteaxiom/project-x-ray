@@ -151,3 +151,7 @@ Sol修正回合已确认active。Luna首稿root完整读后，继续原两文档
 18:29：Luna T2 active，最新cursor后缀8（完整见review），两工具活动文件已创建但未冻结；Sol仍idle后缀9。main仍7a2e2b8，root不运行/提交未验工具，不重复已通过回归或制造任务。现有独立准备等待稳定交付；GUI、正式性能及其他原未验门不变，本轮无新验收/Git/工程规则。
 
 19:04新增独立结果：旧baseline帮助函数signal可选属性的TS2379已独立复现并按T2计划精准例外修正，仅缺省时省略属性。strict/exactOptionalPropertyTypes原命令exit0，旧baseline/samples/v1导航三文件24项回归通过；冻结v1/fixture/报告保持。新helper hash5F437278…完整见review及2026-10-03-baseline-signal-type-fix.md，已通知Luna重新走完整严格门，不把关闭选项的诊断称通过。AGENTS新增0。Luna T2 active未冻结cursor后缀11，Sol idle后缀9；正式工具、CLI/challenge/三配对及GUI仍未验，未提交其活动实现。
+
+19:08实际推送：baseline精准修正与六份计划/记录ce1b9b547ebd29a5eab8c98110a2412aea12eb58已普通push，远端精确同SHA。未提交活动T2工具/GUI，仅接受后台类型修正；工具正式验收与三配对仍待冻结。此补记留待后续稳定记录收尾。
+
+19:17新增确认缺陷：T2首版真实索引后错源码content/targetSpan行号/source.evidence范围三型仍被工具误报全11门通过。root普通22项/严格类型/正常CLI单对虽通过，当前不接受T2或性能结论。已交原Luna四文件修正完整响应核验，active cursor后缀14，Sol保持idle后缀9；完整复现/hash/预期见2026-10-03-navigation-optimized-independent-review.md及review。正式三配对/challenge/cancel/timeout待修正冻结后独立复验，未验工具未提交，main仍ce1b9b5；GUI继续暂缓，本轮无新增规则。

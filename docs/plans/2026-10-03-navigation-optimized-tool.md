@@ -31,6 +31,12 @@
 
 批准协调方单独仅修改这一调用：缺省signal时省略该属性，有signal时原样传递。不改变受控进程、取消、协议、样例或计量语义，不放宽类型或断言。Luna仍仅写上述四新文件；旧v1三文件、fixture、报告继续冻结。完成门为同一严格命令通过、baseline及samples与原v1工具回归通过、实际差异仅这一处行为等价修正。修正后的帮助函数hash由协调方复验记录并通知Luna，不以旧hash阻止已审查修正。记录见 `docs/development-runs/2026-10-03-baseline-signal-type-fix.md`；无新增工程经验规则。
 
+### 2026-10-03 首版独立验收反馈
+
+root确认首版冻结hash、22项回归、完整严格类型与正常实际CLI通过，但真实medium child的三项受控错响应仍被误报为11门true/optimization passed：错误源码内容但保留声明hash、相同filePath但错误targetSpan行号、相同ID但错误source.evidence范围。child.resolveNavigation只比声明hash和部分ID/filePath，未核实际完整结果，冷/暖一致错误不能证明正确。复现见 `docs/development-runs/2026-10-03-navigation-optimized-independent-review.md`。
+
+原Luna继续同四文件修正完整响应核验，允许在现有新文件内提取共用纯核验函数并加入定向反例回归，不变更v1/application/contracts/fixture。核验固定样例和当前snapshot真实期望的归属/文件/语言/完整证据、精确行列/目标范围及实际content重算hash；保持原11门与全部1177/4708、顺序、计量域和隐私限制，错响应必须semantic failure且不可比较。修正重新冻结后由root独立重跑真实反例，再安排challenge及正式三配对。首版计数≤2不作为性能接受证据，原正常单对不替代三对。
+
 使用 schemaVersion 2 与 XRAY_NAVIGATION_OPTIMIZED_V2:，严格 exact-key 校验 child/summary/report。固定 medium128，每阶段两 API 各完整 1,177 次，单配对两阶段共 4,708 次调用；保留全部响应/source/span/hash/归属/顺序和原 11 语义门。只计实际导航 full-load，索引/current/replay/gate 另计。完整可比且无 external/both 的两轮 full-load 合计 ≤2；不通过平均数、抽样、漏调用或更改 v1 达门。
 
 begin/end 在导航 wall/API 计时外，使用真实 scope 聚合。保留候选唯一终态、封存 resolver 决定、O/R/Delta 与 admission 全关系，以及 failure 优先级：完整关系违例、语义失败或 failed/rejected/cancelled 非零均 failed；只有其余门成立且确实缺覆盖/可比较分类才观测不足；完整 external/both 为外部变化不可比较，不能抹去。真实聚合不证明逐 candidate 绑定，产品 C2 回归负责该门。
