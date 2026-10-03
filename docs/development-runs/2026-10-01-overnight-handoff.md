@@ -173,3 +173,11 @@ Sol修正回合已确认active。Luna首稿root完整读后，继续原两文档
 01:30：Sol升级保护修订设计经root实际两文件/对应源码复查后接受并精确复制main（hash/入口区别/WAL有限child门见review），不是backup/升级运行成功。新的4B-A具体计划已形成并精确复制Sol，原聊天继续仅两自有夹具测试及记录：真实迁移、WAL崩溃/还原、current/partial/ownership保留和三库失败现状；生产库和核心不改，交付后root独立复验。Lunamanifest首稿因安全reader依赖、签名child有限资源及隐含source读取根需修订，已派同两文档，不启动CLI/native/打包。两原聊天active，实际cursor均后缀7（完整见review），main及远端仍95ebbd3。
 
 本轮已实现：仅审查后的设计/实施计划；独立代码与回归验证：没有新增产品结果；真实GUI：0，继续暂缓。用户可查看2026-10-04-upgrade-preservation-fixtures-plan.md理解下一技术验证边界，尚无产品升级保护可操作路径。旧未验UI/安全接线保留，远程质量/隐私选择、生产数据保护、安装升级卸载、签名/干净Windows和公开发布仍未验。AGENTS无新增规则，当前仅源码调查/设计，尚无新复现实验；未纳入Luna未接受文档或Sol活动实现的Git范围。
+
+01:32已接受设计和4B-A计划六文件提交60abf56318bc95966cf2c1f307cb3ded8e553f2d，普通push exit0且origin/main精确一致；没有提交Luna待修设计或任何未验产品/GUI。原双线程继续，运行验证待冻结交付。
+
+02:20新增独立接受：4B-A两隔离测试及记录，Sol23定向/359整包、main366整包及两侧graph/application noEmit通过；root独立自有三库/全局项目失败/不可变原始包/独立还原和真实WAL崩溃恢复探针通过，WAL12392字节，main-only缺提交记录而完整恢复第二重开保持。详见2026-10-04-upgrade-preservation-independent-review.md（实际命令/hash/限制）。仅精确复制三文件，原核心/旧测试/worktree未验UI保留。用户可在本仓库直接运行node node_modules/vitest/vitest.mjs run packages/graph/src/upgrade-preservation.test.ts packages/application/src/upgrade-preservation.test.ts --fileParallelism=false；只自有临时数据，绕开native预构建，不碰用户库。
+
+已实现：隔离迁移/保留/WAL/还原验证，非产品backup；独立代码/回归已验证：上述主目录与独立探针；真实GUI已验证：0。生产升级保护/future-role拒绝/多库失败关闭/原生路径接线仍未实现或验收，真实旧安装版本/安装升级卸载、远程质量/隐私选择、签名/干净Windows/公开发布原门保持。极端taskkill失败/close不确认未实测。AGENTS新增0，不能把测试helper写成生产保证。
+
+下一批已依据实际源码/实验形成可审查计划并派原双线程：Luna4B-P仅纯observation协议/内存fixture/记录（修订设计阶段A已接受，B安全reader未验）；Sol4B-B0仅Windows生产文件边界两设计文档，先明确closed-only writer证据/root handle及原包/副本/生产打开门再实施。实际回合/游标见review：Luna:13 active、Sol:14 active；main仍60abf56，已接受范围Git收尾待本轮完成，不纳入活动新代码。没有询问重复开发许可、没有扫描/执行候选产物/真实DB或computer-use。

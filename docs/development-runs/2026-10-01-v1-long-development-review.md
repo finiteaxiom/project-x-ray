@@ -826,3 +826,21 @@ root完整读查Sol两份修订稿，实际hash92EEE06846BB54D64F6D191E3D82CCF2D
 Luna首稿完整读查时hashA10E2E462A0CE7AF513462B573C80369CBD0F937136408371FA4E2B1E28AB7E4 /F58CD80FDE6034827C6F8D43E82FDE9EFF8171A3674D5BC308CEC52983C210E1。其两个artifact根、声明SHA/来源关联分离、逐文件/签名原Status/架构/未接线边界方向合适，但实施前置仍不完整：安全reader仅条件描述却未列依赖，缺实际签名子进程/扫描有限生命周期，出现未定义source-root及checkout比较隐含读取根。root实读secure-read.ts与secure_reader.cc确认两层2,000,000字节上限，native采用允许共享写/删除的源码句柄；不能复用为2GiB artifact/ASAR/Authenticode对应字节保证。派原两文档明确分阶段/reader前置、签名与ASAR对象对应、有限child时限/取消/输出上限、两root契约及实际sqlite候选选择规则；不授权新native/CLI，不用realpath前后检查替代根句柄约束。原Luna修订回合01a102cf-2e08-71f1-b762-cfde536f6761 active，cursor:7，首稿未接受/未提交。
 
 一次rg使用PowerShell未展开的glob路径导致读查exit1，随后以rg --files及精确路径找到/读取实际文件；是命令路径问题，不是产品或测试失败。此轮仅静态设计接受与实施派发，无新代码/回归/GUI/性能验证；AGENTS新增0。真实GUI及远程、生产库、安装升级卸载、签名/干净Windows/公开发布门保持未验。
+
+01:32实际Git收尾：六份已接受升级设计/A实施计划/协调记录exact staged范围及diff检查通过，提交60abf56318bc95966cf2c1f307cb3ded8e553f2d，普通push exit0，独立ls-remote origin/main精确同SHA。仅Luna未接受两文档未跟踪，未纳入任何活动实现或旧UI；不整体合并Sol。此实际收尾补记留下一次稳定记录提交。
+
+01:38紧凑检查：原Luna文档修订回合01a102cf-2e08-71f1-b762-cfde536f6761、原Sol夹具实施回合01a102d1-24c0-7c13-b520-db29f57b25a9均active，最新实际cursor分别5f905603-9e05-4a70-bae4-5e6a5162a670:8 /cfe7da2a-d1e4-4a1f-9168-182cb9c80d36:8。Sol开始graph定向自测、尚无冻结交付，root不读取/运行活动新测试；Luna仍仅两文档，无CLI实施。main60abf56保持，仅先前Git收尾/本状态补记待提交及Luna活动文档。没有新验收、重型root检查、GUI、Git或规则；保持原批继续，无需用户处理。
+
+01:54紧凑检查及一次30秒有限等待：Luna原文档修订仍active cursor5f905603-9e05-4a70-bae4-5e6a5162a670:11，Sol原夹具实施仍active cursorcfe7da2a-d1e4-4a1f-9168-182cb9c80d36:12。Sol报告graph128/application230及真实WAL正负对照，是开发方自测、尚未冻结及root接受；不读取/运行其活动测试。root只读已接受A计划及当前GraphStore/application接口/hash，853DA337…/855105B4…保持，用于后续独立复验。main60abf56及当前文件边界保持，无新验收、GUI或Git动作；当前无其他具体不冲突动作，继续原批、不制造任务。
+
+## 2026-10-04 02:20：4B-A夹具独立接受、manifest阶段A设计接受与后续派发
+
+先读当前规则/队列/审查/交接/Git；main60abf56。紧凑检查确认Luna修订文档idle cursor5f905603-9e05-4a70-bae4-5e6a5162a670:12、Sol实施idle cursorcfe7da2a-d1e4-4a1f-9168-182cb9c80d36:13，随后实际读取两份设计、两个完整测试/记录/真实hash，不只查状态。
+
+Luna修订hash896108DF233D5095A67683C1C3FE1D2D6693F266AB1DB2E4432ACBA207C91DC2 /9A6041DE3D88FD65230936D4B84025652C4395D09C5BF00CB605F14E17279F49；root只读候选better-sqlite3 lib/binding.js核对prebuild→Debug→Release静态选择相符，没有执行候选模块。修订拆纯observation协议与后续真实reader，消除隐含source-root/current checkout读取，补有限child/同对象签名/ASAR副本/原始状态门。接受阶段A方向；B仍仅未实测要求，没有Windows reader或产物扫描接受。新增artifact-manifest-protocol-plan，hashCF670524537E6AFB8BBCDEF8C1177C7ED6BD83A997DD7B3A034E3E64029405B3，明确唯一3文件、有限plain-data/无IO导入、完整性优先3的状态矩阵、未验证观察固定标签、PE适用覆盖/非PE不适用、正反例/规范序列化、定向与类型门。原Luna实施回合01a102f6-8ae1-7d40-9b7b-1851e89dda91 active cursor:13；无扫描CLI/package/native/GUI授权，活动成果不提交。
+
+4B-A实际独立复验详见2026-10-04-upgrade-preservation-independent-review.md。root Sol定向23项/整包18文件359项及两包noEmit通过；三个冻结文件hash6B92986E…/A2B9E936…/5689D8D7…相符。main独立ignored探针18E3DF273272A7FA75EF8476CB87D3C84EC27DC5C597DA4C02D1F373CBAAC647，不导入开发test helper，实际自有三库/完整原始包/多库失败/全局失败前未开项目/独立还原和固定WAL child崩溃恢复通过，WAL12392字节，main-only缺提交表、完整副本第二重开保持，原集与包hash不变。Probe明确productionBackupVerified/guiVerified false。确认目标不存在后仅精确复制两测试及记录main并核hash，main20文件366项/两包noEmit及diff-check通过，接受该隔离验证切片。现有核心、旧测试和未验worktree桌面/规则改动保持，不整体合并。taskkill极端失败/close永不确认仍未实验，不将自有辅助能力提升为生产根路径或备份保证。AGENTS新增0，既有规则/已接受设计已覆盖验证门。
+
+据本轮真实未来/角色无拒绝与多库早期提交现状，形成upgrade-protection-boundary-plan（P1生产文件边界设计，非重复旧迁移表），hashC4A9F2DC106F34A53C580AD471AE2D0161145E79C305C4808D638CBD383CA7C3，确认新目标后精准复制Sol并核同hash。只两新设计文档，明确closed-only静止证据、Windows实际API/句柄/shared访问、原包→操作副本profile/迁移/还原→生产打开的能力与窗口、后续最小切片/失败门；不运行真实库/复制/native/GUI探针，不实施backup。原Sol B0回合01a102fd-46c0-7a43-878a-10292eae23d5 active cursor:14。两个新批次文件互不冲突，重型root窗口结束。
+
+本轮已实现/独立接受的是隔离夹具与协议设计，不是产品升级保护；真实GUI0仍暂缓，远程质量、真实库/安装升级卸载、签名/干净Windows/公开发布仍未验。Git仅安排已接受三文件、Luna冻结设计及root计划/记录精确收尾，不纳入任何新活动实现。
