@@ -1062,3 +1062,24 @@ root按两原聊天实际冻结边界独立审查2D-S1与2D-L1。Sol六图测试
 仅接受历史材料只读端口和独立纯授权/公开入口DTO：prepare-only/not-checked、旧新授权完整对象双向拒绝保持，不产生真实外发许可、任务或评分。真实GUI=0，模型/权威SQL政策/共享占用/dispatch/跨库发布与完整生产接线均未验。AGENTS新增0，现有捕获/有限DTO/历史权威区分规则已覆盖。当前两原聊天idle/completed，实际游标Luna1ac033a7-c1ee-48ae-9e61-2317590f341e:20、Sol7e07c337-f6c9-490f-bd90-c31368d0efe4:28；保留全部冻结WIP，开发不Git。
 
 main起点999ff4e3bb1c166c8f959ace03b56f5a1db67036，本轮只收尾对应八份源码/开发记录及六份准确协调文档，实际Git回执另核；没有重型窗口、GUI、网络或导入代码执行。原四批仍有本地链路实现，不标全部完成或启动第五批；收尾/全剩外部条件后暂停project-x-ray及派发讨论。
+2026-10-05 02:23实际Git与调度回执：精确14文件普通提交/推送9edaea93128b06da60411096f91fd5d349313ff3，独立ls-remote核origin/main同SHA，cached diff --check通过，推送后main清洁。六源码hash与冻结检查一致；Luna记录仅修Markdown行尾空白，未改正确断言。无Sol旧生产源码/二进制或未验GUI实现。Git回执留下一稳定切片收尾，不为回执循环提交。
+
+基于ADR0008与实际旧feature按repository授权表，root形成2D-S2独立政策SQL实施计划（A6AFBD3499207229404A1C2AE7D6A2E88AB1EB66EE0B26EFF14D572953F2A303），精确同步已验两个新contracts policy/test及barrel一行到5170（原目标不存在、SHA相同，保留旧index差异），已成功派原Sol/medium。仅graph新store/test、index窄端口与必要global迁移断言、自己的记录；13仅global，12 cache保留，project不创建政策表。默认拒绝零写、复合键、IMMEDIATE实际revision/provider revision、时钟回退/整数上限失败关闭及真实两连接/回滚重开；不接共享占用/任务/dispatch/IPC/评分/UI。计划与队列已保存，待下一稳定切片收尾，不测试活动源。原全部WIP保持冻结，无第五批或外发授权。
+
+原Luna接受回执idle/completed，实际cursor1ac033a7-c1ee-48ae-9e61-2317590f341e:21；无新代码/自测。原Sol具体开发回合实际状态及cursor由本轮timeout0读取，下次按返回续查；不将发送回执冒充实现或独立验收。原四批/本地收尾及全剩外部条件后暂停门保持，重型窗口空闲，GUI暂缓、API/签名未验。
+本轮实际新回合：Sol 01a10827-be42-7ce3-aad4-b0ab8b7c4662 为 active/inProgress，cursor7e07c337-f6c9-490f-bd90-c31368d0efe4:29，已确认核计划/冻结依赖与原副本，无冻结新交付；root不检查其活动修改。Luna cursor仍:21。
+
+## 2026-10-05 02:27：第二批内部身份契约实际派发
+
+本轮按原两聊天最近实际游标timeout0，Luna原冻结接受回合idle，Sol2D-S2 active且暂无新冻结交付；main仍9edaea93128b06da60411096f91fd5d349313ff3，仅既有协调文档/新SQL计划待收尾，无不相关改动。不重跑已验切片、不测试Sol活动源、不启动重型窗口。
+
+root只读核ADR0008、actual remoteCapturedIdentity/公开prepare-start、semantic package/rubric与adapter实际protocol：旧解释身份缺questionFingerprint/attemptHash/rubricHash，新历史材料与独立授权DTO均不补任务绑定。形成2D-L2具体实施计划2026-10-05-ownership-semantic-task-identity.md并成功派原Luna/Max，仅新contracts内部有限strict identity/test/自己的记录及barrel一行。33个required字段，版本/哈希/配置/上下文/provider/model/body完整元数据；结构校验不是权威/关联签名，不接受正文/凭据，也不扩旧feature/public taskId。不做任务状态机/结果/网络/SQL/IPC/UI；与5170 Sol政策SQL无文件或活动依赖交叉，后者不依赖新未冻结identity。
+
+这是原第二批未来同步登记/共享占用所需的纯实现，不第五批或重复准备任务。没有本轮独立验收/GUI/真实远程/Git或公共AGENTS新规则；先等明确稳定切片，不把开发自测称验收。当前队列/停止计划与交接已同步，新计划留下一稳定切片收尾。四批本地收尾/全剩外部条件后暂停automation及派发讨论，不因GUI或API外部门无限空等。
+本轮最后实际timeout0：Luna回合01a1082a-cd17-79c2-9995-f4c73612de22 active，cursor1ac033a7-c1ee-48ae-9e61-2317590f341e:22；Sol回合01a10827-be42-7ce3-aad4-b0ab8b7c4662 active，cursor7e07c337-f6c9-490f-bd90-c31368d0efe4:30。均尚无冻结新交付；下轮携这些实际游标续查，不硬编码更早阶段。
+
+## 2026-10-05 02:41：第二批内部任务身份纯契约独立接受
+
+root按实际completed/idle冻结核Luna四文件，33字段与ADR/实际adapter协议一致，old/public schema未扩，源码hash精确匹配；独立六contracts文件145/145及noEmit通过，diff --check通过。仅结构与值域，不证明原题/attempt/rubric/body关联、权威许可/当前性/签名，不登记或发送任务。详见2026-10-05-ownership-task-identity-independent-review.md。没有独立产品/测试缺陷或新公共规则，GUI=0。
+
+Sol实际timeout0仍2D-S2 active/inProgress，游标7e07c337-f6c9-490f-bd90-c31368d0efe4:31；只自报落地SQL进入并发/时钟验证，不是冻结交付或root验收，不审查/测试活动源。Luna已验冻结游标1ac033a7-c1ee-48ae-9e61-2317590f341e:23；回执仅确认，不扩任务。root本轮仅收尾Luna四文件及七份准确协调文档/计划，实际Git另核；不含Sol活动SQL/其他生产WIP/二进制，无重型窗口/GUI/远程，四批及结束暂停门保持，不第五批。
