@@ -928,3 +928,24 @@ actual main0941fb94deae3d3c0f0d96d44ab356d24ef855a7为上一六root文档已推�
 只接受五文件隔离诊断工具与唯一新probe build ignore，精确复制main/hash相同；main原build/语法及原CLI两runtime独立复验一致。原CLI仍exit1/read-only parent创建假设失败；清理0删除，normal/junction资源true、材料保留，不称OS权限全绿/ACL或生产能力。native I/O取消/60秒总截止/关闭失败未实测明确保留。已实现/独立回归为上述，真实GUI0；S1a EPERM整体仍未接受/集成。AGENTS去重新增2条，分别根据实际创建反例及unknown-child删除/修正保留，不整体复制Sol规则。
 
 依据source只有read/verify、累计20GiB及Complete直接release/无borrow状态，形成upgrade-source-loan-plan：原Sol仅私有源借用/2B预算/pending生命周期与自有两遍consumer，零目标/SQLite/marker；本批明确解冻原相关S1a文件但不重做已修正逻辑，不以loan豁免S1a安全门或进入main。probe/core/UI/package/lock/AGENTS冻结，Luna无新不冲突任务。Git仅精确接受工具/规则/记录及新计划，旧Sol差异不纳入；实际SHA及派发游标收尾后记录。
+
+08:10真实收尾与派发：上述12份精确已接受工具/规则/文档实际提交f6eb2cdecc48f7c45e6e80bf10b5d640bd4215dc，普通push exit0，独立ls-remote确认origin/main精确同SHA，提交后main清洁，没有S1a/二进制/旧Sol改动。新source-loan计划复制5170核SHA E8366F775ED14C66B5BD842D3475034E441BB477CD4652EF92BFBE60A6E6E0F6；原smoke/fixture/binding基线也实际一致。沿用原Sol GPT-6.1 Sol/medium派发，实际wait确认新回合01a1043f-38e7-76c2-8eb6-4b333b47f8cd active，cursor cfe7da2a-d1e4-4a1f-9168-182cb9c80d36:39；Luna completed/notLoaded20无新任务。唯一重型窗口交Sol，root不运行其活动native/源码。此回执与交接追加是两份协调记录待下一稳定切片收尾，不反复为回执建立新提交；已推送版本仍f6eb2cd。
+
+## 2026-10-04 10:27检查：保留S1b-L中断改动恢复原线程
+
+main仍f6eb2cdecc48f7c45e6e80bf10b5d640bd4215dc，仅两份已知root回执记录未提交。先读实际规则/队列/review/handoff；紧凑wait取得原Sol回合01a1043f-38e7-76c2-8eb6-4b333b47f8cd failed/systemError额度中断，cursor cfe7da2a-d1e4-4a1f-9168-182cb9c80d36:41。单Luna确认原冻结任务completed/notLoaded、cursor5f905603-9e05-4a70-bae4-5e6a5162a670:20。资源中断不当产品缺陷或已交付切片。
+
+root只读核Sol实际455d4ad基线与三份已保存partial：native D6B7342145E76F3F7F552EA057ABBC227FA5756F7CF770D186C95FF2F4A13AC9、adapter A9AD25268B29065C71341846AFE558FB8822C90D45C5F91B36A79307593EC2E6、新loan模块630D28D347F9C151F454D06E06E65C4B8F99143A16D689916B23CF7C4DC35255；原adapter test/smoke冻结hash相同，尚无loan test/新开发记录。不运行或复制partial、不重置旧工作，未进行独立验收。
+
+实际usage工具ordinaryUsageAllowed=true、五小时已用1%，不购买/使用reset。在原授权/原文件边界内恢复同Sol GPT-6.1 Sol/medium，新回合01a104bd-f1cf-72b3-ad5a-ecb09287fd62实际active，cursor cfe7da2a-d1e4-4a1f-9168-182cb9c80d36:42；唯一native/Electron技术窗口仍交Sol，Luna无新任务。S1a EPERM/零GUI/零target/SQLite/marker/生产及原source void close边界保持，AGENTS新增0。本轮仅资源恢复与记录，无新测试/产品接受/Git动作；待明确冻结切片再独立审查。
+
+## 2026-10-04 原四批恢复与新停止门
+
+用户最新要求恢复四批，结束后暂停开发/定时任务并讨论后续规划；覆盖旧自主继续授权。原automation经工具恢复ACTIVE/15分钟，回读确认中文与停止条款，无新timer。AGENTS协作条款与四批队列已同步，细目见2026-10-04-four-batch-resume.md；此为用户要求更新，非新增工程经验。
+
+真实main仍f6eb2cdecc48f7c45e6e80bf10b5d640bd4215dc，保留原两记录未提交；Sol旧未提交成果不重置。原Luna恢复4B-M2 reader两文档设计；原Sol确认全部冻结、技术进程结束。root独立重编译/类型、原49回归48过1正确symlink EPERM失败0skip、Node loan/GC及Electron三技术模式通过，冻结hash前后保持；仅局部技术接受，S1a整体/GUI/production未验，未复制或提交实现。具体证据见2026-10-04-source-loan-independent-review.md。
+
+root窗口已释放；下一Sol转3G-S普通增量索引实施设计，两新增文档与Luna不冲突，依据现有indexProject完整分析及实际五源码hash相同，先设计审查再实施，不把导航缓存/基准工具冒充增量算法。真实GUI、远程质量、签名/干净机器及旧接线门继续保留。四批全部可推进工作收尾后暂停；全剩外部依赖也暂停并明确未验，不能宣布四批全部完成。本轮无新增已验证工程经验，无Git收尾。
+
+
+2026-10-04 19:00（Asia/Shanghai）实际调度回执：01a0f268-97f6-7a21-90c3-d472963da0e2 / local / cursor e11b2027-fd4e-4bb8-a314-36a1858b89be:3；01a0f53c-353f-70e3-98c3-96ed65c085d6 / local / cursor f54a15ad-5729-4a82-bfce-634472780e76:3。两聊天均active：Luna reader设计、Sol增量索引设计。root所有本輪技术验证进程结束；下一轮沿这些实际cursor检查，进程/回合变化时采用新返回值，不硬编码历史状态。

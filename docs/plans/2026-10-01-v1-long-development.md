@@ -1,5 +1,7 @@
 # V1 四批长期开发与独立验收计划
 
+2026-10-04 最新用户要求：恢复本计划四批及原双开发聊天，四批结束后暂停开发与定时任务，先讨论后续规划。取代此前四批后自主继续规划的授权；不启动第五批。详见 [恢复边界与停止门](2026-10-04-four-batch-resume.md)。GUI 暂缓、真实远程、签名及干净 Windows 等未验收门不豁免。
+
 ## 授权、基线与边界
 
 用户于 2026-10-01 授权协调审查方自行规划并持续推进以下四批开发，沿用双开发聊天、feedback loops、AGENTS 工程经验门槛及验收后自主 Git 收尾。此授权取代旧夜间计划对这四项“仅讨论、不实施”的限制；旧夜间停止时间不用于本计划。
@@ -100,7 +102,10 @@ Sol 先测量当前全量索引/查询/内存基线，设计按语言的保守�
 | 3F-T2 优化测量工具 | 修正后独立接受，Git收尾见最新审查 | Luna/协调方 | root23项/严格类型、三错响应拒绝、三实际第二连接commit挑战、取消/原CLI超时及单次三配对通过；14124调用/33语义门，每对full-load2，报告206848字节。固定样例计数门，不外推真实项目或旧协议wall收益；GUI未验。详细原始值/限制见navigation-optimized-independent-review |
 | 2B-S2a 答题记录引用索引修正 | 独立核心及main集成整包通过，已提交/推送0eef658，远端18e5524包含 | Sol/协调方 | 111/111原门通过、ownership6/类型/真实SQL/多布局/重开/失败重试通过；新增17项。原分/历史不变；旧超时记录保留，GUI未验 |
 | 4A Windows发布链/验收设计 | 修订后设计已接受 | Luna/协调方 | 隔离共存/原始签名Status/迁移阶段已复审；仅文档，不代表安装、升级、卸载或GUI已验收 |
-| 4B Windows发布实现 | 4B-A/P、B0、S1b设计及S1b-P隔离诊断工具已接受；S1a整体EPERM门未验 | 双线程 | 08:03清理修正经独立Node/Electron原CLI、未知普通文件0删除/身份保留、异常outcome拒绝、普通应用import和传输取消/就绪超时验证；五工具文件精确集成main，原CLI仍exit1/read-only创建假设失败，非ACL或生产权限通过。下一S1b-L仅源借用/2B预算与生命周期，具体计划见2026-10-04-upgrade-source-loan-plan.md；core/UI/probe冻结，Luna无新不冲突任务。S1a未接受/复制/提交，source-loan/full writer/材料重开/恢复/生产、实际artifact/安装/GUI/签名/干净机器及原生取消/close失败门保持 |
+| 3G-S 普通增量索引实施设计 | 已派发，设计中 | Sol | 2026-10-04按实际indexProject全量分析与五源码hash对齐派发，仅两设计文档；未实施增量算法；具体边界见incremental-index-implementation-design计划 |
+| 4B-M2 发布材料reader设计 | 已派发，设计中 | Luna | 原manifest阶段B的安全reader前置；只新增两文档，不运行探针/产物/GUI，不改实现；接受后再派有限实现 |
+| 4B-S1b-L 内部source-loan | 独立局部源码/回归与技术入口接受，整体不集成 | Sol/协调方 | root重编译/graph类型、49回归48过1正确file symlink EPERM失败0skip、Node loan/GC与Electron三个原技术入口通过；S1a整体/checked-close/生产仍未验，冻结实现保留5170；见source-loan-independent-review |
+| 4B Windows发布实现 | 既有设计/隔离诊断工具已接受；S1b-L局部技术通过，S1a整体EPERM门未验 | 双线程 | 已接受probe在main，原CLI仍exit1/read-only创建假设失败，非ACL或生产权限通过。S1b-L独立结论见新行及source-loan-independent-review，未整体复制/提交源能力。当前Luna做4B-M2 reader设计，Sol转3G-S增量设计；core/UI/probe/loan冻结。full writer/checked-close/材料重开/恢复/生产、实际artifact/安装/GUI/签名/干净机器等未验门保持 |
 
 3B-L的实施目标为可安全运行的普通本地索引测量工具，不是增量算法：仅benchmarks中新local-index-baseline入口及child、对应最小测试和本批记录；固定仓库自建样例/生成器，唯一新目录/数据库/报告，不调用旧benchmark、不下载项目、不清理共享目录。相同样例根配对冷库/无变化reindex，规范化事实/源码/身份等价是采样门禁；公开阶段计时和Node采样RSS明确标来源，不冒充Python/整应用内存。严格限额/总超时/取消后终止子进程，报告环境/原始样本/失败状态且不含源码/凭据/私人路径。该工具实施与小样例验证可不触碰Sol共享源码；规模性能测量待共享功能稳定、单协调窗口执行，后续优化设计仍由Sol承担。
 

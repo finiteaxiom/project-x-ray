@@ -213,3 +213,18 @@ root又确认实验工具的清理缺陷：在本轮自有target注入未登记�
 08:03：S1b-P清理修正已独立接受为隔离诊断工具，五文件+唯一probe build ignore精确集成main；main重新build/原Node及Electron CLI验证保持权限假设false/exit1。未知普通子项内容/身份保留0删除、意外outcome固定拒绝且无junction、普通应用import0副作用；受控child取消与5秒就绪超时确认close，native I/O取消/总截止/CloseHandle失败仍未实测。源码/回归详见upgrade-write-permissions-independent-review最新节；真实GUI0，无生产原包入口。
 
 已实现与独立验证：仅本轮诊断工具修正和局部实测/边界；未验：S1a正确file symlink EPERM、ACL/生产权限、source-loan/writer/manifest/marker/材料重开/恢复/SQLite/实际artifact/安装升级卸载/签名/干净机器/远程质量及暂缓GUI。AGENTS根据独立证据去重新增2条。下一upgrade-source-loan-plan依据真实预算/pending/Complete源码，原Sol仅内部source借用与两遍自有consumer，main/core/UI/probe冻结，Luna无新任务。收尾前实际main0941fb94deae3d3c0f0d96d44ab356d24ef855a7；上一六文档普通推送及远端SHA已核，真实提交/派发游标另记，不据预定动作当成功。
+
+08:10回执：12份精确接受工具/规则/文档已提交并普通推送f6eb2cdecc48f7c45e6e80bf10b5d640bd4215dc，独立远端main同SHA。新loan计划在5170副本SHA E8366F775ED14C66B5BD842D3475034E441BB477CD4652EF92BFBE60A6E6E0F6；原Sol新回合01a1043f-38e7-76c2-8eb6-4b333b47f8cd active/cursor cfe7da2a-d1e4-4a1f-9168-182cb9c80d36:39，Luna completed/notLoaded20。单native/Electron技术窗口交Sol，root等待明确冻结切片再独立验收；不复制/测试其活动改动。两份root回执记录待下一稳定切片一起收尾，不重复为回执提交。自动任务沿用原ACTIVE15分钟，不重复创建/改写，当前无用户需处理阻碍。
+
+10:27检查与恢复：原source-loan回合实际额度systemError/failed41，三份native/adapter/new-loan partial已保存，原test/smoke未变、尚无新test/记录交付；root只读核实际Git/hash，未测试/复制/接受partial。实际usage工具普通额度恢复（五小时已用1%），保留全部改动沿原计划恢复同Sol，新回合01a104bd-f1cf-72b3-ad5a-ecb09287fd62 active/cursor cfe7da2a-d1e4-4a1f-9168-182cb9c80d36:42，Luna仍completed/notLoaded20，无新任务。main仍f6eb2cd，仅两root记录待稳定切片收尾；窗口交Sol、不并发重型验证，无GUI/Git/新验收、规则新增0，用户无需处理。
+
+## 2026-10-04 原四批恢复与新停止门
+
+用户最新要求恢复四批，结束后暂停开发/定时任务并讨论后续规划；覆盖旧自主继续授权。原automation经工具恢复ACTIVE/15分钟，回读确认中文与停止条款，无新timer。AGENTS协作条款与四批队列已同步，细目见2026-10-04-four-batch-resume.md；此为用户要求更新，非新增工程经验。
+
+真实main仍f6eb2cdecc48f7c45e6e80bf10b5d640bd4215dc，保留原两记录未提交；Sol旧未提交成果不重置。原Luna恢复4B-M2 reader两文档设计；原Sol确认全部冻结、技术进程结束。root独立重编译/类型、原49回归48过1正确symlink EPERM失败0skip、Node loan/GC及Electron三技术模式通过，冻结hash前后保持；仅局部技术接受，S1a整体/GUI/production未验，未复制或提交实现。具体证据见2026-10-04-source-loan-independent-review.md。
+
+root窗口已释放；下一Sol转3G-S普通增量索引实施设计，两新增文档与Luna不冲突，依据现有indexProject完整分析及实际五源码hash相同，先设计审查再实施，不把导航缓存/基准工具冒充增量算法。真实GUI、远程质量、签名/干净机器及旧接线门继续保留。四批全部可推进工作收尾后暂停；全剩外部依赖也暂停并明确未验，不能宣布四批全部完成。本轮无新增已验证工程经验，无Git收尾。
+
+
+2026-10-04 19:00（Asia/Shanghai）实际调度回执：01a0f268-97f6-7a21-90c3-d472963da0e2 / local / cursor e11b2027-fd4e-4bb8-a314-36a1858b89be:3；01a0f53c-353f-70e3-98c3-96ed65c085d6 / local / cursor f54a15ad-5729-4a82-bfce-634472780e76:3。两聊天均active：Luna reader设计、Sol增量索引设计。root所有本輪技术验证进程结束；下一轮沿这些实际cursor检查，进程/回合变化时采用新返回值，不硬编码历史状态。
