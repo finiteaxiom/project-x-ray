@@ -12,7 +12,9 @@ import {
 import {
   EXPLANATION_TASK_PROTOCOL_VERSION,
   remoteCapturedIdentitySchema,
+  remoteUtf8Bytes,
 } from "./remote-explanation.js";
+import { canonicalJson } from "./snapshot-content.js";
 import {
   OWNERSHIP_SEMANTIC_TASK_LIMITS_VERSION,
   OWNERSHIP_SEMANTIC_TASK_PROTOCOL_VERSION,
@@ -20,9 +22,14 @@ import {
   OWNERSHIP_SEMANTIC_TASK_SEMANTIC_PROTOCOL_VERSION,
   OWNERSHIP_SEMANTIC_TASK_SEMANTIC_SCORING_VERSION,
   ownershipSemanticCapturedIdentitySchema,
+  ownershipSemanticTaskRecordSchema,
   type OwnershipSemanticCapturedIdentity,
+  type OwnershipSemanticTaskRecord,
 } from "./ownership-semantic-task.js";
-import { ownershipSemanticCapturedIdentitySchema as barrelIdentitySchema } from "./index.js";
+import {
+  ownershipSemanticCapturedIdentitySchema as barrelIdentitySchema,
+  ownershipSemanticTaskRecordSchema as barrelRecordSchema,
+} from "./index.js";
 
 const uuid = "00000000-0000-4000-8000-000000000001";
 const otherUuid = "00000000-0000-4000-8000-000000000002";
@@ -240,5 +247,146 @@ describe("ownership semantic captured task identity contract", () => {
 
   it("is exported through the contracts barrel", () => {
     expect(barrelIdentitySchema).toBe(ownershipSemanticCapturedIdentitySchema);
+  });
+});
+
+const recordCreatedAt = "2026-10-05T00:00:00.123456Z";
+
+function taskRecord(
+  phase: OwnershipSemanticTaskRecord["phase"] = "dispatched",
+  overrides: Record<string, unknown> = {},
+) {
+  const terminal = phase !== "dispatched";
+  const code = phase === "failed" ? "PROVIDER_FAILED" : phase === "cancelled" ? "CANCELLED" : phase === "interrupted" ? "INTERRUPTED" : null;
+  return {
+    identity: identity(),
+    phase,
+    createdAt: recordCreatedAt,
+    completedAt: terminal ? recordCreatedAt : null,
+    code,
+    ...overrides,
+  };
+}
+
+describe("ownership semantic persistent task record contract", () => {
+  it("accepts the five persistent phases with their required terminal shape", () => {
+    for (const phase of ["dispatched", "completed", "failed", "cancelled", "interrupted"] as const) {
+      expect(ownershipSemanticTaskRecordSchema.safeParse(taskRecord(phase)).success, phase).toBe(true);
+    }
+  });
+
+  it("rejects preparing/reserved and every inconsistent phase, timestamp, or fixed terminal code", () => {
+    const invalidRecords = [
+      { ...taskRecord(), completedAt: recordCreatedAt },
+      { ...taskRecord(), code: "BUSY" },
+      { ...taskRecord("completed"), completedAt: null },
+      { ...taskRecord("completed"), code: "BUSY" },
+      { ...taskRecord("failed"), completedAt: null },
+      { ...taskRecord("failed"), code: null },
+      { ...taskRecord("failed"), code: "CANCELLED" },
+      { ...taskRecord("failed"), code: "INTERRUPTED" },
+      { ...taskRecord("failed"), code: "not-a-failure-code" },
+      { ...taskRecord("cancelled"), completedAt: null },
+      { ...taskRecord("cancelled"), code: null },
+      { ...taskRecord("cancelled"), code: "TIMEOUT" },
+      { ...taskRecord("interrupted"), completedAt: null },
+      { ...taskRecord("interrupted"), code: null },
+      { ...taskRecord("interrupted"), code: "TIMEOUT" },
+      { ...taskRecord(), phase: "preparing" },
+      { ...taskRecord(), phase: "reserved" },
+      { ...taskRecord("completed"), createdAt: "invalid-time" },
+      { ...taskRecord("completed"), completedAt: "invalid-time" },
+    ];
+    for (const invalid of invalidRecords) {
+      expect(ownershipSemanticTaskRecordSchema.safeParse(invalid).success).toBe(false);
+    }
+  });
+
+  it("compares complete fractional seconds and accepts equality and later terminal times", () => {
+    const createdAt = "2026-10-05T00:00:00.123456Z";
+    const earlierWithinSameMillisecond = "2026-10-05T00:00:00.123455Z";
+    expect(Date.parse(earlierWithinSameMillisecond)).toBe(Date.parse(createdAt));
+    expect(ownershipSemanticTaskRecordSchema.safeParse(taskRecord("completed", {
+      createdAt,
+      completedAt: earlierWithinSameMillisecond,
+    })).success).toBe(false);
+
+    for (const [start, finish] of [
+      [createdAt, createdAt],
+      [createdAt, "2026-10-05T00:00:00.123456000Z"],
+      ["2026-10-05T00:00:00.999999999Z", "2026-10-05T00:00:01Z"],
+    ]) {
+      expect(ownershipSemanticTaskRecordSchema.safeParse(taskRecord("completed", { createdAt: start, completedAt: finish })).success).toBe(true);
+    }
+    expect(ownershipSemanticTaskRecordSchema.safeParse(taskRecord("completed", {
+      createdAt: "2026-10-05T00:00:01Z",
+      completedAt: "2026-10-05T00:00:00.999999999Z",
+    })).success).toBe(false);
+  });
+
+  it("keeps the record and nested identity strict without widening the legacy feature identity", () => {
+    const oldFeatureIdentity = {
+      protocolVersion: EXPLANATION_TASK_PROTOCOL_VERSION,
+      taskId: otherUuid,
+      repositoryId: "repo-fixture",
+      snapshotId: "snapshot-fixture",
+      analysisResultFingerprint: hash("a"),
+      ignoreRevision: 0,
+      authorizationRevision: 0,
+      providerRevision: 0,
+      contextEpoch: 0,
+      ownerSessionId: uuid,
+      packageId: hash("1"),
+      limitsVersion: "1.0.0",
+      contextHandle: uuid,
+      activation: recordCreatedAt,
+      configurationHash: hash("c"),
+      ignorePolicyHash: null,
+      sourceManifestHash: hash("b"),
+      credentialRevision: 0,
+      bodyDigest: hash("2"),
+    };
+
+    expect(ownershipSemanticTaskRecordSchema.safeParse({ ...taskRecord("completed"), extra: true }).success).toBe(false);
+    expect(ownershipSemanticTaskRecordSchema.safeParse(taskRecord("completed", {
+      identity: { ...identity(), extra: true },
+    })).success).toBe(false);
+    expect(ownershipSemanticTaskRecordSchema.safeParse(taskRecord("completed", { identity: oldFeatureIdentity })).success).toBe(false);
+  });
+
+  it("accepts the legal maximum identity under 16 KiB and survives canonical JSON round-trip", () => {
+    const controlId = "\u0000".repeat(128);
+    const controlVersion = "\u0000".repeat(64);
+    const maximumFraction = (digit: string) => `2026-10-05T00:00:00.${digit.repeat(11)}Z`;
+    const maximum = taskRecord("failed", {
+      identity: {
+        ...identity(),
+        repositoryId: controlId,
+        snapshotId: controlId,
+        questionId: controlId,
+        attemptId: controlId,
+        questionVersion: controlVersion,
+        deterministicScoringVersion: controlVersion,
+        ignorePolicyHash: hash("a"),
+        ignoreRevision: Number.MAX_SAFE_INTEGER,
+        authorizationRevision: Number.MAX_SAFE_INTEGER,
+        providerRevision: Number.MAX_SAFE_INTEGER,
+        credentialRevision: Number.MAX_SAFE_INTEGER,
+        contextEpoch: Number.MAX_SAFE_INTEGER,
+        model: "m".repeat(128),
+        activation: maximumFraction("1"),
+      },
+      createdAt: maximumFraction("1"),
+      completedAt: maximumFraction("9"),
+      code: "CREDENTIAL_UNAVAILABLE",
+    });
+    const canonical = canonicalJson(maximum);
+    expect(remoteUtf8Bytes(canonical)).toBeLessThan(16 * 1024);
+    expect(ownershipSemanticTaskRecordSchema.safeParse(maximum).success).toBe(true);
+    expect(ownershipSemanticTaskRecordSchema.safeParse(JSON.parse(canonical)).success).toBe(true);
+  });
+
+  it("is exported through the already-existing contracts barrel", () => {
+    expect(barrelRecordSchema).toBe(ownershipSemanticTaskRecordSchema);
   });
 });
