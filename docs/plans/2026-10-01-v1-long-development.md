@@ -79,7 +79,7 @@ Sol 先测量当前全量索引/查询/内存基线，设计按语言的保守�
 | 1C-2B-2B worker/broker/main/preload安全接线 | 延迟事件及状态IPC技术复验通过；整批仍待验收 | Sol/协调方 | 原probe/36+20项、类型/build/Node worker已验证；Electron44.4.3实际worker状态与main/preload状态IPC、错窗口/错页面拒绝技术检查通过，无产品控件操作；App GUI、发送/取消完整IPC、真实远程与集成仍开放，未提交实现 |
 | 1D-0 远程解释界面接入设计 | 修订后设计已接受 | Luna/协调方 | 原两文档；真实preview上限、候选API、queued无SQL取消、复用同步revoke及代码→技术产物→延期GUI顺序已复审；非UI实现或运行验收 |
 | 1C-2B-2B-C 活跃所有者与启动恢复 | 独立源码/回归与真实进程技术门通过；GUI及整接线未验 | Sol/协调方 | 最新普通build、47回归、4真实Electron进程：同目录第二零初始化；人工SQL任务/lease/context不变、崩溃重开恢复/零start、历史结果与源码不变；不代表真实远程请求，不提交main旧接线 |
-| 1C-2B-2B-D worker终止失败隔离修正 | 2026-10-05权限恢复后已派原Sol，实际active | Sol/root | root两条受控端口失败已复现；按explanation-stop-failure-review/fix限定broker/test/support修正，保留3G-S1冻结。旧拒绝记录不删除；本次任务已启动，无真实OS失败/损坏/外发结论，不整体验收旧接线 |
+| 1C-2B-2B-D worker终止失败隔离修正 | 冻结窄修独立源码/45项/类型/build与真实Node生命周期技术门通过 | Sol/root | root核精确原副本/patch/新hash；5真实Worker退出一次，恢复时旧活线程0。见2026-10-05-explanation-stop-failure-independent-review；OS拒绝仍模型，完整Electron发送/取消IPC、GUI与旧接线集成未验，不复制提交整批 |
 | 1D 解释/授权 UI | 待契约冻结 | Luna | 后端契约进入主checkout后派发 |
 | 1E 独立测试、真实 GUI/远程与集成 | 待交付 | 协调方 | 实际代码/产物，远程密钥与项目选择未完成 |
 | 2 所有权语义评价 | ADR设计接受；纯底层契约开始实施 | 双线程 | 真实远程/持久化/安全接线/UI依赖与各自验收门仍保留 |
@@ -97,6 +97,7 @@ Sol 先测量当前全量索引/查询/内存基线，设计按语言的保守�
 | 2B-S4 本地胶囊事务端口 | 独立接受并集成提交133686217903e854e24dbdc76af9203cf3e1fd23 | Sol/协调方 | Sol227/main225核心回归、main111应用回归及两包类型通过；独立四型builder→SQL重开和非空降级投影负例通过。prepare-only历史限制保持；新增经验1条，无GUI/模型 |
 | 3F-T 优化后测量协议设计 | O/T 同步修订独立接受，工具等待 C2 | Luna/协调方 | O/R 分域及失败优先级复审通过；原4708/11门/schema/限额保持，新工具仅待稳定缓存/observer端口后派发 |
 | 2B-S5 本地答题集成 | 修正后独立接受、精确集成提交并推送18b6cbb | Sol/协调方 | Sol/main各11文件298项、三包noEmit及root各16次真实索引答题探针通过；双布局/空非空配置、SQL回滚重试重开及重算摘要错配拒绝。新增明确DTO投影经验1条；只本地材料准备，GUI/模型仍未验收 |
+| 2C-L 纯语义请求/响应适配 | 2026-10-05已派原Luna实现，实际active | Luna/root | 依据已接受ADR/主checkout胶囊及缺失llm适配源码；仅三个llm文件/自有记录。按ownership-semantic-prompt计划私有捕获、总UTF8限额、不裁剪答案/路径、原validator绑定；无provider/SQL/评分/GUI，待冻结独立审查 |
 | 3F-O 缓存observer接缝设计 | 修订设计独立接受 | Luna/协调方 | root 四文档/当前源码复审，O/R 及 estimator/terminal 关系、真实缺采集与协议矛盾区分、后续API错误独立；非实现/收益通过 |
 | 3F-C1 导航有效性取样端口 | 独立接受、精确集成提交7071ae4 | Sol/协调方 | Sol/main各98 graph回归、两包noEmit与真实SQLite探针通过，main原application147通过；嵌套COMMIT/ROLLBACK保守停比较、新实例身份明确。新增经验1，缓存/性能/GUI未验 |
 | 3F-C2 应用导航缓存/observer | 后台独立接受、精确集成并复验通过 | Sol/协调方 | root Sol43定向/225应用/111图，main229应用/114图，两边类型及真实双布局/12竞态探针通过。保留fresh校验、私有身份/4MiB/O/T门；性能/GUI未验，Git见最新审查 |
@@ -107,8 +108,9 @@ Sol 先测量当前全量索引/查询/内存基线，设计按语言的保守�
 | 3G-S1 Python普通索引解析缓存 | 后台独立330项/三包类型及真实20/80冷热测量通过；完整GUI/集成未验 | Sol/root | 持久raw缓存/真实工具探测/全语义重建与取消窄修已独立核；每轮warm1请求19/79hits，两遍安全读/事实/ID保持。见python-parse-cache-independent-review。Sol生产源冻结保留，不以GUI暂缓提交完整实现；TS/Git冷路径保持 |
 | 4B-M2 发布材料reader设计 | 设计门接受，HANDLE保证未验 | Luna/root | 保持v1，签名not-evaluated/incomplete；sidecar/PInvoke仅候选，目标Windows仍须证明。复杂reader后续Sol；本批不生成complete真实manifest |
 | 4B-M3 reader自有子进程边界 | 修正后四文件内部进程端口独立验收；权限恢复后精确Git收尾 | Luna/root | root真实三型合并帧consumer零启动、50回归/desktop类型/语法通过，恢复后hash相同。见artifact-reader-process-independent-review；仅Node内部生命周期支持，无生产reader/HANDLE/artifact/GUI完成保证；实际SHA见最新审查 |
+| 4B-M4 Windows只读HANDLE桥接 | 2026-10-05已派原Sol实现，实际active | Sol/root | 接受M2设计/M3端口下的必要读取实现；仅四新增文件，精确复制已验M3 process依赖冻结。PS5.1进程内PInvoke、逐组件no-follow/完整身份/同handle有限hash及释放实测；无native/build/真实artifact/签名/full scanner，broker/cache/loan旧源保持冻结 |
 | 4B-S1b-L 内部source-loan | 独立局部源码/回归与技术入口接受，整体不集成 | Sol/协调方 | root重编译/graph类型、49回归48过1正确file symlink EPERM失败0skip、Node loan/GC与Electron三个原技术入口通过；S1a整体/checked-close/生产仍未验，冻结实现保留5170；见source-loan-independent-review |
-| 4B Windows发布实现 | 既有设计/隔离诊断工具及M3内部进程端口接受；S1a整体EPERM门未验 | 双线程 | 已接受probe在main，原CLI仍exit1/read-only创建假设失败，非ACL或生产权限通过。source-loan局部接受未整体合入。Luna M3与Sol3G-S1冻结，Sol现修第一批broker，复杂reader/writer仍属原四批后续，core/UI/probe/loan冻结。full writer/checked-close/材料重开/恢复/生产、实际artifact/安装/GUI/签名/干净机器等未验门保持 |
+| 4B Windows发布实现 | M3内部进程端口接受；M4系统读取桥接已派；S1a整体EPERM门未验 | 双线程 | 已接受probe在main，原CLI仍exit1/read-only创建假设失败，非ACL或生产权限通过。source-loan局部接受未整体合入；3G-S1/broker/core/UI/probe/loan冻结。full writer/checked-close/材料重开/恢复/生产、完整reader/实际artifact/安装/GUI/签名/干净机器等未验门保持 |
 
 3B-L的实施目标为可安全运行的普通本地索引测量工具，不是增量算法：仅benchmarks中新local-index-baseline入口及child、对应最小测试和本批记录；固定仓库自建样例/生成器，唯一新目录/数据库/报告，不调用旧benchmark、不下载项目、不清理共享目录。相同样例根配对冷库/无变化reindex，规范化事实/源码/身份等价是采样门禁；公开阶段计时和Node采样RSS明确标来源，不冒充Python/整应用内存。严格限额/总超时/取消后终止子进程，报告环境/原始样本/失败状态且不含源码/凭据/私人路径。该工具实施与小样例验证可不触碰Sol共享源码；规模性能测量待共享功能稳定、单协调窗口执行，后续优化设计仍由Sol承担。
 

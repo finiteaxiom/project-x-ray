@@ -1000,3 +1000,19 @@ root核实际Python版本2.2.0及旧application回归，授权仅同步当前2.2
 用户明确已开放权限继续执行；环境为danger-full-access。root先核AGENTS/队列/最新记录/真实Git及原两聊天，main仍c479ac4dfc25da752e47af5ed8a4937dfd79c73a，未发现中断后额外改动；原两线程idle且历史回合completed。恢复后send_message_to_thread成功送达原Sol终止失败隔离修正，timeout0实际确认新回合01a107a7-a766-7681-8ab4-71974deb0cb5 active，cursor `7e07c337-f6c9-490f-bd90-c31368d0efe4:3`。只解冻计划broker/test/必要support/记录，3G-S1/loan/probe等冻结。Luna收到M3正式独立接受回执，仅确认冻结，不为填槽派新任务；当前其确认回合游标后续取实际返回。
 
 M3三个源码hash与独立50项/类型/语法及三真实反例验收时完全一致，重验无新触发原因，不重复旧测试；只收尾四文件内部支持和root准确独立记录/队列/必要版本计划/复现计划文档。不得纳入Sol缓存/旧接线/loan或二进制。当前Git远程核origin=https://github.com/deeplearner-ui/project-x-ray.git，实际提交/推送另附SHA，不以计划称成功。automation view工具现成功，原heartbeat本轮到达，未新建或重复更改周期。四批及暂停GUI/远程/签名/EPERM边界保持；公共AGENTS新增0。
+
+2026-10-05 00:06 Git与调度实际回执：main精确12文件已提交 `6d76a16427cbbc603c4f0f1f7db14655b960cc48`，包括独立接受M3四文件及准确审查/计划/队列记录，不含Sol缓存、broker旧接线、loan、二进制或GUI未验实现。新增记录的Markdown行尾空白修正后cached diff --check exit0；三个M3源码hash未变，旧50项/类型及三真实反例证据仍适用，无额外代码改动或重复测试。首次普通push exit1返回服务端pack/ref竞争错误；独立ls-remote却精确为此SHA，随后第二次普通push exit0 Everything up-to-date，无force/历史重写。远端origin/main精确同SHA，main提交后清洁。此回执追加仅两协调记录，留下一稳定切片收尾，不反复为回执单独提交。
+
+原Luna接受确认已completed/idle，实际cursor `1ac033a7-c1ee-48ae-9e61-2317590f341e:3`，回合01a107a8-5024-76f0-8c62-10633b4c7284；无新改动或测试。原Sol修正active，实际cursor `7e07c337-f6c9-490f-bd90-c31368d0efe4:4`，回合01a107a7-a766-7681-8ab4-71974deb0cb5。开发自报两条红测均复现终止拒绝后重开，尚非冻结交付或root修复验收；root不测试其活动源码。重型窗口空闲，GUI未恢复，四批及停止门不变，AGENTS新增0。
+
+后续45秒wait返回Sol仍active，最新实际cursor为7e07c337-f6c9-490f-bd90-c31368d0efe4:6；尚未冻结，未独立检查活动修正。原automation只读核ACTIVE/15分钟/本root目标，中文名称完整，无重复更新。
+
+## 2026-10-05 00:33：窄修独立技术验收与第二/四批实际派发
+
+root对冻结1C-2B-2B-D核真实原副本/精确patch及新hash，45项、desktop noEmit与普通build通过；真实Node正常产物5个Worker的关闭/意外exit恢复全部确认，恢复时旧活线程0。详见2026-10-05-explanation-stop-failure-independent-review.md。只接受窄修适用源码/回归/Node技术门，实际OS拒绝仍模型，完整Electron发送/取消IPC、GUI/旧接线集成未验；未复制或提交Sol生产接线。原Sol已确认冻结，3G-S1/cache/loan/probe原成果保留。
+
+实际源码依据补派第二批2C-L：main已有semantic契约/胶囊和本地保存而llm没有semantic请求/响应适配；计划2026-10-05-ownership-semantic-prompt.md限定3个llm代码文件和本批记录、私有捕获/原validator/完整UTF8预算，无评分/SQL/生产外发。原Luna local新回合01a107bf-1e42-7c91-b7e9-842ffb68faee active，最近实际cursor 1ac033a7-c1ee-48ae-9e61-2317590f341e:5；已读任务边界，不测试其活动实现。
+
+第四批4B-M4依据已接受M2设计和M3端口派实际PS5.1只读HANDLE桥接，不再重复设计准备。计划2026-10-05-artifact-handle-bridge.md明确四新增文件、逐组件RootDirectory/no-follow、完整身份、同handle有限hash及确认释放；保留v1签名not-evaluated/incomplete，不调用签名/网络，不full scanner/真实artifact/ASAR/写入/GUI。root在Sol目标不存在且main源码hash精确匹配后复制已验M3 process.cjs只读依赖（56E8E7FF5EEBF4E398234233DB79AE9C8E6283AB6283445B85B9F36E5F2BC5E3）和本轮计划（2EB01B751612D8CE106B9E483F3711A5AD5E16F44C829B9E3825C17B5AA90C53），无整体同步/reset。原Sol local新回合01a107c2-6351-72d1-b747-a8fe5db79906 active，最近实际cursor 7e07c337-f6c9-490f-bd90-c31368d0efe4:12。
+
+两任务文件/契约/记录无交叉，均无Git/native/build/Electron/GUI；技术窗口空闲。已实现=冻结broker窄修；独立代码/回归技术已验证=上述45及真实Node；本轮真实GUI已验证=0；所有外部/整链未验门保持。公共AGENTS新增0（现有终态/恢复规则已覆盖，模型不升OS经验）。仅原四批，结束或全剩外部依赖后暂停project-x-ray及派发讨论，不第五批。当前main HEAD6d76a16427cbbc603c4f0f1f7db14655b960cc48，新派源码无交付不纳入本轮提交；只收尾root已审文档，Git实际回执另核。
