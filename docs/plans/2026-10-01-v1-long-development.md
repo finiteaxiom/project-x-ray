@@ -98,6 +98,7 @@ Sol 先测量当前全量索引/查询/内存基线，设计按语言的保守�
 | 3F-T 优化后测量协议设计 | O/T 同步修订独立接受，工具等待 C2 | Luna/协调方 | O/R 分域及失败优先级复审通过；原4708/11门/schema/限额保持，新工具仅待稳定缓存/observer端口后派发 |
 | 2B-S5 本地答题集成 | 修正后独立接受、精确集成提交并推送18b6cbb | Sol/协调方 | Sol/main各11文件298项、三包noEmit及root各16次真实索引答题探针通过；双布局/空非空配置、SQL回滚重试重开及重算摘要错配拒绝。新增明确DTO投影经验1条；只本地材料准备，GUI/模型仍未验收 |
 | 2C-L 纯语义请求/响应适配 | 冻结纯模块独立源码/151回归/类型及16次真实材料接入通过 | Luna/root | 三个llm文件/自有记录核hash一致，私有捕获/完整65536字节预算/原validator绑定及四题型双布局空非空配置接入通过；原attempt/capsule/source不变。见ownership-semantic-prompt-independent-review；无provider/SQL当前性/授权/评分/GUI或模型质量，整链门保持 |
+| 2D-S1 已保存语义材料只读端口 | 2026-10-05已派原Sol，实际active | Sol/root | ready已有严格SQL核验却丢弃完整包，是原第二批必要实现；仅graph store/test/index窄方法及自己的新记录。prepare-only/not-checked、首次await前私有捕获、零写/迁移/评分/外发；见2026-10-05-ownership-semantic-material-port计划，原11→12测试和index旧工作保留，交付后独立复验 |
 | 3F-O 缓存observer接缝设计 | 修订设计独立接受 | Luna/协调方 | root 四文档/当前源码复审，O/R 及 estimator/terminal 关系、真实缺采集与协议矛盾区分、后续API错误独立；非实现/收益通过 |
 | 3F-C1 导航有效性取样端口 | 独立接受、精确集成提交7071ae4 | Sol/协调方 | Sol/main各98 graph回归、两包noEmit与真实SQLite探针通过，main原application147通过；嵌套COMMIT/ROLLBACK保守停比较、新实例身份明确。新增经验1，缓存/性能/GUI未验 |
 | 3F-C2 应用导航缓存/observer | 后台独立接受、精确集成并复验通过 | Sol/协调方 | root Sol43定向/225应用/111图，main229应用/114图，两边类型及真实双布局/12竞态探针通过。保留fresh校验、私有身份/4MiB/O/T门；性能/GUI未验，Git见最新审查 |
@@ -108,9 +109,9 @@ Sol 先测量当前全量索引/查询/内存基线，设计按语言的保守�
 | 3G-S1 Python普通索引解析缓存 | 后台独立330项/三包类型及真实20/80冷热测量通过；完整GUI/集成未验 | Sol/root | 持久raw缓存/真实工具探测/全语义重建与取消窄修已独立核；每轮warm1请求19/79hits，两遍安全读/事实/ID保持。见python-parse-cache-independent-review。Sol生产源冻结保留，不以GUI暂缓提交完整实现；TS/Git冷路径保持 |
 | 4B-M2 发布材料reader设计 | 设计门接受，HANDLE保证未验 | Luna/root | 保持v1，签名not-evaluated/incomplete；sidecar/PInvoke仅候选，目标Windows仍须证明。复杂reader后续Sol；本批不生成complete真实manifest |
 | 4B-M3 reader自有子进程边界 | 修正后四文件内部进程端口独立验收；权限恢复后精确Git收尾 | Luna/root | root真实三型合并帧consumer零启动、50回归/desktop类型/语法通过，恢复后hash相同。见artifact-reader-process-independent-review；仅Node内部生命周期支持，无生产reader/HANDLE/artifact/GUI完成保证；实际SHA见最新审查 |
-| 4B-M4 Windows只读HANDLE桥接 | 2026-10-05已派原Sol实现，实际active | Sol/root | 接受M2设计/M3端口下的必要读取实现；仅四新增文件，精确复制已验M3 process依赖冻结。PS5.1进程内PInvoke、逐组件no-follow/完整身份/同handle有限hash及释放实测；无native/build/真实artifact/签名/full scanner，broker/cache/loan旧源保持冻结 |
+| 4B-M4 Windows只读HANDLE桥接 | 窄内部支持独立接受并精确main集成；完整reader仍未验 | Sol/root | 两目录26项与desktop类型、main原M3 28项通过；逐组件HANDLE/完整身份/同handle有限hash及root三生命周期精确观察的helper/conhost退出。literal零OS后代门未满足，目录成员仍可新增、mapping仅单构造结论；见artifact-handle-bridge-independent-review。四文件冻结，不含生产reader/CLI/签名/full scanner/GUI，broker/cache/loan旧源不集成 |
 | 4B-S1b-L 内部source-loan | 独立局部源码/回归与技术入口接受，整体不集成 | Sol/协调方 | root重编译/graph类型、49回归48过1正确file symlink EPERM失败0skip、Node loan/GC与Electron三个原技术入口通过；S1a整体/checked-close/生产仍未验，冻结实现保留5170；见source-loan-independent-review |
-| 4B Windows发布实现 | M3内部进程端口接受；M4系统读取桥接已派；S1a整体EPERM门未验 | 双线程 | 已接受probe在main，原CLI仍exit1/read-only创建假设失败，非ACL或生产权限通过。source-loan局部接受未整体合入；3G-S1/broker/core/UI/probe/loan冻结。full writer/checked-close/材料重开/恢复/生产、完整reader/实际artifact/安装/GUI/签名/干净机器等未验门保持 |
+| 4B Windows发布实现 | M3及M4窄内部支持接受；完整reader与S1a整体EPERM门未验 | 双线程 | 已接受probe在main，原CLI仍exit1/read-only创建假设失败，非ACL或生产权限通过。source-loan局部接受未整体合入；3G-S1/broker/core/UI/probe/loan冻结。full writer/checked-close/材料重开/恢复/生产、完整reader/零OS后代/实际artifact/安装/GUI/签名/干净机器等未验门保持 |
 
 3B-L的实施目标为可安全运行的普通本地索引测量工具，不是增量算法：仅benchmarks中新local-index-baseline入口及child、对应最小测试和本批记录；固定仓库自建样例/生成器，唯一新目录/数据库/报告，不调用旧benchmark、不下载项目、不清理共享目录。相同样例根配对冷库/无变化reindex，规范化事实/源码/身份等价是采样门禁；公开阶段计时和Node采样RSS明确标来源，不冒充Python/整应用内存。严格限额/总超时/取消后终止子进程，报告环境/原始样本/失败状态且不含源码/凭据/私人路径。该工具实施与小样例验证可不触碰Sol共享源码；规模性能测量待共享功能稳定、单协调窗口执行，后续优化设计仍由Sol承担。
 

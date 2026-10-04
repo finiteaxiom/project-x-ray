@@ -1032,3 +1032,15 @@ root 核 Luna 2C-L 三源码实际 hash 与冻结交付一致、index 仅追加�
 接受范围仅纯 adapter 与记录：无生产 provider/授权/SQL 当前性/语义模型质量或端到端 GUI 验收。本轮真实 GUI=0，公共 AGENTS 新增=0（现有捕获/有限 DTO 规则已覆盖）。原 Luna 接受确认 completed/idle，cursor1ac033a7-c1ee-48ae-9e61-2317590f341e:10；四文件冻结，不 Git、不为填槽派新准备。原 Sol M4 仍 active，最近实际 cursor7e07c337-f6c9-490f-bd90-c31368d0efe4:18，尚无冻结交付；不测试活动桥接，不将宿主 conhost/mapping/目录行为猜测升级为保证。
 
 main起点50d7609f87e253d32b52bba53e61e87045dba8ce，本轮仅收尾独立接受2C-L四文件与五份准确协调文档，实际 Git SHA 另核；不纳入任何 Sol 未验源或二进制。重型窗口空闲，四批剩余原门与全部外部门继续保留；四批本地收尾或全剩外部条件后暂停定时及派发讨论，不第五批。
+
+2026-10-05 01:14 实际 Git 回执：上述精确九文件已普通提交/推送 `44810ceaf7c7c7b296d0b699813b04e8ca25cb6e`，独立 ls-remote 确认 origin/main 同 SHA，提交后 main 清洁。开发记录一处 Markdown 行尾空白移除后 cached diff --check exit0，三个源码 hash 未变，不重复已通过检查。最新实际 Luna idle/completed cursor1ac033a7-c1ee-48ae-9e61-2317590f341e:10；Sol active cursor7e07c337-f6c9-490f-bd90-c31368d0efe4:19，未冻结交付，不测试活动代码。此回执留下一稳定切片收尾，不单独循环提交；原四批和停止门保持。
+
+## 2026-10-05 01:49：M4窄支持独立接受与第二批必要实现继续
+
+root独立审查冻结M4四文件及目标PS5.1 x64布局/逐组件路径/完整身份/固定缓冲/错误与释放。Sol26项及desktop noEmit、main原M3 28项通过；四目标原不存在且SHA匹配后精确复制，main26项及desktop noEmit再次通过。root额外3条真实M3+PS release/cancel/consumer-failure确认ready持有、hash和拒写、实际close、精确观察helper/conhost退出、文件重开；有限census不是全过程审计或Job Object。详见2026-10-05-artifact-handle-bridge-independent-review.md。没有重型构建/生产artifact/GUI；literal零OS后代门仍未满足、目录可新增、mapping仅具体构造，完整reader/材料保护/重开恢复/签名/安装链均保留未验，不改成第四批完成。
+
+已实现=内部单文件支持；独立代码/回归已验证=上述26/28/集成26及类型/三实际路径；真实GUI已验证=0；未验门按独立记录。公共AGENTS新增0，现有HANDLE/目标运行时/安全材料规则已覆盖，单次harness与宿主取样不升保证。起点main44810ceaf7c7c7b296d0b699813b04e8ca25cb6e；仅收尾已接受四文件与准确协调记录/计划，不含Sol旧生产源或二进制，实际Git回执另核。
+
+原Luna保持2C-L/M3冻结并idle，最近实际cursor1ac033a7-c1ee-48ae-9e61-2317590f341e:10。原Sol收到窄接受回执并已启动2D-S1，新回合01a10807-cd17-7153-87d5-029756dae42b active，最近实际cursor7e07c337-f6c9-490f-bd90-c31368d0efe4:22。新计划2026-10-05-ownership-semantic-material-port.md精确复制到其自己的worktree，SHA1E4D7EAC2EA24A4680658D181276C9F60B0D95A90BB6C33C971E301C6F6E8FBD。源码依据为ready已有真实SQL核验却丢弃包、adapter没有生产材料来源；仅graph store/test/index窄方法及自己的新记录，prepare-only/not-checked、同事务首次await前捕获、零写/迁移/评分/外发，11→12测试/旧index工作保留。root不测试活动图存储，LLM集成复验待冻结。不是第五批或填槽准备。
+
+四批及完成/全剩外部条件后暂停门保持；重型窗口已释放，当前无GUI/密钥/签名权限变化，不因开放filesystem权限推断恢复GUI。原automation继续原周期，不重复修改。真实远程与UI门继续开放。
