@@ -76,7 +76,7 @@ Sol 先测量当前全量索引/查询/内存基线，设计按语言的保守�
 | 1C-2A graph/application策略与任务 | 后台核心已验收并集成 | Sol/协调方 | 取消修正后独立161项/三包类型通过；独立真实索引+SQL两等待点cancelled/dispatch0/result空；5665245提交，32dbae8合并，集成93项/五包类型通过；非GUI/真实网络 |
 | 1C-2B-1 生产provider桥接/desktop协议 | 独立验收并集成 | Sol/协调方 | 0cdc683提交、8e99f82合并；独立203项/五包类型，实际索引至正文摘要/同步fetch/结果与事件守卫验证；集成72项/三包类型通过；非真实网络/IPC/GUI |
 | 1C-2B-2A Windows凭据原生适配器 | 底层独立验收并集成 | Sol/协调方 | 61项/两包类型、最终原Electron CLI完整通过；556e9f2提交/a09be86合并；main再编译与61项/desktop+ui类型、Node/Electron原命令/copy及test清理通过；无production凭据/GUI/远程/portable |
-| 1C-2B-2B worker/broker/main/preload安全接线 | 延迟事件及状态IPC技术复验通过；整批仍待验收 | Sol/协调方 | 原probe/36+20项、类型/build/Node worker已验证；Electron44.4.3实际worker状态与main/preload状态IPC、错窗口/错页面拒绝技术检查通过，无产品控件操作；App GUI、发送/取消完整IPC、真实远程与集成仍开放，未提交实现 |
+| 1C-2B-2B worker/broker/main/preload安全接线 | 状态及未配置IPC拒绝路径技术复验通过；整批仍待验收 | Sol/协调方 | Electron44.4.3实际main/preload/worker：空context与真实1文件/6证据当前ref下prepare/start及未登记cancel/status/result均拒绝，provider不变、SQL任务/授权/占用0；见2026-10-05-explanation-ipc-denial-independent-review。原错窗口/页、延迟事件等证据保持；正常发送/取消全链、App GUI、远程及集成未验，未提交实现 |
 | 1D-0 远程解释界面接入设计 | 修订后设计已接受 | Luna/协调方 | 原两文档；真实preview上限、候选API、queued无SQL取消、复用同步revoke及代码→技术产物→延期GUI顺序已复审；非UI实现或运行验收 |
 | 1C-2B-2B-C 活跃所有者与启动恢复 | 独立源码/回归与真实进程技术门通过；GUI及整接线未验 | Sol/协调方 | 最新普通build、47回归、4真实Electron进程：同目录第二零初始化；人工SQL任务/lease/context不变、崩溃重开恢复/零start、历史结果与源码不变；不代表真实远程请求，不提交main旧接线 |
 | 1C-2B-2B-D worker终止失败隔离修正 | 冻结窄修独立源码/45项/类型/build与真实Node生命周期技术门通过 | Sol/root | root核精确原副本/patch/新hash；5真实Worker退出一次，恢复时旧活线程0。见2026-10-05-explanation-stop-failure-independent-review；OS拒绝仍模型，完整Electron发送/取消IPC、GUI与旧接线集成未验，不复制提交整批 |

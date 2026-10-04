@@ -1,0 +1,29 @@
+# 第一批：真实Electron未配置IPC拒绝路径独立复验
+
+2026-10-05 00:40–00:43；root；主checkout HEAD b09b82d434519a3bedb07e46bece1b2aee5bae6f。两开发活动文件仅main llm纯适配及Sol新增HANDLE桥接，不触碰冻结解释main/preload/broker。root独占一个技术窗口，无build/native/dist修改，无computer-use或GUI控件操作。
+
+## 来源与实际入口
+
+先读当前AGENTS/队列/审查/交接和两个实际游标，核Sol冻结main/preload/broker/worker源码及上轮普通构建产物。实际直接require dist/main.js，contextIsolation=true、nodeIntegration=false、sandbox=true的隐藏BrowserWindow加载实际dist/preload.js和既有UI静态壳，通过window.xray发送本地IPC；未复制main处理器、未注入测试provider/凭据适配器。
+
+启动前及结束后产物hash相同：main.js 98DF957CF8951F64CBE3E581CD88E3809207892E57EB52452231A67D51C10D50；preload.js C39282DF3C933E177CE9E73529F97AC8B67A35CEFAD69481BF00E2092E8A9B9C；explanation-worker.js 52807828D70D66A89FD611575BAA53551CD45A3C3B9EC3BC54D08A67209E42D1。结束源码broker AF23D5847EAACEFADF610F47B7C76C5CDF960644F6CF9385B781DF9B4B7CD16F、main CE8911EAAAA7EF8B8C73C253C7D2520BBBFFE4AECCB3029DCA49B0FC5869823A、preload 950043D4AE1F95D6A6AD75E99ABD5476126AF0A027B35C8CA50077A683BA944F；未审当前活动实现。
+
+复用历史入口的隔离原则，另建两个唯一自有Temp目录和新入口，不修改旧工具。userData/sessionData均为新目录；XRAY_SMOKE使窗口隐藏，harness只延后自动quit以完成IPC，再恢复正常退出经过main清理。Windows隐藏启动固定本地Electron，父进程35秒/child30秒界限。CLI仅在实际argv身份匹配时执行，正常产物hash不匹配即拒绝。材料保留，未递归清理；不读取真实用户数据/凭据/环境密钥，不操作授权或隐私控件。
+
+## 实际结果
+
+两次`node <自有Temp>/launch.cjs`各exit0，真实Electron44.4.3/Node24.21.0：
+
+- 空上下文：实际activate-context(null)、provider-state/authorization为inactive/unconfigured/denied；形状合法prepare/start/cancel/status/result全部CONTEXT_CHANGED拒绝。随机preview/task并未登记，不是有效正常任务的取消证明。固定错误不含查询测试标记。
+- 当前快照：自建一个TS文件，仅经真实importLocalProject/analysis-worker分析，不执行其代码；completed为ready、1文件/6证据，再将该真实ref激活。provider仍unconfigured、授权denied。prepare(query=entry)经过实际broker/worker返回NOT_CONFIGURED；无preview的start及未登记cancel/status/result返回CONTEXT_CHANGED。不是凭空造快照或修改SQL授权。
+- 两次通过只读node:sqlite连接实际本轮global数据库观察：explanation_tasks=0、project_remote_authorizations=0、inflight=0；provider前后完全相同。未调用configure-provider、write/delete-credential、save-authorization，不将测试provider插入生产。
+
+预期拒绝在Electron stderr中显示固定RemoteExplanationError及有限code，均非产品失败；不保存重复stack。第一次正常退出之后有GPU IPC警告，退出码0且所有断言已完成，未作产品根因推断；第二次没有该警告。早期查找历史工具时误查Sol目录，工具实际在main ignored目录；查找范围错误已纠正，没有改变产品源或历史证据。
+
+自有材料basename：xray-ipc-denial-review-a58949fcfa574f288cb4bfcf1250b705及xray-ipc-current-review-1ebc7529684546a1934d4e9235579101，各含launch.cjs/ipc.cjs/job.json及本轮应用数据；不保存私有绝对路径或原始源码到本记录。所有启动的Electron子进程正常退出，技术窗口已结束。
+
+## 接受与限制
+
+接受本轮实际main/preload/worker未配置及无登记任务拒绝路径技术证据。空context与真实当前context分列，零SQL任务/占用不是对任意未来调用的OS/HTTP计数证明。无正常有效start→dispatch→取消/terminal/result全链、快照改变期间真实任务、项目外发授权/撤销、真实API质量或GUI验收，旧接线整体与Sol实现仍不提交。App控件及实际使用流程仍未验，不能以隐藏页技术调用改写界面完成。
+
+本轮产品修改0、真实GUI验收0；独立技术证据如上。AGENTS无新增规则：现有身份/未配置/来源/真实媒介规则已覆盖，没有新确认产品缺陷。继续原四批及停止门，不因无key扩大范围、购买或模拟生产远程。
