@@ -207,6 +207,10 @@ LLM 输出永远不是一级证据。LLM 可以对分析器返回的证据进行
 
 只按“执行反馈与规则沉淀”的门槛维护；详细过程保存在对应开发记录中。
 
+- 使用 Windows 相对目录 HANDLE 约束路径时，不得由父 HANDLE 未申请 FILE_ADD 权限推断子项 FILE_CREATE 会被系统拒绝；需要拒绝创建的能力应限制实际导出的操作端口，并在目标 Node/Electron 运行时实测。只读父 HANDLE 下创建成功不能外推为 ACL 绕过，ACL 拒绝须另验。[权限实验独立复验](docs/development-runs/2026-10-04-upgrade-write-permissions-independent-review.md)
+
+- 临时实验目录的根身份及无重解析检查不能证明普通子项归属；未知名字或身份必须保留，禁止检查全树后按字符串递归删除。需要清理时，仅处置本次真实创建、仍由 HANDLE 和完整身份绑定的对象；不能证明时明确保留材料，并单独报告句柄释放状态。用自有未登记普通文件验证零删除及内容/身份保留。[清理反例与修正复验](docs/development-runs/2026-10-04-upgrade-write-permissions-independent-review.md)
+
 - 用 SQLite 保存成功驱动本地缓存代数时，先区分外层事务提交与嵌套 savepoint 释放；无法观察外层终态时停止该实例的 token 比较，不能在后续普通保存时恢复旧代数。真实回归同时覆盖外层 COMMIT/ROLLBACK、原返回值及源码、关闭重开和只读取样；相等数字不代表相同 store 实例。[导航取样记录](docs/development-runs/2026-10-03-navigation-cache-token.md) · [独立复验](docs/development-runs/2026-10-01-v1-long-development-review.md)
 
 - 完整本地分析身份转换为严格有限 DTO 时，生成与持久来源核验须使用相同的明确字段投影，嵌套配置只保留契约字段；不能直接展开完整对象、放宽 schema 或删除持久规则。回归使用真实索引的空/非空排除配置，覆盖构造、双行保存和重开，确认完整规则/指纹/源码不变，重算摘要的配置或来源错配仍拒绝且零写。[真实答题集成记录](docs/development-runs/2026-10-03-ownership-capsule-integration.md) · [独立复验](docs/development-runs/2026-10-01-v1-long-development-review.md)

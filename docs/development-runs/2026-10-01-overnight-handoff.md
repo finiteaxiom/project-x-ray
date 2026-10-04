@@ -209,3 +209,7 @@ Sol修正回合已确认active。Luna首稿root完整读后，继续原两文档
 root又确认实验工具的清理缺陷：在本轮自有target注入未登记普通child，递归rm删除它且harness仍报告已验证清理。没有用户文件参与。整批未接受/未复制提交，已按准确cleanup-fix-plan交原Sol同五文件/ignore修正，修正回合01a1041b-a3e6-7f23-83af-ee28c693b0f2 active/cursor34；Luna仍completed/notLoaded20无新任务。默认保留自有fixture、分离固定测试子目录、未知对象不递归删除及错误终态门是当前预期，不放宽原红门。详见upgrade-write-permissions-independent-review及review完整hash/命令。
 
 已实现：仅Sol隔离实验首稿；独立代码/回归已验证：上述局部真实API结果和清理负例，整批不接受；真实GUI已验证：0。主实际版本acf076b70fbd046537f9e465b29e47f2855fd4de已普通推送并独立核远端同SHA，仅接受设计/计划文档；用户可查看清理修正计划，当前无产品备份入口。S1a/file symlink EPERM、ACL拒绝、取消/timeout、生产writer/重开/恢复/SQLite及原外部质量门均未验。AGENTS新增0，下一步待修正冻结后独立复验；本轮Git只精确收尾root六份文档，不提交活动实验实现。
+
+08:03：S1b-P清理修正已独立接受为隔离诊断工具，五文件+唯一probe build ignore精确集成main；main重新build/原Node及Electron CLI验证保持权限假设false/exit1。未知普通子项内容/身份保留0删除、意外outcome固定拒绝且无junction、普通应用import0副作用；受控child取消与5秒就绪超时确认close，native I/O取消/总截止/CloseHandle失败仍未实测。源码/回归详见upgrade-write-permissions-independent-review最新节；真实GUI0，无生产原包入口。
+
+已实现与独立验证：仅本轮诊断工具修正和局部实测/边界；未验：S1a正确file symlink EPERM、ACL/生产权限、source-loan/writer/manifest/marker/材料重开/恢复/SQLite/实际artifact/安装升级卸载/签名/干净机器/远程质量及暂缓GUI。AGENTS根据独立证据去重新增2条。下一upgrade-source-loan-plan依据真实预算/pending/Complete源码，原Sol仅内部source借用与两遍自有consumer，main/core/UI/probe冻结，Luna无新任务。收尾前实际main0941fb94deae3d3c0f0d96d44ab356d24ef855a7；上一六文档普通推送及远端SHA已核，真实提交/派发游标另记，不据预定动作当成功。

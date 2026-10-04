@@ -920,3 +920,11 @@ root完整读查本批五文件及ignore，hash/原核心冻结保持，独立�
 新cleanup-fix-plan hashBEAD8FBFDBADCD588AE0B59F236C1DF9AF26295FB153909CF2817060E0045C7C及root独立审查hash3F5BDA4E66745AC596ADE77C716BD22EB1AAA03BCECAF4392C08D50BFF5A67A9精确复制5170核相同；原Sol限定同五文件/ignore修正，停止字符串recursive未知清理、分离normal/junction固定子目录，默认保留fixture可接受但文件保留/句柄释放须明确，native意外outcome不能靠positive rows冒充完成。原read-only假设红门及所有旧边界不改。修正回合01a1041b-a3e6-7f23-83af-ee28c693b0f2已active/cursor cfe7da2a-d1e4-4a1f-9168-182cb9c80d36:34，单技术窗口交Sol，root停止同批运行；Luna无新具体任务。
 
 本轮已实现为Sol冻结实验首稿；独立验证为上述真实局部API/反例，整批接受0、GUI0。未知清理及正确symlink/ACL/取消timeout未验门保留，生产source-loan/raw包/重开/恢复/启动、实际artifact/安装升级卸载、远程质量/隐私选择、签名/干净Windows仍开放。AGENTS候选暂不纳入（0），Git只安排六份root拒绝审查/修正计划/有证据设计更正/队列交接，不纳入实验代码或ignore。
+
+## 2026-10-04 08:03：S1b-P清理修正独立通过并精确集成
+
+actual main0941fb94deae3d3c0f0d96d44ab356d24ef855a7为上一六root文档已推送版本；Luna notLoaded/completed20，单Sol确认原修正completed/idle38，未凭缺席poll推断状态。root独立重构建并执行原CLI、未知普通文件保留、意外outcome拒绝、另一Node/Electron应用import、受控传输取消/真实就绪超时，详见upgrade-write-permissions-independent-review最新节及精确hash/测试缺陷诊断。
+
+只接受五文件隔离诊断工具与唯一新probe build ignore，精确复制main/hash相同；main原build/语法及原CLI两runtime独立复验一致。原CLI仍exit1/read-only parent创建假设失败；清理0删除，normal/junction资源true、材料保留，不称OS权限全绿/ACL或生产能力。native I/O取消/60秒总截止/关闭失败未实测明确保留。已实现/独立回归为上述，真实GUI0；S1a EPERM整体仍未接受/集成。AGENTS去重新增2条，分别根据实际创建反例及unknown-child删除/修正保留，不整体复制Sol规则。
+
+依据source只有read/verify、累计20GiB及Complete直接release/无borrow状态，形成upgrade-source-loan-plan：原Sol仅私有源借用/2B预算/pending生命周期与自有两遍consumer，零目标/SQLite/marker；本批明确解冻原相关S1a文件但不重做已修正逻辑，不以loan豁免S1a安全门或进入main。probe/core/UI/package/lock/AGENTS冻结，Luna无新不冲突任务。Git仅精确接受工具/规则/记录及新计划，旧Sol差异不纳入；实际SHA及派发游标收尾后记录。

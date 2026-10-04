@@ -100,7 +100,7 @@ Sol 先测量当前全量索引/查询/内存基线，设计按语言的保守�
 | 3F-T2 优化测量工具 | 修正后独立接受，Git收尾见最新审查 | Luna/协调方 | root23项/严格类型、三错响应拒绝、三实际第二连接commit挑战、取消/原CLI超时及单次三配对通过；14124调用/33语义门，每对full-load2，报告206848字节。固定样例计数门，不外推真实项目或旧协议wall收益；GUI未验。详细原始值/限制见navigation-optimized-independent-review |
 | 2B-S2a 答题记录引用索引修正 | 独立核心及main集成整包通过，已提交/推送0eef658，远端18e5524包含 | Sol/协调方 | 111/111原门通过、ownership6/类型/真实SQL/多布局/重开/失败重试通过；新增17项。原分/历史不变；旧超时记录保留，GUI未验 |
 | 4A Windows发布链/验收设计 | 修订后设计已接受 | Luna/协调方 | 隔离共存/原始签名Status/迁移阶段已复审；仅文档，不代表安装、升级、卸载或GUI已验收 |
-| 4B Windows发布实现 | 4B-A/P、B0及S1b设计已接受；S1a整体EPERM门未验；S1b-P局部实测后退回清理修正 | 双线程 | S1a两缺陷原独立修正通过，整体未接受/复制/提交。root实测新probe原CLI Node/Electron均exit1：read-only parent仍能创建，已更正设计推定；两mask写/flush/读回/share/collision/rename/close局部结果通过。但unknown普通child被recursive清理删除的自有反例确认，五实验文件未接受/集成，已形成write-probe-cleanup-fix-plan原Sol同范围修正，既有产品/core/UI冻结、Luna无新任务。2B/通常10GiB、source-loan/full writer/材料重开/恢复/生产、实际artifact/安装/GUI/签名/干净机器门保持 |
+| 4B Windows发布实现 | 4B-A/P、B0、S1b设计及S1b-P隔离诊断工具已接受；S1a整体EPERM门未验 | 双线程 | 08:03清理修正经独立Node/Electron原CLI、未知普通文件0删除/身份保留、异常outcome拒绝、普通应用import和传输取消/就绪超时验证；五工具文件精确集成main，原CLI仍exit1/read-only创建假设失败，非ACL或生产权限通过。下一S1b-L仅源借用/2B预算与生命周期，具体计划见2026-10-04-upgrade-source-loan-plan.md；core/UI/probe冻结，Luna无新不冲突任务。S1a未接受/复制/提交，source-loan/full writer/材料重开/恢复/生产、实际artifact/安装/GUI/签名/干净机器及原生取消/close失败门保持 |
 
 3B-L的实施目标为可安全运行的普通本地索引测量工具，不是增量算法：仅benchmarks中新local-index-baseline入口及child、对应最小测试和本批记录；固定仓库自建样例/生成器，唯一新目录/数据库/报告，不调用旧benchmark、不下载项目、不清理共享目录。相同样例根配对冷库/无变化reindex，规范化事实/源码/身份等价是采样门禁；公开阶段计时和Node采样RSS明确标来源，不冒充Python/整应用内存。严格限额/总超时/取消后终止子进程，报告环境/原始样本/失败状态且不含源码/凭据/私人路径。该工具实施与小样例验证可不触碰Sol共享源码；规模性能测量待共享功能稳定、单协调窗口执行，后续优化设计仍由Sol承担。
 
