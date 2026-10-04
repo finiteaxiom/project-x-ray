@@ -1,0 +1,28 @@
+# 2D-S3-D 共享任务具体设计独立审查
+
+2026-10-05 03:25，原第二批，Windows，不电脑操作。main仍2ff849300c8720c3a4ded32de914155521a6ce76；仅已有协调记录/具体派发计划未提交，全部产品源保持冻结。原Sol设计回合01a10851-3959-73c0-9769-9b961ff7453e实际completed/idle，cursor:42；Luna原已验冻结idle :24。已读AGENTS、当前执行队列、最新审查/交接与实际Git。
+
+## 冻结初稿与独立源码依据
+
+两自有文档SHA256实际匹配：设计64D51237A3B9B7D691368D6CA328599D4A5E06A05DC93CE8398ABA705089395E；记录4BC890E8AA8A4D68B4023B219AA25BA9A29C08D900C0A374F88DE2BD460CB94B。开发报告原313文件前后changed0；root独立查实际旧调用/契约，未将报告或146/182旧回归当本轮执行。当前只是设计，不运行SQL/网络模型实验、类型或重型构建。
+
+可用方向：单provider共享registry/lease而非两把独立锁；旧terminal/inflight1迁移保留；完整identity与角色限制；finish不自动release；provider两用途失效与purpose独立revoke；durable reserve将同步网络发起后commit失败和许可前零dispatch分开；恢复需全部相关generation真实退出，不由feature单worker停止推出；跨库成功门/补偿失败占用、S1 prepare-only不得认证题目、窗口合计预算及顺序文件边界均有明确讨论。
+
+## 暂不接受的具体缺口
+
+1. 初稿dedup binding_hash排除bodyDigest，同绑定completed复用只笼统要求协议/包闭合。实际main llm/ownership-semantic-prompt.ts的serializedRequest包含systemInstructions、responseSchema与data；同package/版本字符串不能证明完整体相同。仅指令/schema变化可保持其拟议bindingHash，却改变真正请求。须把完整bodyDigest纳入去重preimage，或明确历史identity.bodyDigest和当前可信私有完整body精确一致才复用；不能仅比调用方摘要。加入同包/其他身份不变但完整体不同的拒绝复用/手动新preview矩阵。这是设计缺口，尚无生产语义发送实现，不称已复现产品缺陷。
+2. 初稿reserve registry.created_at与第二次register任务createdAt未明确一路稳定。现有feature register独立now()；新预占用与第二锁段在两个时间点，若promotion重造时间会破坏registry/lease/task及实际迟到阶段的稳定创建时间。须首次权威reserve一次分配并一路复用，direct feature第一次登记分配，迁移旧时间不改；控制两个时间点及取消/恢复/重复/迟到阶段的矩阵明确相等。这是待实施设计约束，未改旧正确断言。
+
+已将两点及具体源码依据反馈原Sol，仅修其两份自有文档并再冻结，不开始源码、不改其他WIP/AGENTS。为尽快进入可独立后台实施，root拟先缩至S3-A1：global共享registry/lease与现有feature兼容，后续另派semantic任务、当前性、结果和durable传输接线；第一段不抢改L2 record、不导出半校验语义许可，人工semantic slot仅检验SQL互斥。feature-only旧恢复遇非feature占用须失败关闭，不伪造全部worker已停。迁移编号14仅为root拟分配，正式实现计划接受后再生效，原11/12/13保持。
+
+## 当前边界
+
+设计暂不接受，待原Sol修订冻结后逐项复核；无新实现或独立回归/GUI结果。AGENTS新增0：只有设计缺口，没有新运行复现经验，既有完整身份/稳定时间/停止/事务规则覆盖。原四批仍有可推进本地链路，继续原双聊天工作流，原结束/全剩外部条件后暂停门不变，不第五批。
+
+## 修订稿独立接受与首段实施边界
+
+root再次核两冻结hash：设计1A30187FDB18422E53C2B67D150B04A1D814CF08F3AED0DE7189B5F2C5EE2A58、记录D869509C34BD9EE7B058E98E0347E174CFF477A51C9B2FCE8C68303C4576C802，并精确复制两份自有文档至原不存在的main目标。bodyDigest已保留进入binding preimage，复用还核历史与当前私有完整体精确一致，body不同矩阵保持旧历史且零复用。首次权威createdAt一次分配并在promotion/恢复/所有实际阶段复用，控制T1/T2矩阵已补。A1精确收窄到registry/lease及feature兼容；非feature占用下feature-only恢复在任何写入前全事务拒绝。两具体设计缺口关闭，接受修订具体设计；仍是文档，不运行或承认未来A/B/C实验。
+
+原Sol修订回合01a10864-1c9a-7923-82fa-c8c984586808实际completed/idle，cursor:44；原313文件未改为开发报告，root依赖读取/接收两新hash相符，未测试活动源。Luna保持idle :24。root正式分配14仅global共享registry/lease，形成2026-10-05-shared-task-core-implementation.md明确文件/API/真实SQL门，准备派原Sol A1，不抢改contracts/S2/application/desktop或semantic任务/结果。index只实际必要私有生命周期，S2 test仅必要严格合法旧task夹具调整且所有原断言保持。原同步dispatch后commit失败事实不被SQL互斥洗成零网络/已解决；durable transport与统一停止参与者后续独立门。详见实际实施计划，不第五批。
+
+本轮独立设计未跑测试/类型/SQL/重型/GUI/网络，AGENTS0；可接受三设计/记录及准确协调记录提交，不含任何Sol旧生产源。原四批仍未全部完成，继续明确本地后台实施后按停止门暂停讨论。Git与实际派发回执另核。
