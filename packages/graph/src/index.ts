@@ -1,6 +1,8 @@
 import Database from "better-sqlite3";
 import { createHash } from "node:crypto";
 import { RemoteExplanationStore, type GraphStoreRole } from "./remote-explanation-store.js";
+import { OwnershipSemanticPolicyStore } from "./ownership-semantic-policy-store.js";
+import type { OwnershipSemanticAuthorization, OwnershipSemanticGrantCommand, OwnershipSemanticRevokeCommand } from "@project-xray/contracts";
 import { OwnershipCapsuleStore, OwnershipCapsuleStoreError, type OwnershipCapsuleWriteInput, type OwnershipSourceCapture, type PreparedOwnershipWrite, type OwnershipCapsuleRead, type OwnershipSemanticPackageRead } from "./ownership-capsule-store.js";
 export type { OwnershipSemanticPackageRead } from "./ownership-capsule-store.js";
 export { RemoteExplanationStore, remoteStoreFailure, type GraphStoreRole } from "./remote-explanation-store.js";
@@ -45,6 +47,7 @@ export class GraphStore {
   private readonly database: Database.Database;
   readonly remote: RemoteExplanationStore;
   private readonly ownershipCapsules: OwnershipCapsuleStore;
+  private readonly ownershipSemanticPolicy: OwnershipSemanticPolicyStore;
   private navigationGeneration: number | null = null;
 
   constructor(databasePath = ":memory:", role: GraphStoreRole = "project") {
@@ -52,10 +55,11 @@ export class GraphStore {
     this.database = new Database(databasePath);
     this.remote = new RemoteExplanationStore(this.database, role);
     this.ownershipCapsules = new OwnershipCapsuleStore(this.database, this);
+    this.ownershipSemanticPolicy = new OwnershipSemanticPolicyStore(this.database, role);
     try {
       this.database.pragma("busy_timeout = 250");
       this.database.pragma("journal_mode = WAL");
-      this.migrate(); this.remote.migrate(); this.ownershipCapsules.migrate();
+      this.migrate(); this.remote.migrate(); this.ownershipCapsules.migrate(); this.ownershipSemanticPolicy.migrate();
       this.navigationGeneration = 0;
     } catch (error) { this.database.close(); throw error; }
   }
@@ -573,6 +577,9 @@ export class GraphStore {
   savePreparedOwnershipAttempt(prepared: PreparedOwnershipWrite): void { this.ownershipCapsules.save(prepared); }
   loadOwnershipCapsule(attemptId: string): Promise<OwnershipCapsuleRead> { return this.ownershipCapsules.load(attemptId); }
   loadOwnershipSemanticPackage(attemptId: string): Promise<OwnershipSemanticPackageRead> { return this.ownershipCapsules.loadSemanticPackage(attemptId); }
+  loadOwnershipSemanticAuthorization(repositoryId: string): OwnershipSemanticAuthorization { return this.ownershipSemanticPolicy.load(repositoryId); }
+  grantOwnershipSemanticAuthorization(command: OwnershipSemanticGrantCommand): OwnershipSemanticAuthorization { return this.ownershipSemanticPolicy.grant(command); }
+  revokeOwnershipSemanticAuthorization(command: OwnershipSemanticRevokeCommand): OwnershipSemanticAuthorization { return this.ownershipSemanticPolicy.revoke(command); }
 
   saveOwnershipAttempt(attempt: OwnershipAttempt, ignoreRevision?: number): void {
     this.database.transaction(() => {
@@ -589,6 +596,7 @@ export class GraphStore {
   }
 
   close(): void {
+    this.ownershipSemanticPolicy.close();
     this.ownershipCapsules.close();
     this.database.close();
   }

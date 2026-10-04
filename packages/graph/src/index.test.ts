@@ -114,6 +114,16 @@ describe("navigation validity samples", () => {
 });
 
 describe("graph", () => {
+  it("global专属migration13与project原cache12隔离", () => {
+    const global = new GraphStore(":memory:", "global"), project = new GraphStore();
+    try {
+      const db = (store: GraphStore) => (store as unknown as { database: Database.Database }).database;
+      expect(db(global).prepare("SELECT version FROM schema_migrations WHERE version IN(12,13) ORDER BY version").all()).toEqual([{ version: 13 }]);
+      expect(db(project).prepare("SELECT version FROM schema_migrations WHERE version=13").all()).toEqual([]);
+      expect(db(global).prepare("SELECT name FROM sqlite_master WHERE name='ownership_semantic_authorizations'").get()).toBeTruthy();
+      expect(db(project).prepare("SELECT name FROM sqlite_master WHERE name='ownership_semantic_authorizations'").get()).toBeUndefined();
+    } finally { project.close(); global.close(); }
+  });
   it("事务化保存并读取快照", () => {
     const store = new GraphStore();
     store.saveSnapshot(snapshot, [{ filePath: "a.ts", contentHash: "hash", language: "TypeScript", content: "a()" }]);

@@ -351,3 +351,9 @@ root只读核ADR0008、actual remoteCapturedIdentity/公开prepare-start、seman
 root按实际completed/idle冻结核Luna四文件，33字段与ADR/实际adapter协议一致，old/public schema未扩，源码hash精确匹配；独立六contracts文件145/145及noEmit通过，diff --check通过。仅结构与值域，不证明原题/attempt/rubric/body关联、权威许可/当前性/签名，不登记或发送任务。详见2026-10-05-ownership-task-identity-independent-review.md。没有独立产品/测试缺陷或新公共规则，GUI=0。
 
 Sol实际timeout0仍2D-S2 active/inProgress，游标7e07c337-f6c9-490f-bd90-c31368d0efe4:31；只自报落地SQL进入并发/时钟验证，不是冻结交付或root验收，不审查/测试活动源。Luna已验冻结游标1ac033a7-c1ee-48ae-9e61-2317590f341e:23；回执仅确认，不扩任务。root本轮仅收尾Luna四文件及七份准确协调文档/计划，实际Git另核；不含Sol活动SQL/其他生产WIP/二进制，无重型窗口/GUI/远程，四批及结束暂停门保持，不第五批。
+2026-10-05 02:43实际Git回执：精确11文件普通提交/推送d31dcba582170825a54c2c186ca3c6f426e2a4d4，独立ls-remote核origin/main同SHA，cached diff --check通过，推送后main清洁。三个源码hash与冻结独立验证一致，不额外重跑无变化切片；只Luna已验纯身份与准确记录/计划，无Sol活动政策SQL/未验生产源/二进制。此回执仅留两协调记录，下一稳定切片收尾，不循环单独提交。Sol政策仍按既定边界继续，Luna已接受切片冻结，不为填槽派新准备。四批及本地收尾/全剩外部条件后暂停门保持。
+最后实际游标：Luna接受回执idle/completed，1ac033a7-c1ee-48ae-9e61-2317590f341e:24；Sol同一2D-S2回合active/inProgress，7e07c337-f6c9-490f-bd90-c31368d0efe4:32，无冻结交付。后续原第二批共享占用需要保留实际remote store语义：finish只改终态不释放inflight；releaseDispatch拒绝仍dispatched任务；启动recoverInterrupted在旧worker已停止前置下关闭上下文并清占用。现有唯一索引只约束explanation_tasks，新语义任务不能独立再开一席。此为只读源码依据，尚未派实现或修改这些源；等政策/身份稳定后划具体共享边界，不把pure DTO或独立grant当发送许可。
+
+## 2026-10-05 03:07：2D-S2独立政策SQL切片接受
+
+原Sol已completed/idle冻结，实际cursor7e07c337-f6c9-490f-bd90-c31368d0efe4:39；Luna原冻结idle，:24。root核原字节备份及精确patch reverse check，五文件仅内部global政策13，main窄index适配不引入Sol缓存，原main11/Sol12及全部WIP保留。Sol独立146、main集成182、graph/application noEmit、root双布局真实索引答题16门均通过；详见2026-10-05-ownership-policy-store-independent-review.md。root探针首轮错误使用已关闭legacy实例，修验证脚本后重验通过，非产品缺陷。AGENTS0，GUI0，无重型/网络/生产授权。只本地政策持久化，不接任务/共享占用/撤销反应/当前性/发布/IPC/UI或远程质量；四批未全部完成，下一步按实际旧store占用语义划跨用途共享任务边界，原四批收尾暂停门保持。Git实际另核，仅接受范围。

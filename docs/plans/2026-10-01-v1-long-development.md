@@ -100,7 +100,7 @@ Sol 先测量当前全量索引/查询/内存基线，设计按语言的保守�
 | 2C-L 纯语义请求/响应适配 | 冻结纯模块独立源码/151回归/类型及16次真实材料接入通过 | Luna/root | 三个llm文件/自有记录核hash一致，私有捕获/完整65536字节预算/原validator绑定及四题型双布局空非空配置接入通过；原attempt/capsule/source不变。见ownership-semantic-prompt-independent-review；无provider/SQL当前性/授权/评分/GUI或模型质量，整链门保持 |
 | 2D-S1 已保存语义材料只读端口 | 独立接受并精确 main 集成；Git见最新审查 | Sol/root | Sol122/main graph118、三包类型、main答题53及16次真实索引材料端口→adapter通过；原11/12断言保留。prepare-only/not-checked、零写/迁移/授权/外发，见ownership-material-policy-independent-review；整链/GUI未验 |
 | 2D-L1 独立语义授权/公开入口纯契约 | 纯契约独立接受；Git见最新审查 | Luna/root | main contracts136与graph118联合254项及三包类型通过；六类披露/严格grant-revoke/prepare-start DTO及完整旧新对象双向拒绝。合法结构不生成权威许可；SQL/共享占用/任务/IPC/GUI未验，见ownership-material-policy-independent-review |
-| 2D-S2 独立语义授权 SQL 存储 | 已派原Sol，待冻结独立验收 | Sol/root | 已验2D-L1精确依赖；仅global复合键授权表/迁移13、同步revision/provider revision/默认拒绝/重开与两连接回归，原12缓存保留。见2026-10-05-ownership-semantic-policy-store；不接共享lease/任务/dispatch/IPC/UI |
+| 2D-S2 独立语义授权 SQL 存储 | 内部SQL独立接受并精确main集成，Git见最新审查 | Sol/root | Sol146/main182与两包类型、root双布局真实索引答题16门通过；global13/project无13、默认拒绝零写、实际两连接revision/provider/BUSY/重开与历史保持。见ownership-policy-store-independent-review；原main11/Sol12不改，不接共享lease/任务/dispatch/IPC/UI或证明用户动作 |
 | 2D-L2 语义评价内部任务身份纯契约 | 纯契约独立接受，Git见最新审查 | Luna/root | 33字段strict/有限绑定元数据；root145项/类型通过，旧新完整对象互拒/public入口不扩。parse非权威/当前性/签名；见ownership-task-identity-independent-review，未接SQL/共享占用/任务/provider/GUI |
 | 3F-O 缓存observer接缝设计 | 修订设计独立接受 | Luna/协调方 | root 四文档/当前源码复审，O/R 及 estimator/terminal 关系、真实缺采集与协议矛盾区分、后续API错误独立；非实现/收益通过 |
 | 3F-C1 导航有效性取样端口 | 独立接受、精确集成提交7071ae4 | Sol/协调方 | Sol/main各98 graph回归、两包noEmit与真实SQLite探针通过，main原application147通过；嵌套COMMIT/ROLLBACK保守停比较、新实例身份明确。新增经验1，缓存/性能/GUI未验 |
