@@ -1044,3 +1044,21 @@ root独立审查冻结M4四文件及目标PS5.1 x64布局/逐组件路径/完整
 原Luna保持2C-L/M3冻结并idle，最近实际cursor1ac033a7-c1ee-48ae-9e61-2317590f341e:10。原Sol收到窄接受回执并已启动2D-S1，新回合01a10807-cd17-7153-87d5-029756dae42b active，最近实际cursor7e07c337-f6c9-490f-bd90-c31368d0efe4:22。新计划2026-10-05-ownership-semantic-material-port.md精确复制到其自己的worktree，SHA1E4D7EAC2EA24A4680658D181276C9F60B0D95A90BB6C33C971E301C6F6E8FBD。源码依据为ready已有真实SQL核验却丢弃包、adapter没有生产材料来源；仅graph store/test/index窄方法及自己的新记录，prepare-only/not-checked、同事务首次await前捕获、零写/迁移/评分/外发，11→12测试/旧index工作保留。root不测试活动图存储，LLM集成复验待冻结。不是第五批或填槽准备。
 
 四批及完成/全剩外部条件后暂停门保持；重型窗口已释放，当前无GUI/密钥/签名权限变化，不因开放filesystem权限推断恢复GUI。原automation继续原周期，不重复修改。真实远程与UI门继续开放。
+
+2026-10-05 01:52实际Git回执：上述精确10文件普通提交/推送999ff4e3bb1c166c8f959ace03b56f5a1db67036，独立ls-remote核origin/main精确同SHA，cached diff --check通过，推送后main清洁。三个桥接源码SHA仍与冻结及集成验证相同，不重复已通过检查；仅内部支持和协调记录，无Sol未验生产源/二进制。最近实际timeout0：Luna idle/completed cursor1ac033a7-c1ee-48ae-9e61-2317590f341e:10；Sol 2D-S1 active cursor7e07c337-f6c9-490f-bd90-c31368d0efe4:23，已确认三文件基线/原字节副本并开始允许范围实现，尚无冻结交付，不测试活动源。此回执仅追加两记录，待下一稳定切片收尾，不循环单独提交。原四批停止门/GUI暂缓/远程与签名边界保持，技术窗口空闲。
+
+## 2026-10-05 01:58：第二批独立授权契约实际派发
+
+本轮先读主AGENTS/真实队列/两记录和两checkout实际Git，main999ff4e3bb1c166c8f959ace03b56f5a1db67036仅两份SHA回执待收尾；Sol基线455d4ad50830ee2495b70927e51caf830a4efbb8及原全部WIP保留。最近timeout0实际Sol 2D-S1仍active，cursor7e07c337-f6c9-490f-bd90-c31368d0efe4:25；开发自报65项/类型及真实builder取样，尚非冻结交付或root独立结果，不测试活动源。
+
+root只读对照ADR0008与actual remote-explanation契约/授权库/remote application：feature purpose literal、旧scope/disclosure、按repository解释授权均不能授权语义答案；已接受纯包/adapter和当前只读材料端口均不补此边界。基于该实际缺口形成2D-L1具体实现计划2026-10-05-ownership-semantic-policy-contract.md（SHA9EDB547ADAC682D813EA69CC7679E47161007B4F46E846C4C2B3ADB407107BA5），已派原Luna在main，仅policy/test/自己的新记录加contracts barrel一行。六类有限披露/独立grant-revoke及prepare-start DTO，不扩旧feature literal、不创建grant/receipt，不写SQL/授权/评分/任务/IPC/provider；共享lease/完整captured身份与发布/恢复由后续复杂Sol切片另行边界，不本轮猜造。
+
+原Luna新回合01a1080f-b689-75f0-b12f-c5731333243b实际active，cursor1ac033a7-c1ee-48ae-9e61-2317590f341e:11。与Sol不同checkout的graph四文件无文件或活动依赖交叉，均无重型验证/GUI/Git。root待冻结独立审查，不并发测试main活动contracts。此为原第二批必要纯实现，不填槽准备或第五批；没有本轮新验收/缺陷/AGENTS规则，外部与停止门保持。main协调文档留下一稳定切片收尾，不单独周期提交。
+
+## 2026-10-05 02:18：第二批材料端口与独立授权契约接受
+
+root按两原聊天实际冻结边界独立审查2D-S1与2D-L1。Sol六图测试122/122及graph类型通过；精确三文件patch核副本与SHA后集成main，未复制其旧index/生产源或迁移12，main原11断言保留。main五图加五contracts共254/254（118+136）、application答题两文件53/53、graph/contracts/application类型通过；root新自有probe实际TS索引→四型答题→SQL重开→新材料端口→纯adapter共16/16，双布局/空非空配置、完整包独立重建及全表零写/原记录不变通过。详见2026-10-05-ownership-material-policy-independent-review.md。
+
+仅接受历史材料只读端口和独立纯授权/公开入口DTO：prepare-only/not-checked、旧新授权完整对象双向拒绝保持，不产生真实外发许可、任务或评分。真实GUI=0，模型/权威SQL政策/共享占用/dispatch/跨库发布与完整生产接线均未验。AGENTS新增0，现有捕获/有限DTO/历史权威区分规则已覆盖。当前两原聊天idle/completed，实际游标Luna1ac033a7-c1ee-48ae-9e61-2317590f341e:20、Sol7e07c337-f6c9-490f-bd90-c31368d0efe4:28；保留全部冻结WIP，开发不Git。
+
+main起点999ff4e3bb1c166c8f959ace03b56f5a1db67036，本轮只收尾对应八份源码/开发记录及六份准确协调文档，实际Git回执另核；没有重型窗口、GUI、网络或导入代码执行。原四批仍有本地链路实现，不标全部完成或启动第五批；收尾/全剩外部条件后暂停project-x-ray及派发讨论。

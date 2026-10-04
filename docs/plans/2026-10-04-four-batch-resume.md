@@ -18,8 +18,8 @@
 ## 本轮分工
 
 - root：按当前队列独立审查冻结切片；M3、2C-L及M4窄内部支持已接受，M4精确main集成后26项/类型通过，单文件hash与释放不等于完整目录或零OS后代保证。3G-S1及broker窄修技术门已验但整体GUI/旧接线集成未验。窗口已释放，不GUI，不整体合入未验Sol生产源。
-- Sol：按[2D-S1具体实施边界](2026-10-05-ownership-semantic-material-port.md)实现已保存语义材料只读端口，原四文件M4冻结；仅graph store/test/index窄方法及新记录，零迁移/写入/授权/外发。保持3G-S1/broker/core/UI/loan/probe等冻结，不Git。完整reader/零OS后代门/manifest/签名与生产接线未验。
-- Luna：按[2C-L具体实施边界](2026-10-05-ownership-semantic-prompt.md)交付纯语义适配器，root151回归/类型及16次真实材料接入通过，当前保持四文件冻结。原M3也冻结；待依赖稳定再派四批内必要任务，不反复制造准备工作。授权、任务、真实provider、SQL当前性和GUI仍未验。
+- Sol：2D-S1 已独立接受并精确集成（Sol122/main联合254、答题53、真实索引16及类型通过），原实现与其他WIP保持冻结。已完成[2D-S1具体实施边界](2026-10-05-ownership-semantic-material-port.md)实现已保存语义材料只读端口，原四文件M4冻结；仅graph store/test/index窄方法及新记录，零迁移/写入/授权/外发。保持3G-S1/broker/core/UI/loan/probe等冻结，不Git。完整reader/零OS后代门/manifest/签名与生产接线未验。
+- Luna：2C-L/M3及2D-L1已独立接受并冻结（contracts136纳入main联合254及类型通过），已完成[2D-L1具体实施边界](2026-10-05-ownership-semantic-policy-contract.md)实现独立授权与公开入口纯契约，仅main新增contracts policy/test/自己的记录及barrel一行，不改旧feature、不执行授权/网络/SQL/任务。与Sol自己的graph文件无交叉；真实权威政策/任务/provider/SQL当前性和GUI仍未验。
 
 后续由root在四批内部按依赖派发，不让两聊天修改相同文件；两worktree仅维护自己的记录。单重型验证窗口，不并发重建或操作GUI。
 

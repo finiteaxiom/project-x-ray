@@ -44,6 +44,10 @@ export interface OwnershipSettingsAuthority { loadIgnoreSettings(repositoryId: s
 declare const receiptBrand: unique symbol;
 export type PreparedOwnershipWrite = Readonly<{ [receiptBrand]: true }>;
 export type OwnershipCapsuleRead = { status: "not-found" | "legacy-capsule-absent" } | { status: "ready" | "not-evaluated"; questionBinding: "prepare-only"; attempt: OwnershipAttempt; capsule: OwnershipCapsule };
+export type OwnershipSemanticPackageRead =
+  | { status: "not-found" | "legacy-capsule-absent" }
+  | { status: "not-evaluated"; questionBinding: "prepare-only"; currentness: "not-checked"; attempt: OwnershipAttempt; capsule: OwnershipCapsule }
+  | { status: "ready"; questionBinding: "prepare-only"; currentness: "not-checked"; attempt: OwnershipAttempt; capsule: OwnershipReadyCapsule; package: OwnershipSemanticPackage };
 interface Material { snapshot: ProjectSnapshot; activation: string; current: boolean; sources: { filePath: string; contentHash: string; language: string; content: string }[]; manifestHash: string }
 interface Receipt { attempt: string; capsule: string; submission: string | null; projectionPreimage: string | null; questionPreimage: string; attemptPreimage: string; capsulePreimage: string; source: string; material: string; settings: OwnershipSettingsAuthority }
 interface AttemptRow { attempt_id: string; repository_id: string; snapshot_id: string; concept_id: string; completed_at: string; payload: string }
@@ -123,6 +127,22 @@ export class OwnershipCapsuleStore {
     } catch (error) { throw safe(error); }
   }
   async load(attemptId: string): Promise<OwnershipCapsuleRead> {
+    return (await this.read(attemptId)).result;
+  }
+  async loadSemanticPackage(attemptId: string): Promise<OwnershipSemanticPackageRead> {
+    try {
+      this.open(); if (typeof attemptId !== "string" || !attemptId.length) fail();
+      const { result, package: semanticPackage } = await this.read(attemptId);
+      this.open();
+      if (result.status === "not-found" || result.status === "legacy-capsule-absent") return result;
+      if (result.status === "ready" && result.capsule.status === "ready" && semanticPackage) {
+        return capture({ status: "ready", questionBinding: "prepare-only", currentness: "not-checked", attempt: result.attempt, capsule: result.capsule, package: semanticPackage });
+      }
+      if (result.status !== "not-evaluated" || semanticPackage !== null) fail();
+      return capture({ status: "not-evaluated", questionBinding: "prepare-only", currentness: "not-checked", attempt: result.attempt, capsule: result.capsule });
+    } catch (error) { throw safe(error); }
+  }
+  private async read(attemptId: string): Promise<{ result: OwnershipCapsuleRead; package: OwnershipSemanticPackage | null }> {
     try {
       this.open();
       const captured = this.db.transaction(() => {
@@ -137,10 +157,11 @@ export class OwnershipCapsuleStore {
         const material = this.material(raw.repositoryId, raw.snapshotId); this.assertCapsuleSource(capsule, material);
         return { status: "found" as const, attempt: raw, capsule, material };
       }).deferred();
-      if (captured.status !== "found") return captured;
-      if (captured.capsule.status === "ready") await this.ready(captured.attempt, captured.capsule, captured.material);
+      if (captured.status !== "found") return { result: captured, package: null };
+      let semanticPackage: OwnershipSemanticPackage | null = null;
+      if (captured.capsule.status === "ready") semanticPackage = await this.ready(captured.attempt, captured.capsule, captured.material);
       else if (captured.capsule.answerHash !== null && captured.capsule.answerHash !== await hashOwnershipAnswer(captured.attempt.semanticText)) fail();
-      return { status: captured.capsule.status, questionBinding: "prepare-only", attempt: captured.attempt, capsule: captured.capsule };
+      return { result: { status: captured.capsule.status, questionBinding: "prepare-only", attempt: captured.attempt, capsule: captured.capsule }, package: semanticPackage };
     } catch (error) { throw safe(error); }
   }
   private revision(value: number): void { if (!Number.isSafeInteger(value) || value < 0) fail(); }
@@ -232,7 +253,7 @@ export class OwnershipCapsuleStore {
     else if (check.kind === "variable-roles" && structured.kind === "variable-flow") { if (question.expectedNodeIds.length !== 1 || capsule.roleBindings.some(binding => !check.requirements.find(item => item.role === binding.role)?.edgeIds.includes(binding.edgeId) || edges.find(edge => edge.id === binding.edgeId)?.target !== question.expectedNodeIds[0]) || check.requirements.some(item => !capsule.roleBindings.some(binding => binding.role === item.role))) fail(); }
     else fail();
   }
-  private async ready(attempt: OwnershipAttempt, capsule: OwnershipReadyCapsule, material: Material): Promise<void> {
+  private async ready(attempt: OwnershipAttempt, capsule: OwnershipReadyCapsule, material: Material): Promise<OwnershipSemanticPackage> {
     if (capsule.repositoryId !== attempt.repositoryId || capsule.snapshotId !== attempt.snapshotId || capsule.attemptId !== attempt.attemptId || capsule.questionId !== attempt.questionId || capsule.questionVersion !== attempt.questionVersion || capsule.questionKind !== attempt.questionKind || capsule.variantKey !== attempt.variantKey || capsule.createdAt !== attempt.completedAt || capsule.deterministicScoringVersion !== attempt.scoringVersion || attempt.legacy) fail();
     const edges = capsule.necessaryEdgeIds.map(id => material.snapshot.edges.find(edge => edge.id === id));
     if (edges.some(edge => !edge || edge.confidence !== "verified") || !same(ids(edges.flatMap(edge => edge ? [edge.source, edge.target] : [])), ids(capsule.necessaryNodeIds))) fail();
@@ -281,6 +302,7 @@ export class OwnershipCapsuleStore {
       nodes: capsule.necessaryNodeIds.map(id => { const node = material.snapshot.nodes.find(item => item.id === id); if (!node) fail(); return { id, name: node.name, kind: node.kind, filePath: node.filePath ?? null, evidenceIds: ids(selected.filter(edge => edge.source === id || edge.target === id).map(edge => edge.evidenceId)) }; }),
       edges: selected.map(edge => ({ id: edge.id, source: edge.source, target: edge.target, kind: edge.kind, evidenceId: edge.evidenceId, confidence: edge.confidence, reason: "当前题目所选的静态关系" })), proofs,
     };
-    await validateOwnershipSemanticPackage({ ...content, assessmentPackageId: await computeOwnershipPackageId(content) }, attempt.semanticText);
+    const semanticPackage = { ...content, assessmentPackageId: await computeOwnershipPackageId(content) };
+    return validateOwnershipSemanticPackage(semanticPackage, attempt.semanticText);
   }
 }

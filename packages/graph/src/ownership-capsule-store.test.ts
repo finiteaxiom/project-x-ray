@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   canonicalJson, canonicalSnapshotResult, computeOwnershipAttemptHash, computeOwnershipCapsuleHash, computeOwnershipLimitationId, computeOwnershipQuestionFingerprint,
-  computeOwnershipRubricHash, computeOwnershipSubmissionProjectionHash, hashOwnershipAnswer, IGNORE_POLICY_VERSION, ownershipAttemptPreimage, ownershipCapsulePreimage, ownershipQuestionPreimage,
+  computeOwnershipRubricHash, computeOwnershipSubmissionProjectionHash, hashOwnershipAnswer, IGNORE_POLICY_VERSION, ownershipAttemptPreimage, ownershipCapsulePreimage, ownershipQuestionPreimage, validateOwnershipSemanticPackage,
   type OwnershipAttempt, type OwnershipCapsule, type OwnershipCapsuleSourceIdentity, type OwnershipGrade, type OwnershipQuestion, type OwnershipQuestionRequest, type OwnershipReadyCapsule, type OwnershipSubmission, type ProjectSnapshot, type SourceCitation,
 } from "@project-xray/contracts";
 import { GraphStore } from "./index.js";
@@ -74,11 +74,15 @@ async function fixture(store: GraphStore, attemptId = "attempt", ready = true, r
 function counts(store: GraphStore): { attempts: number; capsules: number } {
   return { attempts: (db(store).prepare("SELECT count(*) n FROM ownership_attempts").get() as { n: number }).n, capsules: (db(store).prepare("SELECT count(*) n FROM ownership_semantic_capsules").get() as { n: number }).n };
 }
+function databaseState(store: GraphStore): string {
+  const schema = db(store).prepare("SELECT name,type,sql FROM sqlite_master ORDER BY name").all() as { name: string; type: string; sql: string | null }[];
+  return canonicalJson({ schema, rows: schema.filter(item => item.type === "table").map(item => ({ table: item.name, rows: db(store).prepare(`SELECT * FROM "${item.name.replaceAll('"', '""')}"`).all() })) });
+}
 async function resign(input: OwnershipCapsuleWriteInput): Promise<void> {
   input.capsule.questionFingerprint = await computeOwnershipQuestionFingerprint(input.question); input.capsule.attemptHash = await computeOwnershipAttemptHash(input.attempt); input.capsule.capsuleHash = await computeOwnershipCapsuleHash(input.capsule);
 }
-async function relationshipFixture(store: GraphStore, kind: "entry" | "call-direction" | "call-path"): Promise<OwnershipCapsuleWriteInput> {
-  const input = await fixture(store), snapshot = structuredClone(store.loadSnapshot("snap")!), content = "function b() {}\na calls b()\nb calls c()";
+async function relationshipFixture(store: GraphStore, kind: "entry" | "call-direction" | "call-path", rules?: string[]): Promise<OwnershipCapsuleWriteInput> {
+  const input = await fixture(store, "attempt", true, rules), snapshot = structuredClone(store.loadSnapshot("snap")!), content = "function b() {}\na calls b()\nb calls c()";
   snapshot.snapshotId = kind; snapshot.createdAt = "2026-10-02T00:01:00.000Z";
   snapshot.nodes.forEach(node => { node.snapshotId = kind; }); if (kind === "entry") snapshot.nodes[0]!.kind = "file";
   snapshot.sourceFiles[0]!.contentHash = sha(content); snapshot.sourceFiles[0]!.bytes = Buffer.byteLength(content);
@@ -90,8 +94,8 @@ async function relationshipFixture(store: GraphStore, kind: "entry" | "call-dire
   store.saveSnapshot(snapshot, [{ filePath: "a.ts", contentHash: sha(content), language: "TypeScript", content }]);
   const q = input.question; Object.assign(q, { id: `q-${kind}`, snapshotId: kind, kind, variantKey: kind, concept: { id: kind, label: kind }, prompt: "解释所选静态关系", learningObjective: "核验静态关系", evidenceIds: snapshot.evidence.map(proof => proof.id), expectedNodeIds: kind === "entry" ? ["b"] : kind === "call-direction" ? ["a", "b"] : ["a", "b", "c"], deterministicChecks: kind === "entry" ? [{ kind: "definition", nodeId: "b", edgeId: "definition" }] : kind === "call-direction" ? [{ kind: "call-direction", sourceNodeId: "a", targetNodeId: "b", edgeId: "ab" }] : [{ kind: "ordered-path", legalNodePaths: [["a", "b", "c"]], legalEdgePaths: [["ab", "bc"]] }] });
   Object.assign(input.attempt, { snapshotId: kind, questionId: q.id, questionKind: kind, variantKey: kind, concept: q.concept, structuredAnswer: kind === "entry" ? { kind, nodeId: "b" } : kind === "call-direction" ? { kind, callerNodeId: "a", calleeNodeId: "b" } : { kind, nodeIds: ["a", "b", "c"] }, citations: snapshot.evidence.map(proof => ({ ...proof.span, evidenceId: proof.id })) });
-  input.source = store.captureOwnershipSource("repo", kind, 0);
-  const cap = input.capsule as OwnershipReadyCapsule; Object.assign(cap, { snapshotId: kind, questionId: q.id, questionKind: kind, variantKey: kind, prompt: q.prompt, learningObjective: q.learningObjective, questionFingerprint: await computeOwnershipQuestionFingerprint(q), attemptHash: await computeOwnershipAttemptHash(input.attempt), sourceIdentity: { activation: input.source.activation, analysisResultFingerprint: input.source.analysisIdentity.analysisResult!.fingerprint, configurationHash: input.source.analysisIdentity.configurationHash, ignorePolicyHash: null, sourceManifestHash: input.source.sourceManifestHash, ignoreRevision: 0 }, analysisIdentity: { ...snapshot.analysisIdentity, ignorePolicy: null }, citationOrder: edgeIds.map((_, index) => index), roleBindings: [], necessaryNodeIds: kind === "call-path" ? ["a", "b", "c"] : ["a", "b"], necessaryEdgeIds: edgeIds,
+  input.source = store.captureOwnershipSource("repo", kind, store.loadIgnoreSettings("repo").revision);
+  const cap = input.capsule as OwnershipReadyCapsule; Object.assign(cap, { snapshotId: kind, questionId: q.id, questionKind: kind, variantKey: kind, prompt: q.prompt, learningObjective: q.learningObjective, questionFingerprint: await computeOwnershipQuestionFingerprint(q), attemptHash: await computeOwnershipAttemptHash(input.attempt), sourceIdentity: { activation: input.source.activation, analysisResultFingerprint: input.source.analysisIdentity.analysisResult!.fingerprint, configurationHash: input.source.analysisIdentity.configurationHash, ignorePolicyHash: input.source.analysisIdentity.ignorePolicy?.hash ?? null, sourceManifestHash: input.source.sourceManifestHash, ignoreRevision: input.source.ignoreRevision }, analysisIdentity: { ...snapshot.analysisIdentity, ignorePolicy: snapshot.analysisIdentity.ignorePolicy ? { version: snapshot.analysisIdentity.ignorePolicy.version, hash: snapshot.analysisIdentity.ignorePolicy.hash } : null }, citationOrder: edgeIds.map((_, index) => index), roleBindings: [], necessaryNodeIds: kind === "call-path" ? ["a", "b", "c"] : ["a", "b"], necessaryEdgeIds: edgeIds,
     necessaryProofs: snapshot.evidence.map(proof => ({ evidenceId: proof.id, kind: proof.kind, filePath: proof.span.filePath, span: proof.span, analyzer: proof.analyzer, analyzerVersion: proof.analyzerVersion, confidence: "verified", contentHash: sha(content) })) });
   const criteria: OwnershipReadyCapsule["rubric"]["criteria"] = [], limitations: OwnershipReadyCapsule["rubric"]["limitations"] = [];
   for (const [index, edge] of snapshot.edges.entries()) {
@@ -154,15 +158,15 @@ describe("source-owned ownership capsule transactions", () => {
     const receipt = await pending; store.savePreparedOwnershipAttempt(receipt);
     expect(await store.loadOwnershipCapsule("late-budget")).toMatchObject({ status: "not-evaluated", questionBinding: "prepare-only", attempt: input.attempt });
   });
-  it.each(["entry", "call-direction", "call-path", "variable-flow"] as const)("消费已接受 generator/grader/builder 的 %s ready 结果并真实双写重开", async kind => {
+  it.each((["entry", "call-direction", "call-path", "variable-flow"] as const).flatMap(kind => (["project", "global"] as const).flatMap(role => [[], ["never"]].map(rules => ({ kind, role, rules }))))) ("消费真实builder $kind/$role/$rules 保存重开并零写返回完整语义材料", async ({ kind, role, rules }) => {
     // Test orchestration only: builder is deliberately not exported from the production package barrel until S5.
     // Runtime module loading keeps graph's production dependencies/rootDir unchanged; all exchanged data use public contracts.
     const ownershipUrl = new URL("../../ownership/src/index.ts", import.meta.url).href;
     const builderUrl = new URL("../../ownership/src/semantic-rubric.ts", import.meta.url).href;
     const ownership = await import(/* @vite-ignore */ ownershipUrl) as { createQuestions(snapshot: ProjectSnapshot, request: OwnershipQuestionRequest): OwnershipQuestion[]; gradeAnswer(question: OwnershipQuestion, submission: OwnershipSubmission, snapshot: ProjectSnapshot, citations: SourceCitation[]): OwnershipGrade };
     const builder = await import(/* @vite-ignore */ builderUrl) as { buildOwnershipRubricCapsule(input: { question: OwnershipQuestion; submission: OwnershipSubmission; grade: OwnershipGrade; attempt: OwnershipAttempt; snapshot: ProjectSnapshot; validatedCitations: SourceCitation[]; sourceIdentity: OwnershipCapsuleSourceIdentity; sources: { repositoryId: string; snapshotId: string; filePath: string; contentHash: string; content: string }[] }): Promise<OwnershipCapsule> };
-    const path = await pathFixture(`${kind}.sqlite`); let store = open(path);
-    const input = kind === "variable-flow" ? await fixture(store) : await relationshipFixture(store, kind), snapshot = store.loadSnapshot(input.attempt.snapshotId)!;
+    const path = await pathFixture(`${kind}.sqlite`); let store = open(path, role);
+    const input = kind === "variable-flow" ? await fixture(store, "attempt", true, rules) : await relationshipFixture(store, kind, rules), snapshot = store.loadSnapshot(input.attempt.snapshotId)!;
     const question = ownership.createQuestions(snapshot, { repositoryId: "repo", snapshotId: snapshot.snapshotId, count: 20, scope: { kind: "project" } }).find(item => item.kind === kind)!;
     expect(question).toBeDefined();
     const structured = input.attempt.structuredAnswer as OwnershipSubmission["structuredAnswer"];
@@ -176,8 +180,23 @@ describe("source-owned ownership capsule transactions", () => {
     const capsule = await builder.buildOwnershipRubricCapsule({ question, submission, grade, attempt: input.attempt, snapshot, validatedCitations: input.attempt.citations, sourceIdentity, sources });
     expect(capsule.status).toBe("ready"); const before = canonicalJson(input.attempt);
     store.savePreparedOwnershipAttempt(await store.prepareOwnershipAttemptWithCapsule({ ...input, question, capsule, submission }));
-    store.close(); store = open(path);
+    store.close(); store = open(path, role);
     expect(await store.loadOwnershipCapsule("attempt")).toMatchObject({ status: "ready", questionBinding: "prepare-only", capsule, attempt: input.attempt }); expect(canonicalJson(store.listOwnershipAttempts("repo")[0])).toBe(before);
+    const state = databaseState(store), changes = db(store).prepare("SELECT total_changes() n").get();
+    db(store).pragma("query_only=ON");
+    const material = await store.loadOwnershipSemanticPackage("attempt");
+    expect(material).toMatchObject({ status: "ready", questionBinding: "prepare-only", currentness: "not-checked", attempt: input.attempt, capsule });
+    if (material.status !== "ready" || capsule.status !== "ready") throw new Error("ready required");
+    expect(await validateOwnershipSemanticPackage(material.package, input.attempt.semanticText)).toEqual(material.package);
+    expect(material.package.analysisIdentity).toEqual(capsule.analysisIdentity);
+    expect(material.package.structuredAnswer).toEqual(input.attempt.structuredAnswer);
+    expect(material.package.validatedCitations).toEqual(input.attempt.citations);
+    expect(material.package.rubric).toEqual(capsule.rubric);
+    expect(material.package.edges.map(edge => edge.id)).toEqual(capsule.necessaryEdgeIds);
+    expect(material.package.proofs.map(proof => proof.id)).toEqual(capsule.necessaryProofs.map(proof => proof.evidenceId));
+    for (const proof of material.package.proofs) { const original = sources.find(source => source.filePath === proof.span.filePath)!; const lines = original.content.split("\n"); const slice = lines.slice(proof.span.startLine - 1, proof.span.endLine); slice[0] = slice[0]!.slice(proof.span.startColumn); slice[slice.length - 1] = slice[slice.length - 1]!.slice(0, proof.span.startLine === proof.span.endLine ? proof.span.endColumn - proof.span.startColumn : proof.span.endColumn); expect(proof.snippet).toBe(slice.join("\n")); }
+    expect(db(store).prepare("SELECT total_changes() n").get()).toEqual(changes); expect(databaseState(store)).toBe(state);
+    db(store).pragma("query_only=OFF");
   });
   it.each(["entry", "call-direction", "call-path"] as const)("%s 在源事实闭合下保存/读取，完整原题与关系错配拒绝", async kind => {
     const store = open(), input = await relationshipFixture(store, kind); store.savePreparedOwnershipAttempt(await store.prepareOwnershipAttemptWithCapsule(input));
@@ -275,6 +294,7 @@ describe("source-owned ownership capsule transactions", () => {
     if (change === "edge-column") db(store).prepare("UPDATE edges SET source_id='other' WHERE edge_id='write'").run();
     if (change === "proof-payload") { const proof = { ...store.loadSnapshot("snap")!.evidence[0]!, analyzerVersion: "fake" }; db(store).prepare("UPDATE evidence SET payload=? WHERE evidence_id='e-write'").run(canonicalJson(proof)); }
     await expect(store.loadOwnershipCapsule("attempt")).rejects.toThrow("所有权胶囊存储失败");
+    await expect(store.loadOwnershipSemanticPackage("attempt")).rejects.toMatchObject({ code: "INVALID_MATERIAL", message: "所有权胶囊存储失败" });
   });
   it("新迁移不改旧attempt/源码字节或7/10时间；FK精确删除同attempt胶囊", async () => {
     const path = await pathFixture("old.sqlite"), initial = open(path), input = await fixture(initial, "old"); initial.saveOwnershipAttempt(input.attempt); initial.close(); const connection = connect(path);
@@ -325,6 +345,7 @@ describe("source-owned ownership capsule transactions", () => {
     const { rubricHash: _hash, ...content } = cap.rubric; cap.rubric.rubricHash = await computeOwnershipRubricHash(content); cap.capsuleHash = await computeOwnershipCapsuleHash(cap);
     db(store).prepare("UPDATE ownership_semantic_capsules SET payload=?,capsule_hash=?").run(canonicalJson(cap), cap.capsuleHash);
     const read = await store.loadOwnershipCapsule("attempt"); expect(read).toMatchObject({ status: "ready", questionBinding: "prepare-only", capsule: cap });
+    expect(await store.loadOwnershipSemanticPackage("attempt")).toMatchObject({ status: "ready", questionBinding: "prepare-only", currentness: "not-checked", capsule: cap });
     // The supplied original question still rejects this rewriting at preparation; the read tag is not an authorization.
     await expect(store.prepareOwnershipAttemptWithCapsule({ ...input, capsule: cap })).rejects.toThrow("所有权胶囊存储失败");
     expect(db(store).prepare("SELECT name FROM sqlite_master WHERE name LIKE '%capsule%' AND type='table'").all()).toEqual([{ name: "ownership_semantic_capsules" }]);
@@ -334,5 +355,62 @@ describe("source-owned ownership capsule transactions", () => {
     db(store).prepare("UPDATE ownership_semantic_capsules SET attempt_id='second'").run(); await expect(store.loadOwnershipCapsule("second")).rejects.toThrow();
     db(store).pragma("foreign_keys=OFF"); db(store).prepare("DELETE FROM ownership_attempts WHERE attempt_id='second'").run(); db(store).pragma("foreign_keys=ON"); await expect(store.loadOwnershipCapsule("second")).rejects.toThrow();
     expect(() => db(store).prepare("INSERT INTO ownership_semantic_capsules VALUES(?,?,?,?,?,?,?,?)").run("missing", "repo", "snap", "not-evaluated", "1.0.0", "a".repeat(64), "b".repeat(64), "{}")).toThrow();
+  });
+  it("语义端口不猜补缺attempt/旧无胶囊/预算或证据不足，并保持全部历史字节", async () => {
+    const store = open(); const legacy = await fixture(store, "legacy"); store.saveOwnershipAttempt(legacy.attempt);
+    for (const [attemptId, reason] of [["budget", "rubric-budget-exceeded"], ["evidence", "structured-answer-mismatch"]] as const) {
+      const input = await fixture(store, attemptId, false); if (input.capsule.status !== "not-evaluated") throw new Error("not evaluated required");
+      input.capsule.reason = reason; input.capsule.capsuleHash = await computeOwnershipCapsuleHash(input.capsule);
+      store.savePreparedOwnershipAttempt(await store.prepareOwnershipAttemptWithCapsule(input));
+    }
+    const before = databaseState(store); db(store).pragma("query_only=ON");
+    expect(await store.loadOwnershipSemanticPackage("missing")).toEqual({ status: "not-found" });
+    expect(await store.loadOwnershipSemanticPackage("legacy")).toEqual({ status: "legacy-capsule-absent" });
+    for (const id of ["budget", "evidence"]) { const result = await store.loadOwnershipSemanticPackage(id); expect(result).toMatchObject({ status: "not-evaluated", questionBinding: "prepare-only", currentness: "not-checked" }); expect(result).not.toHaveProperty("package"); }
+    expect(databaseState(store)).toBe(before); db(store).pragma("query_only=OFF");
+    await expect(store.loadOwnershipSemanticPackage({} as string)).rejects.toMatchObject({ code: "INVALID_MATERIAL" });
+    store.close(); await expect(store.loadOwnershipSemanticPackage("legacy")).rejects.toMatchObject({ code: "RECEIPT_INVALID", message: "所有权胶囊存储失败" });
+  });
+  it.each(["source", "edge", "role-order", "analysis-projection", "path-order"] as const)("语义读取首摘要await后第二连接改%s，只返回原私有捕获，下次严格拒绝损坏", async change => {
+    const path = await pathFixture("semantic-race.sqlite"), store = open(path), input = change === "path-order" ? await relationshipFixture(store, "call-path") : await fixture(store);
+    store.savePreparedOwnershipAttempt(await store.prepareOwnershipAttemptWithCapsule(input));
+    const baseline = await store.loadOwnershipSemanticPackage("attempt"), writer = connect(path);
+    const digest = globalThis.crypto.subtle.digest.bind(globalThis.crypto.subtle); let release!: () => void, entered!: () => void;
+    const gate = new Promise<void>(resolve => { release = resolve; }), started = new Promise<void>(resolve => { entered = resolve; });
+    vi.spyOn(globalThis.crypto.subtle, "digest").mockImplementationOnce(async (...args) => { expect(db(store).inTransaction).toBe(false); entered(); await gate; return digest(...args); });
+    const pending = store.loadOwnershipSemanticPackage("attempt"); await started;
+    try {
+      if (change === "source") writer.prepare("UPDATE source_snapshots SET content=content || 'later-corruption'").run();
+      else if (change === "edge") writer.prepare("UPDATE edges SET target_id='other'").run();
+      else {
+        const cap = structuredClone(input.capsule) as OwnershipReadyCapsule;
+        if (change === "role-order") cap.roleBindings.reverse();
+        if (change === "analysis-projection") cap.analysisIdentity.configurationHash = "b".repeat(64);
+        if (change === "path-order") { cap.rubric.selectedPath!.edgeIds.reverse(); const { rubricHash: _hash, ...content } = cap.rubric; cap.rubric.rubricHash = await computeOwnershipRubricHash(content); }
+        cap.capsuleHash = await computeOwnershipCapsuleHash(cap);
+        writer.prepare("UPDATE ownership_semantic_capsules SET payload=?,capsule_hash=?").run(canonicalJson(cap), cap.capsuleHash);
+      }
+    } finally { release(); }
+    expect(await pending).toEqual(baseline); expect(baseline).toMatchObject({ currentness: "not-checked" });
+    await expect(store.loadOwnershipSemanticPackage("attempt")).rejects.toMatchObject({ code: "INVALID_MATERIAL", message: "所有权胶囊存储失败" });
+  });
+  it("返回对象及getter不能污染持久材料/再读，当前配置和activation改变不授予当前性", async () => {
+    const store = open(), input = await fixture(store, "attempt", true, ["never"]); store.savePreparedOwnershipAttempt(await store.prepareOwnershipAttemptWithCapsule(input));
+    const first = await store.loadOwnershipSemanticPackage("attempt"); if (first.status !== "ready") throw new Error("ready required");
+    const baseline = canonicalJson(first), before = databaseState(store); let getterRead = false;
+    first.package.proofs[0]!.snippet = "caller alteration"; first.capsule.roleBindings.reverse();
+    Object.defineProperty(first.package.analysisIdentity, "configurationHash", { enumerable: true, get() { getterRead = true; throw new Error("must not run"); } });
+    expect(canonicalJson(await store.loadOwnershipSemanticPackage("attempt"))).toBe(baseline); expect(getterRead).toBe(false); expect(databaseState(store)).toBe(before);
+    db(store).prepare("UPDATE snapshot_overviews SET is_current=0,activated_at=?").run("2026-12-01T00:00:00.000Z"); store.saveIgnoreSettings("repo", store.loadIgnoreSettings("repo").revision, ["changed"]);
+    expect(canonicalJson(await store.loadOwnershipSemanticPackage("attempt"))).toBe(baseline);
+    const old = await store.loadOwnershipCapsule("attempt"); expect(Object.keys(old).sort()).toEqual(["attempt", "capsule", "questionBinding", "status"]);
+  });
+  it("首await后关闭store时语义端口固定失败，私有捕获不变成关闭后的可用结果", async () => {
+    const store = open(), input = await fixture(store); store.savePreparedOwnershipAttempt(await store.prepareOwnershipAttemptWithCapsule(input));
+    const digest = globalThis.crypto.subtle.digest.bind(globalThis.crypto.subtle); let release!: () => void, entered!: () => void;
+    const gate = new Promise<void>(resolve => { release = resolve; }), started = new Promise<void>(resolve => { entered = resolve; });
+    vi.spyOn(globalThis.crypto.subtle, "digest").mockImplementationOnce(async (...args) => { entered(); await gate; return digest(...args); });
+    const pending = store.loadOwnershipSemanticPackage("attempt"); await started; store.close(); release();
+    await expect(pending).rejects.toMatchObject({ code: "RECEIPT_INVALID", message: "所有权胶囊存储失败" });
   });
 });

@@ -1,7 +1,8 @@
 import Database from "better-sqlite3";
 import { createHash } from "node:crypto";
 import { RemoteExplanationStore, type GraphStoreRole } from "./remote-explanation-store.js";
-import { OwnershipCapsuleStore, OwnershipCapsuleStoreError, type OwnershipCapsuleWriteInput, type OwnershipSourceCapture, type PreparedOwnershipWrite, type OwnershipCapsuleRead } from "./ownership-capsule-store.js";
+import { OwnershipCapsuleStore, OwnershipCapsuleStoreError, type OwnershipCapsuleWriteInput, type OwnershipSourceCapture, type PreparedOwnershipWrite, type OwnershipCapsuleRead, type OwnershipSemanticPackageRead } from "./ownership-capsule-store.js";
+export type { OwnershipSemanticPackageRead } from "./ownership-capsule-store.js";
 export { RemoteExplanationStore, remoteStoreFailure, type GraphStoreRole } from "./remote-explanation-store.js";
 import {
   canonicalJson, canonicalSnapshotContent, canonicalSnapshotResult, IGNORE_POLICY_VERSION, projectIgnoreSettingsSchema, ignoreRulesSchema, SafeDiagnosticError, type ProjectIgnoreSettings,
@@ -571,6 +572,7 @@ export class GraphStore {
   }
   savePreparedOwnershipAttempt(prepared: PreparedOwnershipWrite): void { this.ownershipCapsules.save(prepared); }
   loadOwnershipCapsule(attemptId: string): Promise<OwnershipCapsuleRead> { return this.ownershipCapsules.load(attemptId); }
+  loadOwnershipSemanticPackage(attemptId: string): Promise<OwnershipSemanticPackageRead> { return this.ownershipCapsules.loadSemanticPackage(attemptId); }
 
   saveOwnershipAttempt(attempt: OwnershipAttempt, ignoreRevision?: number): void {
     this.database.transaction(() => {
