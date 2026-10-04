@@ -234,3 +234,37 @@ root窗口已释放；下一Sol转3G-S普通增量索引实施设计，两新增
 2026-10-04 19:37（Asia/Shanghai）独立审查与派发：两冻结设计已审，详见2026-10-04-four-batch-design-review.md。3G-S的Python raw持久缓存/真实工具探测/全语义重建接受为实施设计，追加精确current activation门；root真实复现persisting callback取消后AbortError但重开已新current，缺陷未修复，已随3G-S1交原Sol。4B-M2保持v1签名not-evaluated/incomplete，sidecar/PInvoke仅候选；原Luna实施4B-M3四文件真实Node子进程边界，复杂HANDLE留Sol后续四批。无新产品/GUI验收，无AGENTS新增规则，source-loan整体红门及所有外部门保持。
 
 实际调度：原Sol 01a0f53c-353f-70e3-98c3-96ed65c085d6 / local / turn01a106b0-4609-7271-a217-be5aaaf99601 active / cursor f54a15ad-5729-4a82-bfce-634472780e76:6；原Luna 01a0f268-97f6-7a21-90c3-d472963da0e2 / local / turn01a106b2-202a-7932-b4ba-24e9648dc989 active / cursor e11b2027-fd4e-4bb8-a314-36a1858b89be:8。两任务文件无交叉，不native/build/Electron/GUI，重型窗口空闲。automation沿原ACTIVE15分钟与四批停止门，未重复更新；后续只验明确冻结差异，不测试活动实现。main起点e88e03b，root只收尾已审设计/计划/复现/队列文档，不纳入活动实现。
+
+
+2026-10-04 19:48（Asia/Shanghai）：main实际c479ac4dfc25da752e47af5ed8a4937dfd79c73a，上轮仅11份已审文档普通提交/推送，远端同SHA已核。原双线程当前均active，未有冻结实现交付，未测试/复制其活动增量或reader进程源。
+
+root推进第一批冻结broker的独立源码及两条受控端口终止失败模型：close拒绝后session和fault吞拒绝后provider-state均创建第二worker，原端口模型仍alive，具体记录explanation-stop-failure-review。使用main真实内存SQLite authority+Sol冻结contracts/broker，无真实Worker/OS拒绝/凭据/HTTP/GUI；不声称已发生外发/损坏。根因stop在终止成功前丢引用，队列新增1C-2B-2B-D具体修正计划，待原Sol当前3G-S1稳定后派发，不抢占或改开发代码；无新规则。
+
+最近实际cursor：Luna 01a0f268-97f6-7a21-90c3-d472963da0e2 / local / e11b2027-fd4e-4bb8-a314-36a1858b89be:10 active；Sol 01a0f53c-353f-70e3-98c3-96ed65c085d6 / local / f54a15ad-5729-4a82-bfce-634472780e76:8 active。Sol反馈定向测试设置修正正在验证，非冻结成果；Luna四文件实现中。重型窗口空闲，无新native/build/Electron/GUI/Git产品收尾。仅原四批继续，停止门不变；不修改automation或重复派发。
+2026-10-04 20:03（Asia/Shanghai）：原Sol仍active，实际cursor f54a15ad-5729-4a82-bfce-634472780e76:12；原Luna仍active，e11b2027-fd4e-4bb8-a314-36a1858b89be:13。未有冻结实现交付，root不测试或集成活动源码。Sol自报主259项/三包类型通过，但旁侧旧迁移列表待同步；Luna自报真实child26项通过、类型/协议中，均非独立验收。
+
+root已核实际版本与project角色迁移，明确授权Sol仅同步application旧Python版本断言至2.2.0/上一2.1.1，以及ownership-capsule-store.test.ts:196精确迁移列表长度11→12；全部原语义/源码/快照/外键/历史/重开与global无migration12门保持。3G-S1计划已补两条必要测试边界，勿再卡用户批准。无GUI/重型验证/新规则/产品提交；main仍c479ac4dfc25da752e47af5ed8a4937dfd79c73a，root文档待稳定切片收尾，不为回执重复提交。下一先独立验冻结交付，再派第一批stop-failure修正；仅四批，结束暂停讨论。
+
+## 2026-10-04 23:25：冻结交付独立验收与待恢复权限
+
+本轮新增：Sol3G-S1后台root独立17文件330项/三包noEmit及20/80各三对原CLI测量通过，暖Python请求降为1且完整安全读取、事实/ID不变；实际GUI/打包身份/集成未验，不复制提交完整实现。Luna4B-M3原consumer微任务竞态经root真实合并帧发现、原线程修正后root50项/desktop类型/CJS语法及三种真实child零consumer反例复验通过，仅四文件内部Node生命周期支持接受。两份详细独立记录为2026-10-04-python-parse-cache-independent-review.md与2026-10-04-artifact-reader-process-independent-review.md。GUI0、公共AGENTS新增0，未验发布/远程/旧安全门保持，未达四批全部完成。
+
+main HEAD仍c479ac4dfc25da752e47af5ed8a4937dfd79c73a，没有本轮Git收尾；环境已变为main .git只读、approval never、5170不在root可写范围。发送Sol下一stop-failure窄修及Luna接受回执均在执行前被工具要求approval拒绝，尚未派发或送达。automation view/pause同样失败，实际现有定时配置仍ACTIVE，不宣称已暂停、不手改受限文件绕过。需要用户恢复相关工具及Git写权限，或先手动暂停timer；本地结果/源码全部保留，权限未变不重复空轮询。
+
+最新实际timeout0：原Luna local completed/notLoaded，cursor `1ac033a7-c1ee-48ae-9e61-2317590f341e:1` / turn01a106d4-46d5-7f20-97c6-366ad7fe8a4e；原Sol local completed/notLoaded，cursor `7e07c337-f6c9-490f-bd90-c31368d0efe4:1` / turn01a106b0-4609-7271-a217-be5aaaf99601。两边冻结hash恢复后复核不变，root测试/benchmark均已结束，技术窗口空闲。恢复权限后先读本队列/独立记录/实际Git，再派原四批内1C-2B-2B-D；不启动第五批。四批本地可推进工作收尾或全部外部依赖后须成功暂停定时及派发并讨论后续。
+
+## 2026-10-04 23:57：用户要求继续及今晚完成判断
+
+用户明确要求继续原四批并询问今晚能否完成；不改变四批后停止、GUI暂缓及安全边界。root读当前队列/停止计划/最新记录、核main Git仍c479ac4dfc25da752e47af5ed8a4937dfd79c73a及既有未提交范围；原Luna与Sol使用最近实际cursor分别timeout0，均changed=false、completed/notLoaded，无新交付。
+
+基于这次明确继续请求，root向原Sol再次尝试派发已有1C-2B-2B-D具体修正（完整复现、文件/测试边界及保留3G-S1冻结均在消息中），工具执行前返回“MCP tool call requires approval, but approval policy is never”。没有成功发送、没有新开发回合，不能记为恢复开发。当前Git仍只读，未尝试绕过；没有重复测试已验切片、扩大任务或启动第五批。
+
+按实际四批剩余链与当前23:57时间，无法承诺今晚四批全部完成；第一/二批任务与界面接入、第四批材料写入/重开/恢复/真实采集和发布链仍未收尾，GUI、真实API、签名等门另保持开放。需要恢复聊天派发与适当文件/Git写权限才能继续原双聊天实施；root既有验收结果和全部未验改动保留。定时任务此前暂停操作失败，本轮未重复调用或宣称已暂停。无新增实现/独立验收/GUI/Git或公共规则。
+
+2026-10-05 用户再次明确开始原四批开发。root核当前规则/队列/交接与Git，HEAD及工作区范围保持；原两聊天新实际cursor均由:1更新为:2，状态idle、原回合completed，属于已加载历史交付，不是新实现：Luna `1ac033a7-c1ee-48ae-9e61-2317590f341e:2`，Sol `7e07c337-f6c9-490f-bd90-c31368d0efe4:2`。沿原Sol再次发送已有终止失败隔离窄修，工具执行前仍拒绝“MCP tool call requires approval, but approval policy is never”，未送达/未开始新回合。没有新源码/回归/Git/GUI或规则验收，已验切片不重做；main .git仍只读、5170不在root可写范围。用户业务授权已明确，阻碍为工具权限策略，不能再以一句继续代替环境权限变更。原四批及停止门保持，不启动第五批。
+
+## 2026-10-05 权限恢复与真实开发派发
+
+用户明确已开放权限继续执行；环境为danger-full-access。root先核AGENTS/队列/最新记录/真实Git及原两聊天，main仍c479ac4dfc25da752e47af5ed8a4937dfd79c73a，未发现中断后额外改动；原两线程idle且历史回合completed。恢复后send_message_to_thread成功送达原Sol终止失败隔离修正，timeout0实际确认新回合01a107a7-a766-7681-8ab4-71974deb0cb5 active，cursor `7e07c337-f6c9-490f-bd90-c31368d0efe4:3`。只解冻计划broker/test/必要support/记录，3G-S1/loan/probe等冻结。Luna收到M3正式独立接受回执，仅确认冻结，不为填槽派新任务；当前其确认回合游标后续取实际返回。
+
+M3三个源码hash与独立50项/类型/语法及三真实反例验收时完全一致，重验无新触发原因，不重复旧测试；只收尾四文件内部支持和root准确独立记录/队列/必要版本计划/复现计划文档。不得纳入Sol缓存/旧接线/loan或二进制。当前Git远程核origin=https://github.com/deeplearner-ui/project-x-ray.git，实际提交/推送另附SHA，不以计划称成功。automation view工具现成功，原heartbeat本轮到达，未新建或重复更改周期。四批及暂停GUI/远程/签名/EPERM边界保持；公共AGENTS新增0。

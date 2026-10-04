@@ -29,6 +29,8 @@ root 在未改源码的 main 用真实 XRayApplication、Python AST 和项目 SQ
 - `packages/analyzer-python/src/index.ts`、`python/analyze.py`、`src/index.test.ts`；可新增 `src/parse-cache.ts` 及对应测试。
 - `packages/graph/src/index.ts`、新增 `src/analysis-parse-cache.ts` 和 `src/analysis-parse-cache.test.ts`；不改 remote/ownership/upgrade/native 端口。
 - `packages/application/src/index.ts`、新增 `src/incremental-index.test.ts`；如已有测试文件必须改，只增本批明确取消/缓存回归，不触碰旧评分/导航逻辑。
+- 2026-10-04 root核实际旧断言后补充允许：仅同步 `packages/application/src/index.test.ts` 原 analyzerVersions 回归的 Python 当前版本为2.2.0、上一版本为2.1.1，保留TS及快照失效/语义/精确范围全部断言；该必要版本一致性修改不是金标盲更或删正确断言。已通过原聊天明确告知Sol，自己的计划副本/记录可据此注明补充。
+- 同日root核 `packages/graph/src/ownership-capsule-store.test.ts` 默认project角色及新增project-only迁移12后，允许仅将196行精确迁移列表长度11同步12；不放宽为包含，不改foreign key/历史迁移时间/源码/旧payload/重开及所有权断言。global无缓存表/无迁移12门保持，原Sol已明确获授权，纳入必要测试一致性边界。
 - `benchmarks/python-parse-cache.ts`、其有限 child/test（如需要），只生成自有 20/80 Python 文件和 TS-only 对照，保留材料，不使用旧通用 benchmark/共享目录清理。
 - `docs/development-runs/2026-10-04-python-parse-cache.md`；本 worktree 有证据时才去重更新自己的 AGENTS。
 
