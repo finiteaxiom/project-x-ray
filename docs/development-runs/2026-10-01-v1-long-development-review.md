@@ -949,3 +949,9 @@ root窗口已释放；下一Sol转3G-S普通增量索引实施设计，两新增
 
 
 2026-10-04 19:00（Asia/Shanghai）实际调度回执：01a0f268-97f6-7a21-90c3-d472963da0e2 / local / cursor e11b2027-fd4e-4bb8-a314-36a1858b89be:3；01a0f53c-353f-70e3-98c3-96ed65c085d6 / local / cursor f54a15ad-5729-4a82-bfce-634472780e76:3。两聊天均active：Luna reader设计、Sol增量索引设计。root所有本輪技术验证进程结束；下一轮沿这些实际cursor检查，进程/回合变化时采用新返回值，不硬编码历史状态。
+
+2026-10-04 19:12（Asia/Shanghai）：root核main真实worker为每次索引新建、terminal后terminate，故增量验收须覆盖新worker/新application，不用同实例工具收益冒充连续更新产品收益。本轮精确7份停止条款/队列/局部loan审查/计划文档实际提交并普通推送e88e03b0989b68ee16924b14ff78327306d9d513，独立ls-remote确认origin/main相同；提交后main干净，未含任何未验实现/二进制。无新产品验收/GUI/工程经验；两设计仍active，无重复派发。实际cursor：01a0f268-97f6-7a21-90c3-d472963da0e2 e11b2027-fd4e-4bb8-a314-36a1858b89be:5 active；01a0f53c-353f-70e3-98c3-96ed65c085d6 f54a15ad-5729-4a82-bfce-634472780e76:4 active。本回执两记录待下一稳定切片收尾，不重复为回执提交。
+
+2026-10-04 19:37（Asia/Shanghai）独立审查与派发：两冻结设计已审，详见2026-10-04-four-batch-design-review.md。3G-S的Python raw持久缓存/真实工具探测/全语义重建接受为实施设计，追加精确current activation门；root真实复现persisting callback取消后AbortError但重开已新current，缺陷未修复，已随3G-S1交原Sol。4B-M2保持v1签名not-evaluated/incomplete，sidecar/PInvoke仅候选；原Luna实施4B-M3四文件真实Node子进程边界，复杂HANDLE留Sol后续四批。无新产品/GUI验收，无AGENTS新增规则，source-loan整体红门及所有外部门保持。
+
+实际调度：原Sol 01a0f53c-353f-70e3-98c3-96ed65c085d6 / local / turn01a106b0-4609-7271-a217-be5aaaf99601 active / cursor f54a15ad-5729-4a82-bfce-634472780e76:6；原Luna 01a0f268-97f6-7a21-90c3-d472963da0e2 / local / turn01a106b2-202a-7932-b4ba-24e9648dc989 active / cursor e11b2027-fd4e-4bb8-a314-36a1858b89be:8。两任务文件无交叉，不native/build/Electron/GUI，重型窗口空闲。automation沿原ACTIVE15分钟与四批停止门，未重复更新；后续只验明确冻结差异，不测试活动实现。main起点e88e03b，root只收尾已审设计/计划/复现/队列文档，不纳入活动实现。

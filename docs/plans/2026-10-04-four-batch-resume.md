@@ -18,8 +18,8 @@
 ## 本轮分工
 
 - root：独占Sol冻结source-loan的定向原生/Node/Electron技术验证窗口；核真实文件hash、源码与回归，不GUI。S1a整体未验，因此不整体合入。
-- Sol：source-loan独立局部技术复验通过，S1a整体EPERM门未验，不合入；继续保持loan及旧core/UI/desktop冻结。本轮下一派发为3G-S普通增量索引实施设计，按明确计划两文档交付，不自行实现/Git；见[具体边界](2026-10-04-incremental-index-implementation-design.md)。
-- Luna：4B-M2仅发布材料reader设计。依据windows-artifact-manifest.md阶段B及现有secure-read限制，明确Windows系统handle、共享、签名同对象、受控ASAR副本和生命周期；只新增两文档，不实现reader或修改已有协议/core/native/build/UI。设计接受后才派具体实现。
+- Sol：source-loan独立局部技术复验通过，S1a整体EPERM门未验，不合入；继续保持loan及旧core/UI/desktop冻结。3G-S设计已独立接受，现按[3G-S1具体实施边界](2026-10-04-python-parse-cache-implementation.md)完成普通索引Python跨应用解析复用、全语义重建/等价与真实取消缺陷修复，不Git。复杂Windows reader/bridge待该稳定切片后沿原四批派发。
+- Luna：4B-M2设计门已独立接受，HANDLE/签名保证仍未验。现按[4B-M3具体实施边界](2026-10-04-artifact-reader-process-boundary.md)实现自有Node子进程持活/有限消息/取消/close门；不读sidecar/artifact，不实现复杂HANDLE/PowerShell/native，不修改协议/core/build/UI。生产reader/真实manifest尚未实现。
 
 后续由root在四批内部按依赖派发，不让两聊天修改相同文件；两worktree仅维护自己的记录。单重型验证窗口，不并发重建或操作GUI。
 
