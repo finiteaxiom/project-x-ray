@@ -97,7 +97,7 @@ Sol 先测量当前全量索引/查询/内存基线，设计按语言的保守�
 | 2B-S4 本地胶囊事务端口 | 独立接受并集成提交133686217903e854e24dbdc76af9203cf3e1fd23 | Sol/协调方 | Sol227/main225核心回归、main111应用回归及两包类型通过；独立四型builder→SQL重开和非空降级投影负例通过。prepare-only历史限制保持；新增经验1条，无GUI/模型 |
 | 3F-T 优化后测量协议设计 | O/T 同步修订独立接受，工具等待 C2 | Luna/协调方 | O/R 分域及失败优先级复审通过；原4708/11门/schema/限额保持，新工具仅待稳定缓存/observer端口后派发 |
 | 2B-S5 本地答题集成 | 修正后独立接受、精确集成提交并推送18b6cbb | Sol/协调方 | Sol/main各11文件298项、三包noEmit及root各16次真实索引答题探针通过；双布局/空非空配置、SQL回滚重试重开及重算摘要错配拒绝。新增明确DTO投影经验1条；只本地材料准备，GUI/模型仍未验收 |
-| 2C-L 纯语义请求/响应适配 | 2026-10-05已派原Luna实现，实际active | Luna/root | 依据已接受ADR/主checkout胶囊及缺失llm适配源码；仅三个llm文件/自有记录。按ownership-semantic-prompt计划私有捕获、总UTF8限额、不裁剪答案/路径、原validator绑定；无provider/SQL/评分/GUI，待冻结独立审查 |
+| 2C-L 纯语义请求/响应适配 | 冻结纯模块独立源码/151回归/类型及16次真实材料接入通过 | Luna/root | 三个llm文件/自有记录核hash一致，私有捕获/完整65536字节预算/原validator绑定及四题型双布局空非空配置接入通过；原attempt/capsule/source不变。见ownership-semantic-prompt-independent-review；无provider/SQL当前性/授权/评分/GUI或模型质量，整链门保持 |
 | 3F-O 缓存observer接缝设计 | 修订设计独立接受 | Luna/协调方 | root 四文档/当前源码复审，O/R 及 estimator/terminal 关系、真实缺采集与协议矛盾区分、后续API错误独立；非实现/收益通过 |
 | 3F-C1 导航有效性取样端口 | 独立接受、精确集成提交7071ae4 | Sol/协调方 | Sol/main各98 graph回归、两包noEmit与真实SQLite探针通过，main原application147通过；嵌套COMMIT/ROLLBACK保守停比较、新实例身份明确。新增经验1，缓存/性能/GUI未验 |
 | 3F-C2 应用导航缓存/observer | 后台独立接受、精确集成并复验通过 | Sol/协调方 | root Sol43定向/225应用/111图，main229应用/114图，两边类型及真实双布局/12竞态探针通过。保留fresh校验、私有身份/4MiB/O/T门；性能/GUI未验，Git见最新审查 |

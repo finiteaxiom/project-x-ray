@@ -1022,3 +1022,13 @@ root对冻结1C-2B-2B-D核真实原副本/精确patch及新hash，45项、deskto
 两原开发仍active，无冻结新交付。root按第一批实际剩余门，复核冻结main/preload/broker及上轮普通产物，用两个唯一自有userData的隐藏Electron技术入口直接加载原main/preload，不复制处理器/测试provider，不build/native/GUI。两次命令exit0：空context五种请求拒绝；真实IPC索引自有TS样例ready（1文件/6证据）并激活当前ref后，prepare返回NOT_CONFIGURED，无preview start及未登记cancel/status/result拒绝。实际只读SQL观察任务/授权/占用均0，provider不变。详见2026-10-05-explanation-ipc-denial-independent-review.md，产物hash前后相同，子进程正常退出，窗口已释放。
 
 只接受拒绝路径技术证据，不升正常发送/取消、GUI/远程或整接线集成。未修改授权/凭据配置，未执行fixture代码；无新增产品实现/GUI/AGENTS规则，Sol实现仍不提交。已提醒原Sol单列关闭writer后仍活mapping及目录新增事实，不能凭share模式输出immutable/complete保证；不扩大M4窄目标。实际最新cursor：Luna1ac033a7-c1ee-48ae-9e61-2317590f341e:6，Sol7e07c337-f6c9-490f-bd90-c31368d0efe4:14，均原active回合。接下来验冻结2C-L/M4，维持原四批停止门，不第五批。
+2026-10-05 00:45实际Git回执：仅上述四份已审协调文档提交/普通推送50d7609f87e253d32b52bba53e61e87045dba8ce，独立ls-remote核origin/main同SHA，cached diff --check通过；推送后main清洁，无未验产品源码或二进制。最后timeout0原Luna active/cursor1ac033a7-c1ee-48ae-9e61-2317590f341e:6，原Sol active/cursor7e07c337-f6c9-490f-bd90-c31368d0efe4:15；尚无冻结新交付，不测试活动源。此SHA/游标回执留下一稳定切片收尾，不为回执重复提交。技术窗口空闲，原四批及结束暂停门不变。
+
+
+## 2026-10-05 01:12：第二批纯语义适配独立接受
+
+root 核 Luna 2C-L 三源码实际 hash 与冻结交付一致、index 仅追加导出；LLM 90 项、semantic contracts 61 项及 LLM noEmit 通过。独立真实 TS 索引→四型答题→SQL 保存/重开→既有 ready capsule 材料→adapter 共 16 次（project/legacy × 空/非空配置 × 四型），完整 rubric/path/字节/引用范围、UTF-16 代理对边界与复制 prepared 拒绝通过；原 attempt/capsule/snapshot/source 行不变，prepare-only 历史保证保持。root probe 首次原型 strict 比较失败为 harness 期待缺陷，改 JSON 内容与显式 null-prototype/freeze 后通过，未改产品。详见2026-10-05-ownership-semantic-prompt-independent-review.md。
+
+接受范围仅纯 adapter 与记录：无生产 provider/授权/SQL 当前性/语义模型质量或端到端 GUI 验收。本轮真实 GUI=0，公共 AGENTS 新增=0（现有捕获/有限 DTO 规则已覆盖）。原 Luna 接受确认 completed/idle，cursor1ac033a7-c1ee-48ae-9e61-2317590f341e:10；四文件冻结，不 Git、不为填槽派新准备。原 Sol M4 仍 active，最近实际 cursor7e07c337-f6c9-490f-bd90-c31368d0efe4:18，尚无冻结交付；不测试活动桥接，不将宿主 conhost/mapping/目录行为猜测升级为保证。
+
+main起点50d7609f87e253d32b52bba53e61e87045dba8ce，本轮仅收尾独立接受2C-L四文件与五份准确协调文档，实际 Git SHA 另核；不纳入任何 Sol 未验源或二进制。重型窗口空闲，四批剩余原门与全部外部门继续保留；四批本地收尾或全剩外部条件后暂停定时及派发讨论，不第五批。

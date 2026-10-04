@@ -1,3 +1,4 @@
 export { buildEvidencePackage, verifyEvidencePackage, type EvidencePackageInput, type ImmutableSourcePort, type PreparedEvidencePackage } from "./evidence-package.js";
 export { validateRemoteNarrative, type ValidatedExplanation } from "./output-validation.js";
 export { OpenAIResponsesProvider, prepareOpenAIResponsesRequest, type ResponsesRequestInput, type PreparedResponsesRequest, type ExplanationProvider, type ProviderInput, type ProviderRuntime } from "./openai-responses.js";
+export { OWNERSHIP_SEMANTIC_RESPONSE_JSON_SCHEMA, OwnershipSemanticPromptError, prepareOwnershipSemanticRequest, validatePreparedOwnershipSemanticResponse, type OwnershipSemanticPromptErrorCode, type OwnershipSemanticPromptInput, type PreparedOwnershipSemanticRequest } from "./ownership-semantic-prompt.js";

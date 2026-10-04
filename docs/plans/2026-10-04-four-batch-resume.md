@@ -17,9 +17,9 @@
 
 ## 本轮分工
 
-- root：独占Sol冻结source-loan的定向原生/Node/Electron技术验证窗口；核真实文件hash、源码与回归，不GUI。S1a整体未验，因此不整体合入。
-- Sol：source-loan独立局部技术复验通过，S1a整体EPERM门未验，不合入；继续保持loan及旧core/UI/desktop冻结。3G-S设计已独立接受，现按[3G-S1具体实施边界](2026-10-04-python-parse-cache-implementation.md)完成普通索引Python跨应用解析复用、全语义重建/等价与真实取消缺陷修复，不Git。复杂Windows reader/bridge待该稳定切片后沿原四批派发。
-- Luna：4B-M2设计门已独立接受，HANDLE/签名保证仍未验。现按[4B-M3具体实施边界](2026-10-04-artifact-reader-process-boundary.md)实现自有Node子进程持活/有限消息/取消/close门；不读sidecar/artifact，不实现复杂HANDLE/PowerShell/native，不修改协议/core/build/UI。生产reader/真实manifest尚未实现。
+- root：按当前队列独立审查冻结切片；M3纯进程支持与2C-L纯语义适配接受，3G-S1及broker窄修技术门已验但整体GUI/旧接线集成未验。窗口只按实际需要占用，不GUI，不整体合入未验Sol生产源。
+- Sol：按[4B-M4具体实施边界](2026-10-05-artifact-handle-bridge.md)实现PS5.1只读HANDLE桥接及自有端口回归；M3为精确复制的已验只读依赖。保持3G-S1/broker/core/UI/loan/probe等冻结，不Git。实际mapping/目录新增/释放保证须报告，完整reader/manifest/签名与生产接线未验。
+- Luna：按[2C-L具体实施边界](2026-10-05-ownership-semantic-prompt.md)交付纯语义适配器，root151回归/类型及16次真实材料接入通过，当前保持四文件冻结。原M3也冻结；待依赖稳定再派四批内必要任务，不反复制造准备工作。授权、任务、真实provider、SQL当前性和GUI仍未验。
 
 后续由root在四批内部按依赖派发，不让两聊天修改相同文件；两worktree仅维护自己的记录。单重型验证窗口，不并发重建或操作GUI。
 
