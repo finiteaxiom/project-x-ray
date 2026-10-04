@@ -3,7 +3,7 @@ import { mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { canonicalJson, OWNERSHIP_SEMANTIC_POLICY_CATEGORIES, OWNERSHIP_SEMANTIC_PURPOSE, OWNERSHIP_SEMANTIC_POLICY_DISCLOSURE_VERSION,
   type OwnershipSemanticGrantCommand, type OwnershipSemanticRevokeCommand, type OwnershipSemanticAuthorization, type ProjectSnapshot } from "@project-xray/contracts";
 import { GraphStore } from "./index.js";
@@ -31,7 +31,15 @@ const safe = { name: "RemoteExplanationError", code: "POLICY_INVALID", message: 
 describe("independent semantic authorization SQL", () => {
   it("initial denied reads zero-write and never derives feature grants or changes legacy tables", () => {
     const store = open(); store.remote.saveAuthorization("repo", 0, true);
-    db(store).prepare("INSERT INTO explanation_tasks VALUES(?,?,?,?,?)").run("old-task", "old-session", "completed", "old-task-sentinel", 0);
+    // A1's bridge requires a real strict historical task, rather than invalid sentinel bytes.
+    const h = "a".repeat(64), createdAt = "2026-10-01T00:00:00.000Z";
+    const context = store.remote.commitTrustedContext(randomUUID(), { repositoryId: "repo", snapshotId: "old-snapshot", activation: createdAt,
+      analysisResultFingerprint: h, configurationHash: h, ignorePolicyHash: null, sourceManifestHash: h });
+    store.remote.immediate(() => store.remote.recordUndispatchedCancellation({ protocolVersion: "1.0.0", taskId: randomUUID(),
+      repositoryId: "repo", snapshotId: "old-snapshot", activation: createdAt, analysisResultFingerprint: h, configurationHash: h,
+      ignorePolicyHash: null, sourceManifestHash: h, ownerSessionId: context.ownerSessionId, contextHandle: context.contextHandle,
+      contextEpoch: context.epoch, ignoreRevision: 0, authorizationRevision: 1, providerRevision: 0, credentialRevision: 0,
+      packageId: h, bodyDigest: h, limitsVersion: "1.0.0" }, createdAt));
     const content = "owned historical fixture", hash = createHash("sha256").update(content).digest("hex");
     const snapshot: ProjectSnapshot = { repositoryId: "repo", snapshotId: "old-snapshot", name: "fixture", rootPath: "C:/fixture", sourceType: "local", createdAt: "2026-10-05T00:00:00.000Z",
       analysisIdentity: { graphIrVersion: "1", analyzerVersions: { fixture: "1" }, configurationHash: "config", sourceFingerprint: hash },

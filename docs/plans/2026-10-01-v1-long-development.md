@@ -103,7 +103,7 @@ Sol 先测量当前全量索引/查询/内存基线，设计按语言的保守�
 | 2D-S2 独立语义授权 SQL 存储 | 内部SQL独立接受并精确main集成，Git见最新审查 | Sol/root | Sol146/main182与两包类型、root双布局真实索引答题16门通过；global13/project无13、默认拒绝零写、实际两连接revision/provider/BUSY/重开与历史保持。见ownership-policy-store-independent-review；原main11/Sol12不改，不接共享lease/任务/dispatch/IPC/UI或证明用户动作 |
 | 2D-L2 语义评价内部任务身份纯契约 | 纯契约独立接受，Git见最新审查 | Luna/root | 33字段strict/有限绑定元数据；root145项/类型通过，旧新完整对象互拒/public入口不扩。parse非权威/当前性/签名；见ownership-task-identity-independent-review，未接SQL/共享占用/任务/provider/GUI |
 | 2D-S3-D 跨用途共享任务具体实施设计 | 修订后独立设计接受，精确main复制；非实现验收 | Sol/root | 补完整bodyDigest去重及首次权威createdAt全程复用；共享SQL/旧占用迁移/durable传输与统一参与者恢复边界明确，矩阵全部待验。见ownership-shared-task-design-independent-review；不将历史材料/DTO当许可 |
-| 2D-S3-A1 共享SQL/feature兼容 | 精确实施计划接受，派发回执见最新审查 | Sol/root | 14仅global registry/lease、原feature路径共用占用；原迁移/历史保持，非feature占用下feature-only恢复零写拒绝。仅graph窄源/回归/自己记录，不semantic任务/结果/半校验dispatch或durable传输；见shared-task-core-implementation |
+| 2D-S3-A1 共享SQL/feature兼容 | 内部SQL独立接受，精确main集成复验通过；Git见最新审查 | Sol/root | 两目录各236项及graph/application noEmit，原316文件仅四授权旧文件变化；main index与11/Sol12保持。单slot/global14、坏迁移回滚/两连接/终态精确释放/非feature恢复零写通过；见shared-task-core-independent-review。无semantic任务许可/durable传输/GUI完成 |
 | 3F-O 缓存observer接缝设计 | 修订设计独立接受 | Luna/协调方 | root 四文档/当前源码复审，O/R 及 estimator/terminal 关系、真实缺采集与协议矛盾区分、后续API错误独立；非实现/收益通过 |
 | 3F-C1 导航有效性取样端口 | 独立接受、精确集成提交7071ae4 | Sol/协调方 | Sol/main各98 graph回归、两包noEmit与真实SQLite探针通过，main原application147通过；嵌套COMMIT/ROLLBACK保守停比较、新实例身份明确。新增经验1，缓存/性能/GUI未验 |
 | 3F-C2 应用导航缓存/observer | 后台独立接受、精确集成并复验通过 | Sol/协调方 | root Sol43定向/225应用/111图，main229应用/114图，两边类型及真实双布局/12竞态探针通过。保留fresh校验、私有身份/4MiB/O/T门；性能/GUI未验，Git见最新审查 |

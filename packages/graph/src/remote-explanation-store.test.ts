@@ -35,6 +35,18 @@ function fixture(legacy = false) {
 }
 
 describe("remote policy persistence", () => {
+  it("shared registry retains first feature creation time through trusted policy termination and release", () => {
+    const f = fixture(); f.authority.remote.saveAuthorization("repo", 0, true);
+    f.authority.remote.saveProvider(0, { provider: "openai", model: "model", credentialStatus: "configured", credentialRevision: 1, outputTokens: 32 });
+    const identity = { ...f.identity, authorizationRevision: 1, providerRevision: 1, credentialRevision: 1 };
+    const first = f.authority.remote.immediate(() => f.authority.remote.registerDispatch(identity));
+    const db = new Database(f.authorityPath); handles.push(db);
+    expect(db.prepare("SELECT created_at FROM remote_task_registry WHERE task_id=?").get(identity.taskId)).toEqual({ created_at: first.createdAt });
+    f.authority.remote.saveProvider(1, { provider: "openai", model: "changed", credentialStatus: "configured", credentialRevision: 1, outputTokens: 32 });
+    expect(f.authority.remote.task(identity.taskId)).toMatchObject({ phase: "failed", code: "NOT_CONFIGURED", createdAt: first.createdAt });
+    expect(db.prepare("SELECT created_at FROM remote_provider_lease WHERE task_id=?").get(identity.taskId)).toEqual({ created_at: first.createdAt });
+    f.authority.remote.releaseDispatch(identity.taskId); expect(db.prepare("SELECT * FROM remote_provider_lease").all()).toEqual([]);
+  });
   it("migration10 creates only role-appropriate tables and retains old source/payload/time", () => {
     const f = fixture(); const db = new Database(f.projectPath); handles.push(db);
     const names = (db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all() as { name: string }[]).map(row => row.name);

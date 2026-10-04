@@ -1,5 +1,6 @@
 import type Database from "better-sqlite3";
 import { createHash, randomUUID } from "node:crypto";
+import { SharedRemoteTaskStore } from "./shared-remote-task-store.js";
 import {
   canonicalJson, IGNORE_POLICY_VERSION, REMOTE_DATA_CATEGORIES, RemoteExplanationError, remoteActivationSchema, remoteAuthorizationSchema,
   remoteCapturedIdentitySchema, remoteContextSchema, remoteIdSchema, remoteProviderSettingsSchema, remoteResultSchema,
@@ -31,11 +32,13 @@ function revision(value: number): number {
 
 /** Shares GraphStore's connection. No secrets or provider response bodies are stored here. */
 export class RemoteExplanationStore {
-  constructor(private readonly db: Database.Database, readonly role: GraphStoreRole) {}
+  private readonly sharedTasks: SharedRemoteTaskStore;
+  constructor(private readonly db: Database.Database, readonly role: GraphStoreRole) { this.sharedTasks = new SharedRemoteTaskStore(db, role); }
 
   migrate(): void {
     if (this.role !== "global" && this.role !== "project") throw new RemoteExplanationError("POLICY_INVALID");
     this.immediate(() => {
+      this.sharedTasks.validateExistingMigration();
       this.db.exec("CREATE TABLE IF NOT EXISTS remote_explanations(task_id TEXT PRIMARY KEY,repository_id TEXT NOT NULL,snapshot_id TEXT NOT NULL,payload TEXT NOT NULL)");
       if (this.role === "global") this.db.exec(`
         CREATE TABLE IF NOT EXISTS remote_provider_settings(id INTEGER PRIMARY KEY CHECK(id=1),payload TEXT NOT NULL);
@@ -45,6 +48,7 @@ export class RemoteExplanationStore {
         CREATE UNIQUE INDEX IF NOT EXISTS explanation_single_dispatch ON explanation_tasks(inflight) WHERE inflight=1;
       `);
       this.db.prepare("INSERT OR IGNORE INTO schema_migrations(version,applied_at) VALUES(10,?)").run(now());
+      this.sharedTasks.migrate();
     });
   }
 
@@ -165,13 +169,7 @@ export class RemoteExplanationStore {
   }
   task(taskId: string): RemoteTaskRecord | null {
     this.global();
-    try {
-      remoteUuidSchema.parse(taskId); const value = this.read("explanation_tasks", "task_id", taskId);
-      if (!value) return null; const task = remotePersistentTaskRecordSchema.parse(value);
-      if (task.identity.taskId !== taskId) throw new RemoteExplanationError("POLICY_INVALID");
-      const row = this.db.prepare("SELECT phase,owner_session_id FROM explanation_tasks WHERE task_id=?").get(taskId) as { phase: string; owner_session_id: string };
-      if (row.phase !== task.phase || row.owner_session_id !== task.identity.ownerSessionId) throw new RemoteExplanationError("POLICY_INVALID"); return task;
-    } catch (error) { throw remoteStoreFailure(error); }
+    try { return this.sharedTasks.featureTask(taskId); } catch (error) { throw remoteStoreFailure(error); }
   }
   registerDispatch(identity: RemoteCapturedIdentity): RemoteTaskRecord {
     this.global();
@@ -182,20 +180,19 @@ export class RemoteExplanationStore {
     const reference = remoteActivationSchema.parse({ repositoryId: identity.repositoryId, snapshotId: identity.snapshotId, activation: identity.activation,
       analysisResultFingerprint: identity.analysisResultFingerprint, configurationHash: identity.configurationHash, ignorePolicyHash: identity.ignorePolicyHash, sourceManifestHash: identity.sourceManifestHash });
     if (context.ownerSessionId !== identity.ownerSessionId || context.epoch !== identity.contextEpoch || canonicalJson(context.reference) !== canonicalJson(reference)) throw new RemoteExplanationError("CONTEXT_CHANGED");
-    if (this.task(identity.taskId)) throw new RemoteExplanationError("REVISION_CONFLICT");
-    if (this.db.prepare("SELECT 1 FROM explanation_tasks WHERE inflight=1 LIMIT 1").get()) throw new RemoteExplanationError("BUSY");
+    this.sharedTasks.assertAvailable(identity.taskId, true);
     const task = remotePersistentTaskRecordSchema.parse({ identity, phase: "dispatched", createdAt: now(), completedAt: null, code: null });
-    this.db.prepare("INSERT INTO explanation_tasks VALUES(?,?,?,?,1)").run(identity.taskId, identity.ownerSessionId, task.phase, JSON.stringify(task)); return task;
+    this.sharedTasks.insertFeature(task, 1); return task;
   }
   recordUndispatchedCancellation(identity: RemoteCapturedIdentity, createdAt: string): RemoteTaskRecord {
     this.global(); if (!this.db.inTransaction) throw new RemoteExplanationError("POLICY_INVALID");
     identity = remoteCapturedIdentitySchema.parse(identity);
     const context = this.context(identity.contextHandle);
     if (context.ownerSessionId !== identity.ownerSessionId || context.epoch !== identity.contextEpoch) throw new RemoteExplanationError("CONTEXT_CHANGED");
-    if (this.task(identity.taskId)) throw new RemoteExplanationError("REVISION_CONFLICT");
+    this.sharedTasks.assertAvailable(identity.taskId, false);
     const task = remotePersistentTaskRecordSchema.parse({ identity, phase: "cancelled", createdAt, completedAt: now(), code: "CANCELLED" });
     // No permission check, dispatched phase, or network lease: cancellation only records the terminal.
-    this.db.prepare("INSERT INTO explanation_tasks VALUES(?,?,?,?,0)").run(identity.taskId, identity.ownerSessionId, task.phase, JSON.stringify(task)); return task;
+    this.sharedTasks.insertFeature(task, 0); return task;
   }
   finish(taskId: string, code: RemoteFailureCode | null): RemoteTaskRecord {
     this.global();
@@ -203,7 +200,9 @@ export class RemoteExplanationStore {
       const old = this.task(taskId); if (!old) throw new RemoteExplanationError("CONTEXT_CHANGED"); if (old.phase !== "dispatched") return old;
       const phase = code === null ? "completed" : code === "CANCELLED" ? "cancelled" : code === "INTERRUPTED" ? "interrupted" : "failed";
       const next = remotePersistentTaskRecordSchema.parse({ ...old, phase, completedAt: now(), code });
-      this.db.prepare("UPDATE explanation_tasks SET phase=?,payload=? WHERE task_id=? AND phase='dispatched'").run(phase, JSON.stringify(next), taskId); return next;
+      this.sharedTasks.validateTerminalTime(old.createdAt, next.completedAt!);
+      this.db.prepare("UPDATE explanation_tasks SET phase=?,payload=? WHERE task_id=? AND phase='dispatched'").run(phase, JSON.stringify(next), taskId);
+      this.sharedTasks.assertFeatureWrite(next, 1); return next;
     });
   }
   private terminateMatching(matches: (task: RemoteTaskRecord) => boolean, code: RemoteFailureCode): void {
@@ -213,15 +212,17 @@ export class RemoteExplanationStore {
   /** Called once by the trusted broker at worker startup; never restores a request. */
   recoverInterrupted(): void {
     this.global(); this.immediate(() => {
-      this.terminateMatching(() => true, "INTERRUPTED"); this.db.prepare("UPDATE explanation_tasks SET inflight=0").run();
+      this.sharedTasks.assertFeatureRecovery();
+      this.terminateMatching(() => true, "INTERRUPTED");
+      const tasks = this.db.prepare("SELECT task_id FROM explanation_tasks WHERE inflight=1").all() as { task_id: string }[];
+      for (const task of tasks) this.sharedTasks.releaseFeature(task.task_id);
       const rows = this.db.prepare("SELECT owner_session_id FROM explanation_contexts").all() as { owner_session_id: string }[];
       for (const row of rows) this.commitTrustedContext(row.owner_session_id, null);
     });
   }
   releaseDispatch(taskId: string): void {
     this.global(); this.immediate(() => {
-      const task = this.task(taskId); if (!task || task.phase === "dispatched") throw new RemoteExplanationError("POLICY_INVALID");
-      this.db.prepare("UPDATE explanation_tasks SET inflight=0 WHERE task_id=?").run(taskId);
+      this.sharedTasks.releaseFeature(taskId);
     });
   }
   appendResult(raw: RemoteResult): void {

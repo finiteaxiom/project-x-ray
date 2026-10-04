@@ -1093,3 +1093,21 @@ Sol实际timeout0仍2D-S2 active/inProgress，游标7e07c337-f6c9-490f-bd90-c313
 root随后形成2D-S3-D共享任务具体设计边界，源码依据为旧唯一索引仅约束explanation_tasks、finish不释放及可信停止前置恢复。仅原Sol两份自有详细设计/开发记录，选择共享SQL/API/旧占用迁移/跨用途失效及最小实施切片后由root审查再实施；不重复宽泛ADR、不改活动源码。已验L2两个纯contracts依赖与单export精确同步到5170，原差异保留；Luna保持冻结，不填槽派准备。原四批/收尾暂停门不变，无GUI/外发/重型窗口。实际新派发回执：原Sol回合01a10851-3959-73c0-9769-9b961ff7453e为active/inProgress，实际cursor7e07c337-f6c9-490f-bd90-c31368d0efe4:40；Luna仍原completed/idle :24。计划SHA256 76DB8B21992D5D70A69D638010B63C90CCCD22ACF61AEE2096142BF7E2FA9864在两目录相同。oldremote两目录仅CRLF/LF原字节差异，root实际规范化文本完全相同，未复制覆盖。新回合只详细实施设计两文档，待root审查再派源码；不检查或测试活动文件。最新Git回执与新边界/队列留下一稳定切片收尾。
 2026-10-05 03:12只读调度审查准备：携最近实际cursor timeout0，Luna仍原idle :24，Sol S3-D active/inProgress :41，尚无冻结交付，未读取/测试其活动设计。只读核main application/remote-explanation.ts真实gate顺序（登记后同步dispatch再提交，回滚不能反证已获许可请求零出站）与5170冻结broker stopConfirmed（仅自己的worker退出，issued补偿后全局恢复）；将此两个具体现有调用约束发原Sol，设计须明确共享用途的停止参与者及许可前零dispatch/许可后提交失败区别。不是产品缺陷/新验收，不改旧代码。S2新store/test实际hash仍冻结不变；main只有原准确协调文档/新S3-D派发计划待下一稳定切片收尾。AGENTS无新增，GUI/网络/重型及重复回归均未执行；四批仍有本地工作，不暂停或扩大范围。
 2026-10-05共享任务设计审查闭环：初稿两具体缺口（去重漏完整bodyDigest、reserve/promotion创建时间稳定性不明）反馈原Sol后两文档修订冻结，root实际复核并精确复制接受；设计SHA1A30187FDB18422E53C2B67D150B04A1D814CF08F3AED0DE7189B5F2C5EE2A58，记录D869509C34BD9EE7B058E98E0347E174CFF477A51C9B2FCE8C68303C4576C802。详见ownership-shared-task-design-independent-review。只设计，不产品缺陷/SQL实验或GUI结果，AGENTS0。root形成shared-task-core-implementation精确S3-A1计划，14仅global共享registry/lease及feature兼容，不导出半校验语义许可、不创建semantic任务/结果，原10/11/12/13和冻结生产WIP保留。Sol修订回合completed/idle cursor:44、Luna idle :24；计划接受后实际派发另记。四批尚有本地工作，按原结束暂停门，不第五批。
+
+2026-10-05 03:37 实际Git/派发回执：精确九份设计与准确协调记录提交推送4c3b30b133418bd97f9eb31dc3105891856fa75d，独立ls-remote核origin/main同SHA，cached diff --check通过，推送后main清洁。不含任何旧Sol生产源或二进制，也非代码/GUI验收。S3-A1实施计划两目录SHA相同C07F68F5211CEBF4487B2B5C884082ADCC95C2A1C0F4C79907318B91544093EC；已成功派原Sol/medium，实际回合01a1086a-f746-7210-b1ad-42177fa4c893 active/inProgress，cursor7e07c337-f6c9-490f-bd90-c31368d0efe4:45。Luna原冻结idle :24。root等待明确稳定源码切片，不测试活动源；14正式仅global共享registry/lease，其他边界按计划。回执随下一稳定切片收尾，不循环提交；原四批尚有本地工作，继续原流程后按结束暂停门讨论。
+
+## 2026-10-05 06:46：额度中断保留与原Sol恢复
+
+root本轮先读AGENTS、实际队列及最新审查/交接，核main仍4c3b30b133418bd97f9eb31dc3105891856fa75d，仅三份既有协调文档待收尾；5170仍455d4ad50830ee2495b70927e51caf830a4efbb8，全部旧WIP保留。Sol前回合01a1086a-f746-7210-b1ad-42177fa4c893因usage limit失败（所报06:30再试），不是产品或测试缺陷。实际保留新shared-remote-task-store.ts（D88C54AE9AD1EB6FD3596532B2B69F2637C4E4D9A70E74EF279C606C84D4D714）及remote-explanation-store.ts窄改（36445CA9AB467C1900434F6025F813CA2641D9DC1ABAA09312CA43606F040E89），无新core test/开发记录。root核原字节备份及316文件manifest，原清单仅remote-store发生变化，无丢失；index、S2源码/test冻结hash保持。保存备份不覆写，未重置或重做已验切片。上一轮14项旧remote回归只属开发自测，不是独立验收。
+
+当前实际时间已过恢复点；get_usage_limits返回ordinaryUsageAllowed=true，5小时2%/周16%。未购买、未消费reset credit、未切换模型。已向原Sol/medium发送继续同一S3-A1的明确范围与保存状态；实际新回合01a10917-9239-7710-89f9-3c0f53761a5f active/inProgress，最近cursor7e07c337-f6c9-490f-bd90-c31368d0efe4:48。Luna原冻结回合completed、notLoaded，无新派发，实际cursor1ac033a7-c1ee-48ae-9e61-2317590f341e:25。下轮携实际游标续查；不测试活动源、不为填槽安排准备。原四批还有本地实现，不因额度环境中断标完成或启动第五批；收尾/全剩外部条件后暂停门保持。
+
+本轮已实现=仅确认保留的部分源码，尚未交付；独立代码/回归已验证=0新结果；真实GUI已验证=0；迁移/并发/恢复/跨用途/应用兼容等A1门全部待冻结独立检查，完整语义任务/transport/GUI/真实API/签名等仍未验。无重型/native/Electron、外发或导入代码执行，无Git动作。AGENTS新增0：额度波动只记环境过程，不符合工程经验门槛。协调回执留下一稳定切片收尾，不循环单独提交。
+
+## 2026-10-05 07:02：S3-A1内部共享SQL独立接受
+
+root按原Sol六代码明确冻结切片审查，独立316文件manifest仅四授权旧文件变化、其他312未变；原副本精确patch reverse/main check通过，六文件精确apply和准确记录复制。两目录各236/236与graph/application noEmit通过，main六代码规范化全文与Sol相等，原index不改、main11/Sol12断言保持。详情见2026-10-05-shared-task-core-independent-review.md，开发记录SHA8ACD6642E13CDC141EB9681635234B0EBE3FC86565E8868DBF62E3C19585B7EA。只是global14单provider共享登记/占用和既有feature兼容；坏迁移全回滚/两真实连接/终态保留占用/精确迟到释放/非feature恢复全表零写门通过。S2非法旧哨兵按计划换严格合法历史task，全部原断言/S2源码保持。
+
+已实现=内部SQL切片；独立代码/回归已验证=上述源码/两目录236/类型/精确集成；真实GUI已验证=0；semantic task/result/当前性/原题认证/durable reserve/统一参与者停止/provider/IPC/UI及真实API/签名等未验。旧同步dispatch后commit回滚的外部HTTP窗口仍开放，原应用一次dispatch、零task/result、无重试断言保持。没有重型/native/Electron/GUI/外发或导入代码执行。AGENTS0，现有事务/身份/停止/补偿规则覆盖，本轮无独立新产品缺陷；额度和夹具/类型问题不升级经验。只Git收尾本接受范围，实际SHA随后核；原四批尚有本地链路工作，不第五批或标全部完成。
+
+原Sol恢复回合completed/idle，实际cursor7e07c337-f6c9-490f-bd90-c31368d0efe4:50；Luna原completed/notLoaded :25。接受回执/下一具体任务按实际稳定依赖继续，重型窗口空闲，开发不得Git。四批本地收尾或全剩外部条件后暂停原automation及派发讨论。

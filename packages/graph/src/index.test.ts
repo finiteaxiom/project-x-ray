@@ -124,6 +124,19 @@ describe("graph", () => {
       expect(db(project).prepare("SELECT name FROM sqlite_master WHERE name='ownership_semantic_authorizations'").get()).toBeUndefined();
     } finally { project.close(); global.close(); }
   });
+  it("global14仅共享registry/lease，project无14，原迁移与role不变", () => {
+    const global = new GraphStore(":memory:", "global"), project = new GraphStore();
+    const db = (store: GraphStore) => (store as unknown as { database: Database.Database }).database;
+    try {
+      expect(db(global).prepare("SELECT version FROM schema_migrations WHERE version=14").get()).toEqual({ version: 14 });
+      expect(db(project).prepare("SELECT version FROM schema_migrations WHERE version=14").get()).toBeUndefined();
+      for (const name of ["remote_task_registry", "remote_provider_lease"]) {
+        expect(db(global).prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?").get(name)).toEqual({ name });
+        expect(db(project).prepare("SELECT name FROM sqlite_master WHERE name=?").get(name)).toBeUndefined();
+      }
+      expect(db(global).prepare("SELECT name FROM sqlite_master WHERE name='ownership_semantic_tasks'").get()).toBeUndefined();
+    } finally { global.close(); project.close(); }
+  });
   it("事务化保存并读取快照", () => {
     const store = new GraphStore();
     store.saveSnapshot(snapshot, [{ filePath: "a.ts", contentHash: "hash", language: "TypeScript", content: "a()" }]);
