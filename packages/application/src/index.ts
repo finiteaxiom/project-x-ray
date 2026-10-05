@@ -16,8 +16,8 @@ import { TypeScriptAnalyzer } from "@project-xray/analyzer-typescript";
 import { PythonAnalyzer } from "@project-xray/analyzer-python";
 import { captureComparison, cloneRepository, comparisonStateFingerprint, getGitHead, type CapturedSide } from "@project-xray/git";
 import { GraphStore, overviewFromSnapshot, queryFlow, searchNodes, type NavigationValiditySample } from "@project-xray/graph";
-import { buildOwnershipRubricCapsule, createQuestions, gradeAnswer, type OwnershipRubricSource } from "@project-xray/ownership";
-import { canonicalJson, ownershipQuestionSchema, ownershipSubmissionSchema } from "@project-xray/contracts";
+import { buildOwnershipRubricCapsule, createQuestions, createOwnershipQuestionGeneratorPort, gradeAnswer, type OwnershipRubricSource } from "@project-xray/ownership";
+import { canonicalJson, ownershipQuestionRequestSchema, ownershipQuestionSchema, ownershipSubmissionSchema } from "@project-xray/contracts";
 import { RemoteExplanationApplication, type RemoteProviderPort, type RemoteCredentialPort } from "./remote-explanation.js";
 export { RemoteExplanationApplication, type RemoteApplicationPorts, type RemoteProviderPort, type RemoteCredentialPort } from "./remote-explanation.js";
 
@@ -216,6 +216,8 @@ function captureOwnershipData<T>(input: T): T {
 }
 
 export class XRayApplication {
+  private readonly ownershipGenerator = createOwnershipQuestionGeneratorPort();
+  private readonly questionIssuances = new WeakMap<OwnershipQuestion, { store: GraphStore; issuance: Readonly<object> }>();
   private readonly legacyStore: GraphStore;
   private readonly stores = new Map<string, GraphStore>();
   private readonly snapshotStores = new Map<string, GraphStore>();
@@ -232,7 +234,7 @@ export class XRayApplication {
   private navigationObservation: NavigationObservation | null = null;
 
   constructor(options: XRayApplicationOptions) {
-    this.legacyStore = new GraphStore(options.databasePath, "global");
+    this.legacyStore = new GraphStore(options.databasePath, "global", this.ownershipGenerator);
     this.cacheRoot = options.cacheRoot;
     this.projectDatabaseRoot = options.projectDatabaseRoot;
     this.onProgress = options.onProgress;
@@ -246,7 +248,7 @@ export class XRayApplication {
     mkdirSync(root, { recursive: true });
     for (const name of readdirSync(root).filter((item) => item.endsWith(".sqlite"))) {
       try {
-        const repositoryId = name.slice(0, -7); const store = new GraphStore(join(root, name), "project"); const latest = store.getLatestOverview();
+        const repositoryId = name.slice(0, -7); const store = new GraphStore(join(root, name), "project", this.ownershipGenerator); const latest = store.getLatestOverview();
         this.stores.set(repositoryId, store);
         if (latest) {
           this.snapshotStores.set(latest.snapshotId, store);
@@ -307,7 +309,7 @@ export class XRayApplication {
     const known = this.snapshotStores.get(ref.snapshotId);
     if (!known && this.projectDatabaseRoot && !this.stores.has(ref.repositoryId)) {
       const databasePath = join(this.projectDatabaseRoot, `${ref.repositoryId}.sqlite`);
-      if (existsSync(databasePath)) this.stores.set(ref.repositoryId, new GraphStore(databasePath, "project"));
+      if (existsSync(databasePath)) this.stores.set(ref.repositoryId, new GraphStore(databasePath, "project", this.ownershipGenerator));
     }
     const project = this.stores.get(ref.repositoryId), store = known ?? project ?? this.legacyStore;
     const before = this.navigationProbe(store);
@@ -388,7 +390,7 @@ export class XRayApplication {
       },
       currentReference: () => {
         if (this.projectDatabaseRoot) for (const name of readdirSync(this.projectDatabaseRoot).filter(item => item.endsWith(".sqlite"))) {
-          const id = name.slice(0, -7); if (!this.stores.has(id)) this.stores.set(id, new GraphStore(join(this.projectDatabaseRoot, name), "project"));
+          const id = name.slice(0, -7); if (!this.stores.has(id)) this.stores.set(id, new GraphStore(join(this.projectDatabaseRoot, name), "project", this.ownershipGenerator));
         }
         return [this.legacyStore, ...this.stores.values()].map(store => store.getActiveReference()).filter((item): item is NonNullable<typeof item> => item !== null).sort((a, b) => b.activation.localeCompare(a.activation))[0] ?? null;
       },
@@ -407,7 +409,7 @@ export class XRayApplication {
     const parsed = saveIgnoreSettingsRequestSchema.safeParse(raw); if (!parsed.success) throw new SafeDiagnosticError("IGNORE_SETTINGS_INVALID");
     const input = parsed.data; this.requireSnapshot(input);
     const settings = this.storeForRepository(input.repositoryId).saveIgnoreSettings(input.repositoryId, input.expectedRevision, input.rules);
-    if (settings.revision !== input.expectedRevision) this.questions.clear();
+    if (settings.revision !== input.expectedRevision) this.clearQuestions();
     return this.getIgnoreSettings(input);
   }
 
@@ -506,7 +508,7 @@ export class XRayApplication {
     const store = this.storeForRepository(repositoryId);
     const published = store.saveSnapshot(finalizeAnalysisSnapshot(snapshot), sources.map((item) => ({ filePath: item.projectPath, contentHash: item.contentHash, language: item.language, content: item.content })), true, settings.revision, this.currentActivation);
     throwIfAborted(options.signal);
-    this.snapshotStores.set(published.snapshotId, store); this.current = overviewFromSnapshot(published); this.currentActivation = store.getCurrentActivation(); this.questions.clear();
+    this.snapshotStores.set(published.snapshotId, store); this.current = overviewFromSnapshot(published); this.currentActivation = store.getCurrentActivation(); this.clearQuestions();
     return published;
     } finally { secureScope.close(); }
   }
@@ -514,14 +516,14 @@ export class XRayApplication {
   private storeForRepository(repositoryId: string): GraphStore {
     if (!this.projectDatabaseRoot) return this.legacyStore;
     const existing = this.stores.get(repositoryId); if (existing) return existing;
-    const store = new GraphStore(join(this.projectDatabaseRoot, `${repositoryId}.sqlite`), "project"); this.stores.set(repositoryId, store); return store;
+    const store = new GraphStore(join(this.projectDatabaseRoot, `${repositoryId}.sqlite`), "project", this.ownershipGenerator); this.stores.set(repositoryId, store); return store;
   }
 
   private requireSnapshot(ref: SnapshotRef): { snapshot: ProjectSnapshot; store: GraphStore } {
     const known = this.snapshotStores.get(ref.snapshotId);
     if (!known && this.projectDatabaseRoot && !this.stores.has(ref.repositoryId)) {
       const databasePath = join(this.projectDatabaseRoot, `${ref.repositoryId}.sqlite`);
-      if (existsSync(databasePath)) this.stores.set(ref.repositoryId, new GraphStore(databasePath, "project"));
+      if (existsSync(databasePath)) this.stores.set(ref.repositoryId, new GraphStore(databasePath, "project", this.ownershipGenerator));
     }
     const snapshot = known?.loadSnapshot(ref.snapshotId)
       ?? this.stores.get(ref.repositoryId)?.loadSnapshot(ref.snapshotId)
@@ -625,10 +627,28 @@ export class XRayApplication {
 
   async createOwnershipQuestions(input: OwnershipQuestionRequest): Promise<OwnershipQuestion[]> {
     if (this.ownershipClosed) throw new SafeDiagnosticError("TASK_FAILED");
-    const snapshot = await this.requireCurrentSnapshot(input); this.assertSnapshotPolicyCurrent(snapshot); const store = this.requireStore(input); const generated = createQuestions(snapshot, input, store.listOwnershipAttempts(snapshot.repositoryId));
+    const captured = captureOwnershipData(input);
+    // Retain the historical internal count domain while parsing identity/scope/defaults.
+    // The public IPC request continues to enforce its existing twenty-question limit.
+    if (captured.count !== undefined && (!Number.isSafeInteger(captured.count) || captured.count < 1)) throw new SafeDiagnosticError("TASK_FAILED");
+    const request = { ...ownershipQuestionRequestSchema.parse({ ...captured, count: 1 }), count: captured.count ?? 5 };
+    const snapshot = await this.requireCurrentSnapshot(request); this.assertSnapshotPolicyCurrent(snapshot); const store = this.requireStore(request);
+    const generated = store.issueOwnershipQuestions(request, this.storeForRepository(snapshot.repositoryId));
     if (this.ownershipClosed) throw new SafeDiagnosticError("TASK_FAILED");
-    for (const question of generated) this.questions.set(questionKey(question), captureOwnershipData(question)); return generated;
+    for (const { question, issuance } of generated) {
+      const key = questionKey(question), previous = this.questions.get(key);
+      if (previous) this.revokeQuestion(previous);
+      const selected = captureOwnershipData(question);
+      this.questions.set(key, selected); this.questionIssuances.set(selected, { store, issuance });
+    }
+    return generated.map(item => item.question);
   }
+
+  private revokeQuestion(question: OwnershipQuestion): void {
+    const issued = this.questionIssuances.get(question);
+    if (issued) { issued.store.revokeOwnershipQuestion(issued.issuance); this.questionIssuances.delete(question); }
+  }
+  private clearQuestions(): void { for (const question of this.questions.values()) this.revokeQuestion(question); this.questions.clear(); }
 
   async gradeOwnershipAnswer(rawSubmission: OwnershipSubmission): Promise<OwnershipGrade> {
     if (this.ownershipClosed) throw new SafeDiagnosticError("TASK_FAILED");
@@ -641,7 +661,7 @@ export class XRayApplication {
       if (state.status !== "current") throw new SafeDiagnosticError("SNAPSHOT_NOT_CURRENT");
       throw new Error("题目不存在、已经完成或属于其他快照");
     }
-    const question = captureOwnershipData(selected); ownershipQuestionSchema.parse(question);
+    const question = captureOwnershipData(selected), issued = this.questionIssuances.get(selected); ownershipQuestionSchema.parse(question);
     if (this.gradingQuestions.has(key)) throw new SafeDiagnosticError("TASK_FAILED");
     this.gradingQuestions.add(key);
     const assertActive = (): void => {
@@ -685,7 +705,8 @@ export class XRayApplication {
       assertActive();
       settingsStore.assertIgnoreRevision(snapshot.repositoryId, settingsRevision);
       let prepared: Awaited<ReturnType<GraphStore["prepareOwnershipAttemptWithCapsule"]>>;
-      try { prepared = await store.prepareOwnershipAttemptWithCapsule({ question, submission, attempt, capsule, source }, settingsStore); }
+      if (issued && issued.store !== store) throw new SafeDiagnosticError("TASK_FAILED");
+      try { prepared = await store.prepareOwnershipAttemptWithCapsule({ question, submission, attempt, capsule, source, ...(issued ? { issuance: issued.issuance } : {}) }, settingsStore); }
       catch (error) { assertActive(); settingsStore.assertIgnoreRevision(snapshot.repositoryId, settingsRevision); throw error; }
       assertActive();
       const finalState = await this.getSnapshotState(submission);
@@ -700,7 +721,7 @@ export class XRayApplication {
       }
       // Failed attempts remain retryable, while every attempt is still persisted.
       // The server-owned question keeps the deterministic rules out of the renderer.
-      if (grade.passed) this.questions.delete(questionKey(question));
+      if (grade.passed) { this.revokeQuestion(selected); this.questions.delete(questionKey(question)); }
       return grade;
     } finally { this.gradingQuestions.delete(key); }
   }
@@ -733,7 +754,7 @@ export class XRayApplication {
     } finally { if (request) observation?.settle(request); }
   }
 
-  close(): void { this.navigationSlot = null; this.navigationObservation?.dispose(); this.ownershipClosed = true; this.questions.clear(); for (const store of new Set([this.legacyStore, ...this.stores.values()])) store.close(); }
+  close(): void { this.navigationSlot = null; this.navigationObservation?.dispose(); this.ownershipClosed = true; this.clearQuestions(); for (const store of new Set([this.legacyStore, ...this.stores.values()])) store.close(); }
 
   private async analyzeComparisonSide(base: ProjectSnapshot, side: CapturedSide, policy: IgnorePolicy, ignoreRevision: number, signal?: AbortSignal, progress?: (completed: number, total: number, currentFile: string) => void): Promise<ProjectSnapshot> {
     const sources: IndexedSource[] = side.sources.map((item) => ({ absolutePath: resolve(base.rootPath, item.projectPath), projectPath: item.projectPath, content: item.content, contentHash: item.contentHash, language: item.language }));
@@ -758,7 +779,7 @@ export class XRayApplication {
 
   private requireStore(ref: SnapshotRef): GraphStore {
     const known = this.snapshotStores.get(ref.snapshotId); if (known?.getOverview(ref.snapshotId)?.repositoryId === ref.repositoryId) return known;
-    if (this.projectDatabaseRoot && !this.stores.has(ref.repositoryId)) { const databasePath = join(this.projectDatabaseRoot, `${ref.repositoryId}.sqlite`); if (existsSync(databasePath)) this.stores.set(ref.repositoryId, new GraphStore(databasePath, "project")); }
+    if (this.projectDatabaseRoot && !this.stores.has(ref.repositoryId)) { const databasePath = join(this.projectDatabaseRoot, `${ref.repositoryId}.sqlite`); if (existsSync(databasePath)) this.stores.set(ref.repositoryId, new GraphStore(databasePath, "project", this.ownershipGenerator)); }
     for (const store of [this.stores.get(ref.repositoryId), this.legacyStore]) { if (store?.getOverview(ref.snapshotId)?.repositoryId === ref.repositoryId) { this.snapshotStores.set(ref.snapshotId, store); return store; } }
     throw new Error("项目或快照不存在");
   }

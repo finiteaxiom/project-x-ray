@@ -1,5 +1,6 @@
 import type Database from "better-sqlite3";
 import { createHash } from "node:crypto";
+import type { OwnershipQuestionBindingStore, OwnershipQuestionIssuance } from "./ownership-question-binding-store.js";
 import {
   analysisIdentitySchema, canonicalJson, canonicalSnapshotResult, computeOwnershipPackageId, computeOwnershipSubmissionProjectionHash,
   hashOwnershipAnswer, IGNORE_POLICY_VERSION, ownershipAttemptPreimage, ownershipAttemptSchema, ownershipCapsulePreimage, ownershipCapsuleSchema,
@@ -39,7 +40,7 @@ function capture<T>(input: T): T {
   check(input); return structuredClone(input);
 }
 export interface OwnershipSourceCapture { activation: string; analysisIdentity: ProjectSnapshot["analysisIdentity"]; sourceManifestHash: string; ignoreRevision: number }
-export interface OwnershipCapsuleWriteInput { question: OwnershipQuestion; attempt: OwnershipAttempt; capsule: OwnershipCapsule; source: OwnershipSourceCapture; submission?: OwnershipSubmission }
+export interface OwnershipCapsuleWriteInput { question: OwnershipQuestion; attempt: OwnershipAttempt; capsule: OwnershipCapsule; source: OwnershipSourceCapture; submission?: OwnershipSubmission; issuance?: OwnershipQuestionIssuance }
 export interface OwnershipSettingsAuthority { loadIgnoreSettings(repositoryId: string): ProjectIgnoreSettings; withIgnoreRevision<T>(repositoryId: string, revision: number, work: () => T): T }
 declare const receiptBrand: unique symbol;
 export type PreparedOwnershipWrite = Readonly<{ [receiptBrand]: true }>;
@@ -49,7 +50,7 @@ export type OwnershipSemanticPackageRead =
   | { status: "not-evaluated"; questionBinding: "prepare-only"; currentness: "not-checked"; attempt: OwnershipAttempt; capsule: OwnershipCapsule }
   | { status: "ready"; questionBinding: "prepare-only"; currentness: "not-checked"; attempt: OwnershipAttempt; capsule: OwnershipReadyCapsule; package: OwnershipSemanticPackage };
 interface Material { snapshot: ProjectSnapshot; activation: string; current: boolean; sources: { filePath: string; contentHash: string; language: string; content: string }[]; manifestHash: string }
-interface Receipt { attempt: string; capsule: string; submission: string | null; projectionPreimage: string | null; questionPreimage: string; attemptPreimage: string; capsulePreimage: string; source: string; material: string; settings: OwnershipSettingsAuthority }
+interface Receipt { attempt: string; capsule: string; submission: string | null; projectionPreimage: string | null; questionPreimage: string; attemptPreimage: string; capsulePreimage: string; source: string; material: string; settings: OwnershipSettingsAuthority; bindingRecord: string | null; issuance: OwnershipQuestionIssuance | undefined }
 interface AttemptRow { attempt_id: string; repository_id: string; snapshot_id: string; concept_id: string; completed_at: string; payload: string }
 interface CapsuleRow { attempt_id: string; repository_id: string; snapshot_id: string; status: string; version: string; attempt_hash: string; capsule_hash: string; payload: string }
 
@@ -57,7 +58,7 @@ interface CapsuleRow { attempt_id: string; repository_id: string; snapshot_id: s
 export class OwnershipCapsuleStore {
   #receipts = new WeakMap<object, Receipt>();
   #closed = false;
-  constructor(private readonly db: Database.Database, private readonly owner: OwnershipSettingsAuthority) {}
+  constructor(private readonly db: Database.Database, private readonly owner: OwnershipSettingsAuthority, private readonly bindings?: () => OwnershipQuestionBindingStore) {}
   migrate(): void {
     try {
       if (this.db.pragma("foreign_keys", { simple: true }) !== 1) fail();
@@ -74,6 +75,11 @@ export class OwnershipCapsuleStore {
   }
   close(): void { this.#closed = true; this.#receipts = new WeakMap(); }
   private open(): void { if (this.#closed) fail("RECEIPT_INVALID"); }
+  captureQuestionBindingMaterial(repositoryId: string, snapshotId: string, capsule?: OwnershipCapsule): Material {
+    this.open(); const material = this.material(repositoryId, snapshotId);
+    if (capsule) this.assertCapsuleSource(capsule, material);
+    return material;
+  }
   captureSource(repositoryId: string, snapshotId: string, ignoreRevision: number): OwnershipSourceCapture {
     try {
       this.open(); const material = this.db.transaction(() => this.material(repositoryId, snapshotId)).deferred();
@@ -85,12 +91,15 @@ export class OwnershipCapsuleStore {
   async prepare(raw: OwnershipCapsuleWriteInput, settings: OwnershipSettingsAuthority = this.owner): Promise<PreparedOwnershipWrite> {
     try {
       this.open(); const input = capture(raw);
+      const issuance = Object.getOwnPropertyDescriptor(raw, "issuance")?.value as OwnershipQuestionIssuance | undefined;
+      if (issuance !== undefined) input.issuance = issuance;
       ownershipQuestionSchema.parse(input.question); ownershipAttemptSchema.parse(input.attempt); ownershipCapsuleSchema.parse(input.capsule);
       analysisIdentitySchema.parse(input.source.analysisIdentity); remoteTimeSchema.parse(input.source.activation); remoteHashSchema.parse(input.source.sourceManifestHash); this.revision(input.source.ignoreRevision);
-      if (Object.keys(input).filter(key => key !== "submission").sort().join() !== "attempt,capsule,question,source" || Object.keys(input.source).sort().join() !== "activation,analysisIdentity,ignoreRevision,sourceManifestHash") fail();
+      if (Object.keys(input).filter(key => key !== "submission" && key !== "issuance").sort().join() !== "attempt,capsule,question,source" || Object.keys(input.source).sort().join() !== "activation,analysisIdentity,ignoreRevision,sourceManifestHash") fail();
       const material = this.db.transaction(() => this.material(input.attempt.repositoryId, input.attempt.snapshotId)).deferred();
       this.assertCurrent(input.source, material, settings);
       this.assertPublication(input.capsule, input.source);
+      const binding = this.bindings?.().prepare(input.issuance, input.question, input.attempt, input.capsule, input.source, settings);
       await validateOwnershipCapsule(input.capsule, input.question, input.attempt);
       const projection = this.submissionProjection(input, material);
       if (projection && await computeOwnershipSubmissionProjectionHash(projection) !== input.capsule.submissionProjectionHash) fail();
@@ -101,7 +110,7 @@ export class OwnershipCapsuleStore {
       } else if (input.capsule.answerHash !== null && input.capsule.answerHash !== await hashOwnershipAnswer(input.attempt.semanticText)) fail();
       this.open();
       const receipt = Object.freeze(Object.create(null)) as PreparedOwnershipWrite;
-      this.#receipts.set(receipt, { attempt: canonicalJson(input.attempt), capsule: canonicalJson(input.capsule), submission: input.submission === undefined ? null : canonicalJson(input.submission), projectionPreimage: projection ? ownershipSubmissionProjectionPreimage(projection) : null, questionPreimage: ownershipQuestionPreimage(input.question), attemptPreimage: ownershipAttemptPreimage(input.attempt), capsulePreimage: ownershipCapsulePreimage(input.capsule), source: canonicalJson(input.source), material: this.materialIdentity(material), settings });
+      this.#receipts.set(receipt, { attempt: canonicalJson(input.attempt), capsule: canonicalJson(input.capsule), submission: input.submission === undefined ? null : canonicalJson(input.submission), projectionPreimage: projection ? ownershipSubmissionProjectionPreimage(projection) : null, questionPreimage: ownershipQuestionPreimage(input.question), attemptPreimage: ownershipAttemptPreimage(input.attempt), capsulePreimage: ownershipCapsulePreimage(input.capsule), source: canonicalJson(input.source), material: this.materialIdentity(material), settings, bindingRecord: binding ? canonicalJson(binding) : null, issuance: input.issuance });
       return receipt;
     } catch (error) { throw safe(error); }
   }
@@ -123,6 +132,7 @@ export class OwnershipCapsuleStore {
         if (this.db.prepare("SELECT 1 FROM ownership_attempts WHERE attempt_id=?").get(attempt.attemptId) || this.db.prepare("SELECT 1 FROM ownership_semantic_capsules WHERE attempt_id=?").get(attempt.attemptId)) fail("CONFLICT");
         this.db.prepare("INSERT INTO ownership_attempts(attempt_id,repository_id,snapshot_id,concept_id,completed_at,payload) VALUES(?,?,?,?,?,?)").run(attempt.attemptId, attempt.repositoryId, attempt.snapshotId, attempt.concept.id, attempt.completedAt, receipt.attempt);
         this.db.prepare("INSERT INTO ownership_semantic_capsules(attempt_id,repository_id,snapshot_id,status,version,attempt_hash,capsule_hash,payload) VALUES(?,?,?,?,?,?,?,?)").run(attempt.attemptId, attempt.repositoryId, attempt.snapshotId, capsule.status, capsule.version, capsule.attemptHash, capsule.capsuleHash, receipt.capsule);
+        if (receipt.bindingRecord !== null) this.bindings!().save(JSON.parse(receipt.bindingRecord), receipt.issuance, receipt.settings);
       }).immediate());
     } catch (error) { throw safe(error); }
   }

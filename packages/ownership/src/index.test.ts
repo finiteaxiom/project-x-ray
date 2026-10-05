@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { OWNERSHIP_QUESTION_VERSION, OWNERSHIP_SCORING_VERSION, type GraphEdge, type GraphNode, type OwnershipQuestion, type ProjectSnapshot, type SourceCitation } from "@project-xray/contracts";
-import { createQuestions, gradeAnswer } from "./index.js";
+import { createOwnershipQuestionGeneratorPort, createQuestions, gradeAnswer } from "./index.js";
 
 const span = (line: number) => ({ filePath: "a.ts", startLine: line, startColumn: 0, endLine: line, endColumn: 3 });
 const snapshot: ProjectSnapshot = {
@@ -16,6 +16,21 @@ const citation = (evidenceId: string): SourceCitation => { const item = snapshot
 const citationFrom = (source: ProjectSnapshot, evidenceId: string): SourceCitation => { const item = source.evidence.find((value) => value.id === evidenceId)!; return { ...item.span, evidenceId }; };
 
 describe("structured ownership grading", () => {
+  it("trusted generator shares exact original candidates, Map order/count and object-join variant", () => {
+    const port = createOwnershipQuestionGeneratorPort();
+    expect(port.orderingEngine).toMatchObject({ implementationVersion: "js-localeCompare/1.0.0", sensitivity: "variant" });
+    for (const count of [1, 5, 20]) for (const conceptId of [undefined, "call-path:a:c"]) {
+      const request = { repositoryId: "r", snapshotId: "s", count, scope: { kind: "project" as const }, ...(conceptId ? { conceptId } : {}) };
+      const generated = port.generate(snapshot, request, []);
+      expect(generated.questions).toEqual(createQuestions(snapshot, request, []));
+      expect(generated.questions).toEqual([...new Map(generated.candidates.map(q => [q.id, q])).values()].slice(0, count));
+      expect(generated.candidates.filter(q => q.kind === "call-path").every(q => q.variantKey.includes("[object Object]"))).toBe(true);
+    }
+    const request = { repositoryId: "r", snapshotId: "s", count: 20, scope: { kind: "project" as const } };
+    const candidates = port.generate(snapshot, request, []).candidates;
+    expect(candidates.some(q => candidates.some(other => other.id === q.id && other.concept.id !== q.concept.id))).toBe(true);
+    expect(OWNERSHIP_QUESTION_VERSION).toBe("2.0.0"); expect(OWNERSHIP_SCORING_VERSION).toBe("2.1.0");
+  });
   it("接受同节点序列的任一完整边路径，拒绝不完整、混拼及缺失路径证据", () => {
     const alternateEvidence = ["ab-alt", "bc-alt"].map((id, index) => ({ id: `e-${id}`, snapshotId: "s", analyzer: "test", analyzerVersion: "1", kind: "call", confidence: "verified" as const, reason: id, span: span(8 + index) }));
     const alternateEdges: GraphEdge[] = [

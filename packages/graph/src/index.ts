@@ -2,6 +2,8 @@ import Database from "better-sqlite3";
 import { createHash } from "node:crypto";
 import { RemoteExplanationStore, type GraphStoreRole } from "./remote-explanation-store.js";
 import { OwnershipSemanticPolicyStore } from "./ownership-semantic-policy-store.js";
+import { OwnershipQuestionBindingStore, type OwnershipQuestionIssuance } from "./ownership-question-binding-store.js";
+import type { OwnershipQuestionGeneratorPort } from "@project-xray/contracts";
 import type { OwnershipSemanticAuthorization, OwnershipSemanticGrantCommand, OwnershipSemanticRevokeCommand } from "@project-xray/contracts";
 import { OwnershipCapsuleStore, OwnershipCapsuleStoreError, type OwnershipCapsuleWriteInput, type OwnershipSourceCapture, type PreparedOwnershipWrite, type OwnershipCapsuleRead, type OwnershipSemanticPackageRead } from "./ownership-capsule-store.js";
 export type { OwnershipSemanticPackageRead } from "./ownership-capsule-store.js";
@@ -48,18 +50,21 @@ export class GraphStore {
   readonly remote: RemoteExplanationStore;
   private readonly ownershipCapsules: OwnershipCapsuleStore;
   private readonly ownershipSemanticPolicy: OwnershipSemanticPolicyStore;
+  private readonly questionBindings: OwnershipQuestionBindingStore;
   private navigationGeneration: number | null = null;
 
-  constructor(databasePath = ":memory:", role: GraphStoreRole = "project") {
+  constructor(databasePath = ":memory:", role: GraphStoreRole = "project", ownershipGenerator?: OwnershipQuestionGeneratorPort) {
     if (role !== "global" && role !== "project") throw new RemoteExplanationError("POLICY_INVALID");
     this.database = new Database(databasePath);
     this.remote = new RemoteExplanationStore(this.database, role);
-    this.ownershipCapsules = new OwnershipCapsuleStore(this.database, this);
+    this.ownershipCapsules = new OwnershipCapsuleStore(this.database, this, () => this.questionBindings);
+    this.questionBindings = new OwnershipQuestionBindingStore(this.database, ownershipGenerator,
+      (repositoryId, snapshotId, capsule) => this.ownershipCapsules.captureQuestionBindingMaterial(repositoryId, snapshotId, capsule), repositoryId => this.listOwnershipAttempts(repositoryId));
     this.ownershipSemanticPolicy = new OwnershipSemanticPolicyStore(this.database, role);
     try {
       this.database.pragma("busy_timeout = 250");
       this.database.pragma("journal_mode = WAL");
-      this.migrate(); this.remote.migrate(); this.ownershipCapsules.migrate(); this.ownershipSemanticPolicy.migrate();
+      this.migrate(); this.remote.migrate(); this.ownershipCapsules.migrate(); this.ownershipSemanticPolicy.migrate(); this.questionBindings.migrate();
       this.navigationGeneration = 0;
     } catch (error) { this.database.close(); throw error; }
   }
@@ -570,6 +575,9 @@ export class GraphStore {
   }
 
   captureOwnershipSource(repositoryId: string, snapshotId: string, ignoreRevision: number): OwnershipSourceCapture { return this.ownershipCapsules.captureSource(repositoryId, snapshotId, ignoreRevision); }
+  issueOwnershipQuestions(request: import("@project-xray/contracts").OwnershipQuestionRequest, settings: GraphStore = this) { return this.questionBindings.issue(request, settings); }
+  revokeOwnershipQuestion(issuance: OwnershipQuestionIssuance): void { this.questionBindings.revoke(issuance); }
+  loadOwnershipQuestionBinding(attemptId: string) { return this.questionBindings.load(attemptId); }
   prepareOwnershipAttemptWithCapsule(input: OwnershipCapsuleWriteInput, settings: GraphStore = this): Promise<PreparedOwnershipWrite> {
     if (!(settings instanceof GraphStore)) return Promise.reject(new OwnershipCapsuleStoreError());
     return this.ownershipCapsules.prepare(input, settings);
@@ -596,6 +604,7 @@ export class GraphStore {
   }
 
   close(): void {
+    this.questionBindings.close();
     this.ownershipSemanticPolicy.close();
     this.ownershipCapsules.close();
     this.database.close();

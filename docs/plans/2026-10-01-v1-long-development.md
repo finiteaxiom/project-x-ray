@@ -106,6 +106,7 @@ Sol 先测量当前全量索引/查询/内存基线，设计按语言的保守�
 | 2D-S3-A1 共享SQL/feature兼容 | 内部SQL独立接受，精确main集成复验通过；Git见最新审查 | Sol/root | 两目录各236项及graph/application noEmit，原316文件仅四授权旧文件变化；main index与11/Sol12保持。单slot/global14、坏迁移回滚/两连接/终态精确释放/非feature恢复零写通过；见shared-task-core-independent-review。无semantic任务许可/durable传输/GUI完成 |
 | 2D-L3 语义持久任务record纯契约 | 独立接受；Git见最新审查 | Luna/root | root七文件163及contracts noEmit/时间探针通过，L2/barrel保持；五phase/code/完整小数秒与16KiB有限元数据。见ownership-semantic-task-record-independent-review；纯结构，不登记/发送或授予许可 |
 | 2D-S4-D 原题绑定/当前性具体设计 | 修订后独立设计接受，精确main复制 | Sol/root | 实际对象join variant、Map歧义仅新认证unavailable、ordering engine及rowid保证经反馈修订；320旧文件未变。见ownership-question-binding-design-independent-review；运行原题认证/当前性仍待Q1/Q2，不补历史许可 |
+| 2D-Q1 新提交可信原题绑定 | 两缺陷修正后后台独立接受，精确main集成 | Sol/root | 两目录各259项/四包类型及两原始真实探针通过；Sol323仅8授权变化，main365仅8源变化，原迁移/缓存差异保留。三行原子/完整generator/历史截点门通过，新增经验1；见ownership-question-binding-independent-review及最新Git回执。Q2/任务/HTTP/GUI仍未验 |
 | 3F-O 缓存observer接缝设计 | 修订设计独立接受 | Luna/协调方 | root 四文档/当前源码复审，O/R 及 estimator/terminal 关系、真实缺采集与协议矛盾区分、后续API错误独立；非实现/收益通过 |
 | 3F-C1 导航有效性取样端口 | 独立接受、精确集成提交7071ae4 | Sol/协调方 | Sol/main各98 graph回归、两包noEmit与真实SQLite探针通过，main原application147通过；嵌套COMMIT/ROLLBACK保守停比较、新实例身份明确。新增经验1，缓存/性能/GUI未验 |
 | 3F-C2 应用导航缓存/observer | 后台独立接受、精确集成并复验通过 | Sol/协调方 | root Sol43定向/225应用/111图，main229应用/114图，两边类型及真实双布局/12竞态探针通过。保留fresh校验、私有身份/4MiB/O/T门；性能/GUI未验，Git见最新审查 |

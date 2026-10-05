@@ -209,6 +209,8 @@ LLM 输出永远不是一级证据。LLM 可以对分析器返回的证据进行
 
 只按“执行反馈与规则沉淀”的门槛维护；详细过程保存在对应开发记录中。
 
+- 使用持久答题历史认证原题时，在保存与历史读取/重开均核对实际SQL截点严格早于对应提交的真实行号；生成器或排序引擎不支持不能跳过时间顺序检查。用本次/后来提交充当发行历史并重算全部摘要的真实回归确认拒绝，同时覆盖正常失败重答和发行后回退时间追加。自洽摘要不证明发行先于提交，行号不代表整体防篡改日志。[原题绑定独立复验](docs/development-runs/2026-10-05-ownership-question-binding-independent-review.md)
+
 - 使用 Windows 相对目录 HANDLE 约束路径时，不得由父 HANDLE 未申请 FILE_ADD 权限推断子项 FILE_CREATE 会被系统拒绝；需要拒绝创建的能力应限制实际导出的操作端口，并在目标 Node/Electron 运行时实测。只读父 HANDLE 下创建成功不能外推为 ACL 绕过，ACL 拒绝须另验。[权限实验独立复验](docs/development-runs/2026-10-04-upgrade-write-permissions-independent-review.md)
 
 - 临时实验目录的根身份及无重解析检查不能证明普通子项归属；未知名字或身份必须保留，禁止检查全树后按字符串递归删除。需要清理时，仅处置本次真实创建、仍由 HANDLE 和完整身份绑定的对象；不能证明时明确保留材料，并单独报告句柄释放状态。用自有未登记普通文件验证零删除及内容/身份保留。[清理反例与修正复验](docs/development-runs/2026-10-04-upgrade-write-permissions-independent-review.md)

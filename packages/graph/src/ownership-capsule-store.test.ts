@@ -211,8 +211,9 @@ describe("source-owned ownership capsule transactions", () => {
     expect(input.capsule.attemptHash).toBe(sha(ownershipAttemptPreimage(input.attempt))); expect(input.capsule.capsuleHash).toBe(sha(ownershipCapsulePreimage(input.capsule))); expect(input.capsule.questionFingerprint).toBe(sha(ownershipQuestionPreimage(input.question)));
     store.savePreparedOwnershipAttempt(await store.prepareOwnershipAttemptWithCapsule(input)); expect(counts(store)).toEqual({ attempts: 1, capsules: 1 }); store.close(); store = open(path);
     const result = await store.loadOwnershipCapsule("attempt"); expect(result).toMatchObject({ status: "ready", questionBinding: "prepare-only", attempt: input.attempt, capsule: input.capsule });
+    expect(store.loadOwnershipQuestionBinding("attempt")).toMatchObject({ status: "unavailable", currentness: "not-checked", record: { reason: "untrusted-issuance" } });
     expect((db(store).prepare("PRAGMA foreign_key_check").all())).toEqual([]); expect(db(store).pragma("foreign_keys", { simple: true })).toBe(1);
-    expect(db(store).prepare("SELECT version FROM schema_migrations ORDER BY version").all()).toEqual(Array.from({ length: 11 }, (_, index) => ({ version: index + 1 })));
+    expect(db(store).prepare("SELECT version FROM schema_migrations ORDER BY version").all()).toEqual([...Array.from({ length: 11 }, (_, index) => ({ version: index + 1 })), { version: 15 }]);
   });
   it("not-evaluated完整大attempt与孤立代理JSON转义双写，不扩大胶囊或重解释旧数据", async () => {
     const path = await pathFixture("not-ready.sqlite"); let store = open(path); const large = await fixture(store, "original-large", false);
@@ -303,6 +304,7 @@ describe("source-owned ownership capsule transactions", () => {
     const store = open(path); expect((db(store).prepare("SELECT payload FROM ownership_attempts WHERE attempt_id='old'").get() as { payload: string }).payload).toBe(oldPayload);
     expect((db(store).prepare("SELECT content FROM source_snapshots").get() as { content: string }).content).toBe(oldSource); expect(db(store).prepare("SELECT applied_at FROM schema_migrations WHERE version IN(7,10)").all()).toEqual([{ applied_at: "frozen" }, { applied_at: "frozen" }]);
     expect(await store.loadOwnershipCapsule("old")).toEqual({ status: "legacy-capsule-absent" });
+    expect(store.loadOwnershipQuestionBinding("old")).toEqual({ status: "legacy-unbound" });
     for (const attemptId of ["new1", "new2"]) { const fresh = await fixture(store, attemptId); store.savePreparedOwnershipAttempt(await store.prepareOwnershipAttemptWithCapsule(fresh)); }
     db(store).prepare("DELETE FROM ownership_attempts WHERE attempt_id='new1'").run(); expect(counts(store)).toEqual({ attempts: 2, capsules: 1 }); expect(await store.loadOwnershipCapsule("new2")).toMatchObject({ status: "ready" }); expect(await store.loadOwnershipCapsule("new1")).toEqual({ status: "not-found" });
     expect((db(store).prepare("SELECT payload FROM ownership_attempts WHERE attempt_id='old'").get() as { payload: string }).payload).toBe(oldPayload);

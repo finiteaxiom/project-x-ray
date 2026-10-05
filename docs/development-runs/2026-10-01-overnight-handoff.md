@@ -390,3 +390,22 @@ root随后只读核actual ownership createQuestions/question、application grade
 Luna L3实际completed/idle :35，root两个task源码/原L2/barrel独立核hash，七contracts163/163与noEmit/额外小数秒时间探针通过。原身份/版本保持，pure五phase record/16KiB预算接受，不登记/发送/当前性或实际停止。Sol S4-D修订completed/idle :56，两设计SHA7AD175097FD8BD31B4B56CA602B6CE843C69AA0A86A076E689ACFE7EDDF34216及记录4FDE5CF9D9E1A9EE559FD6CDC39C1DCE5DE20FDF7D7DC49DD8FF7BCE023FB0EF，root真实320原文件零变化、精确main复制。首稿对象join变体及locale/rowid保证已反馈修订；是设计静态闭环，不是已复现产品修正。两独立记录给出实际命令/差异/限制，AGENTS0/GUI0。
 
 root已形成2026-10-05-ownership-question-binding-implementation明确Q1计划：新提交真实generator/私有发行capability→原评分三行原子→重开完整核验，旧history不补授权；只原Sol自己的列明跨模块文件，迁移15仅source材料，原11/12/13/14保留。Q2当前性/网络task/durable传输/全参与者恢复/GUI不属本Q1隐式授权；派发与实际Git回执后续核。Luna接受后冻结，不为填槽派准备。四批还有本地工作，停止门/GUI暂缓/API/签名/干净机器外部门不变，无重型窗口或第五批。
+
+2026-10-05 实际Git与派发回执：L3纯record及S4-D准确修订设计/审查/计划共13文件已普通提交推送59abba29f1fd59a97d444c79a16a17a842617541，独立ls-remote核origin/main同SHA，cached diff --check通过，推送后main清洁；未含Sol旧生产WIP/GUI/native/binary。root精确复制Q1实施计划到5170，两目录SHA725A003371DB4F77EA6DFBFDAAD8332017361C00E6522C53B7599431F7B2933B。成功派原Sol/medium，实际回合01a1093d-4bd3-7743-9d83-0fed232b1f0d active/inProgress，最新cursor7e07c337-f6c9-490f-bd90-c31368d0efe4:57；Luna仅确认接受并保持冻结，回合completed/idle，cursor1ac033a7-c1ee-48ae-9e61-2317590f341e:36。下一轮携实际游标续查稳定交付，不测试活动源；本回执/队列留下一稳定切片收尾，不循环单独提交。原四批仍有本地工作，不暂停自动跟进或派第五批，GUI/API/签名/干净机器未验门保持。
+
+## 2026-10-05：Q1首冻结独立回归通过，但额外探针复现两缺陷
+
+root核原Sol明确冻结13文件hash、323旧清单（8授权变化/315未变/零缺失），精确patch C0E58B4332CD9477F8A32DCACF3ACB75626ACA6F3044184ED44AF4C5C6753DAE reverse check通过；独立九文件245/245和四包noEmit通过。但真实索引额外探针确认：createOwnershipQuestions首次await后caller count变动改变发行（6→1题）；重hash完整原题/胶囊/basis后self-cut（attempt rowid1/cut1）仍verified-generator。两产品缺陷未闭环，首Q1不接受、不集成、不提交。详细复现/预期/源码hash/实际命令见2026-10-05-ownership-question-binding-independent-review.md。
+
+已向原Sol/medium仅原Q1边界派修正及回归，实际修正回合01a10963-9f0a-7b90-ad9e-efe07f3c06fd active/inProgress，最新cursor7e07c337-f6c9-490f-bd90-c31368d0efe4:64；Luna保持原冻结idle :36。root不再读或测试活动修正源码，待明确冻结后独立复验两个原探针及适用兼容门。main仍59abba29f1fd59a97d444c79a16a17a842617541，Sol HEAD仍455d4ad，所有WIP保留；本轮仅协调记录，无Git动作。
+
+本轮已实现=首Q1源码但有缺陷；独立代码/回归已验证=首冻结245/四包类型/范围及两个真实失败复现；真实GUI已验证=0；Q1接受/集成、Q2/语义task/transport/模型及其他批次未验门保留。AGENTS0，不提前沉淀未完成闭环；无build/native/dist/Electron/GUI/外发/导入代码执行。四批仍有可推进本地工作，按原workflow继续；四批收尾暂停及不第五批门保持。此记录随下一已验稳定切片收尾，不循环单独提交。
+
+
+## 2026-10-05：Q1两缺陷闭环，后台独立接受并精确集成
+
+首冻结失败保留。修正版patch SHA3178994E12A83EEBBDBD32FD2CE9C1F27D3B1B2A76CC4A353EF4F46AB16AFEF9；root核13hash/323清单，仅8授权源变化、315不变、零缺失。发题首次await完整捕获、SQLcut严格早于对应attempt rowid的保存/重开守卫独立复审；两个原真实探针修后均通过（6→6；全重hash self-cut拒绝）。Sol与main各259/259及contracts/ownership/graph/application noEmit通过，详见2026-10-05-ownership-question-binding-independent-review.md。
+
+主目录从真实原副本逐53块集成，365清单仅8授权源变化、357不变、零缺失；main activation/cache/barrel及旧迁移断言与Sol差异保留，不整份复制。只Q1后台接受：真实发题/原评分/三行原子/关闭重开核验；GUI0、Q2/语义任务/transport/模型及其余批次仍未验，不把verified-generator当当前或外发许可。AGENTS新增截点经验1条，首次await已有规则覆盖不重复。无重型/native/Electron/网络/秘密扫描/导入代码执行。Git实际回执后核。
+
+实际原Sol completed/idle :75，Luna原idle :36；开发不得Git。四批尚有可推进本地链路工作，继续原双线程，收尾或全剩外部条件后暂停原automation及派发讨论，不第五批。

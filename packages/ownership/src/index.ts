@@ -1,8 +1,13 @@
 import { OWNERSHIP_QUESTION_VERSION, OWNERSHIP_SCORING_VERSION, type Evidence, type GraphEdge, type GraphNode, type OwnershipAttempt, type OwnershipGrade, type OwnershipQuestion, type OwnershipQuestionRequest, type OwnershipSubmission, type ProjectSnapshot, type SourceCitation } from "@project-xray/contracts";
 import { stableId } from "@project-xray/analyzer-core";
+import { OWNERSHIP_GENERATOR_BINDING_VERSION, ownershipOrderingEngineSchema, type OwnershipQuestionGeneratorPort } from "@project-xray/contracts";
 export * from "./semantic-rubric.js";
 
 export function createQuestions(snapshot: ProjectSnapshot, request: OwnershipQuestionRequest, attempts: OwnershipAttempt[] = []): OwnershipQuestion[] {
+  const filtered = createQuestionCandidates(snapshot, request, attempts);
+  return [...new Map(filtered.map((item) => [item.id, item])).values()].slice(0, request.count);
+}
+function createQuestionCandidates(snapshot: ProjectSnapshot, request: OwnershipQuestionRequest, attempts: OwnershipAttempt[]): OwnershipQuestion[] {
   const evidence = new Set(snapshot.evidence.map((item) => item.id)); const nodes = new Map(snapshot.nodes.map((node) => [node.id, node])); const allowed = allowedNodes(snapshot, request); const candidates: OwnershipQuestion[] = [];
   const verifiedCalls = snapshot.edges.filter((edge) => edge.kind === "CALLS" && edge.confidence === "verified" && evidence.has(edge.evidenceId) && allowed.has(edge.source) && allowed.has(edge.target));
   for (const edge of verifiedCalls) {
@@ -21,7 +26,19 @@ export function createQuestions(snapshot: ProjectSnapshot, request: OwnershipQue
     candidates.push(question(snapshot, "variable-flow", concept, variantKey, `请为变量 ${variable.name} 的引用分别标记“写入”“读取”${returns.length ? "和返回" : ""}角色。`, "能够把源码引用与变量读写角色正确对应", "hard", [variable], [...new Set([...writes, ...reads, ...returns].map((edge) => edge.evidenceId))], [variable.id], [{ kind: "variable-roles", requirements }], attempts));
   }
   for (const node of [...nodes.values()].filter((item) => allowed.has(item.id) && ["function", "method", "class"].includes(item.kind))) { const definition = snapshot.edges.find((edge) => edge.kind === "DEFINES" && edge.target === node.id && edge.confidence === "verified" && evidence.has(edge.evidenceId)); if (!definition) continue; const concept = { id: `definition:${node.id}`, label: `${node.name} 的定义定位` }; candidates.push(question(snapshot, "entry", concept, `definition:${definition.id}`, `定位 ${node.name} 的定义并引用该范围。`, "能够在当前快照定位关键定义", "easy", [node], [definition.evidenceId], [node.id], [{ kind: "definition", nodeId: node.id, edgeId: definition.id }], attempts)); }
-  const filtered = request.conceptId ? candidates.filter((item) => item.concept.id === request.conceptId) : candidates; return [...new Map(filtered.map((item) => [item.id, item])).values()].slice(0, request.count);
+  return request.conceptId ? candidates.filter((item) => item.concept.id === request.conceptId) : candidates;
+}
+
+export function createOwnershipQuestionGeneratorPort(): OwnershipQuestionGeneratorPort {
+  const options = new Intl.Collator().resolvedOptions(), versions = process.versions;
+  const parsed = ownershipOrderingEngineSchema.safeParse({ ...options, implementationVersion: "js-localeCompare/1.0.0",
+    nodeVersion: versions.node, v8Version: versions.v8, icuVersion: versions.icu, unicodeVersion: versions.unicode, cldrVersion: versions.cldr,
+    hostRuntime: versions.electron ? "electron" : "node", electronVersion: versions.electron ?? null });
+  return Object.freeze({ version: OWNERSHIP_GENERATOR_BINDING_VERSION, orderingEngine: parsed.success ? Object.freeze(parsed.data) : null,
+    generate(snapshot: ProjectSnapshot, request: OwnershipQuestionRequest, attempts: OwnershipAttempt[]) {
+      const candidates = createQuestionCandidates(snapshot, request, attempts);
+      return { candidates, questions: [...new Map(candidates.map(item => [item.id, item])).values()].slice(0, request.count) };
+    } });
 }
 
 export function gradeAnswer(question: OwnershipQuestion, submission: OwnershipSubmission, snapshot: ProjectSnapshot, validatedCitations: SourceCitation[]): OwnershipGrade {
