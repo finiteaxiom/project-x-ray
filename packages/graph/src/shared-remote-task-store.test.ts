@@ -162,13 +162,20 @@ describe("global shared SQL task compatibility", () => {
     expect(raw(other).prepare("SELECT task_id,stage FROM remote_provider_lease").get()).toEqual({ task_id: second.taskId, stage: "reserved" });
     other.remote.immediate(() => other.remote.finishUndispatchedReservation(next, "CANCELLED"));
   });
-  it("global14 is idempotent, project has neither table nor14, no semantic task/result or public API", () => {
+  it("global14/17 remains isolated; both source roles install empty18 without public semantic APIs", () => {
     const path = join(mkdtempSync(join(tmpdir(), "xray-shared-core-")), "global.sqlite");
     const store = open(path), before = snapshot(raw(store)); store.close(); const reopened = open(path);
     expect(snapshot(raw(reopened))).toBe(before);
     const project = open(":memory:", "project"); expect(raw(project).prepare("SELECT 1 FROM schema_migrations WHERE version=14").get()).toBeUndefined();
     for (const table of ["remote_task_registry", "remote_provider_lease"]) expect(raw(project).prepare("SELECT 1 FROM sqlite_master WHERE name=?").get(table)).toBeUndefined();
-    expect(raw(reopened).prepare("SELECT name FROM sqlite_master WHERE name IN ('ownership_semantic_tasks','ownership_semantic_results')").all()).toEqual([{ name: "ownership_semantic_tasks" }]);
+    expect(raw(reopened).prepare("SELECT name FROM sqlite_master WHERE name IN ('ownership_semantic_tasks','ownership_semantic_results') ORDER BY name").all()).toEqual([{ name: "ownership_semantic_results" }, { name: "ownership_semantic_tasks" }]);
+    expect(raw(project).prepare("SELECT name FROM sqlite_master WHERE name='ownership_semantic_tasks'").get()).toBeUndefined();
+    expect(raw(project).prepare("SELECT 1 FROM schema_migrations WHERE version=17").get()).toBeUndefined();
+    for (const target of [reopened, project]) {
+      expect(raw(target).prepare("SELECT version FROM schema_migrations WHERE version=18").get()).toEqual({ version: 18 });
+      expect(raw(target).prepare("SELECT count(*) n FROM ownership_semantic_results").get()).toEqual({ n: 0 });
+      for (const name of ["appendSemanticResult", "readSemanticResult", "compensateSemanticResult"]) expect(name in target).toBe(false);
+    }
     expect("registerSemanticDispatch" in reopened.remote).toBe(false);
   });
   it.each(["dispatched", "completed"] as const)("migration preserves legacy %s1 identity/time/slot and old history bytes", phase => {

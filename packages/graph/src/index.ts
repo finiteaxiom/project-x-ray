@@ -2,6 +2,7 @@ import Database from "better-sqlite3";
 import { createHash } from "node:crypto";
 import { RemoteExplanationStore, type GraphStoreRole } from "./remote-explanation-store.js";
 import { OwnershipSemanticPolicyStore } from "./ownership-semantic-policy-store.js";
+import { OwnershipSemanticResultStore } from "./ownership-semantic-result-store.js";
 import { OwnershipQuestionBindingStore, type OwnershipQuestionIssuance } from "./ownership-question-binding-store.js";
 import type { OwnershipQuestionGeneratorPort } from "@project-xray/contracts";
 import { OwnershipSemanticPreparationStore, OwnershipSemanticPreparationError, type OwnershipSemanticTrustedPorts, type PreparedSemanticBinding, type SemanticRevisionReceipt } from "./ownership-semantic-preparation-store.js";
@@ -55,6 +56,7 @@ export class GraphStore {
   private readonly ownershipSemanticPolicy: OwnershipSemanticPolicyStore;
   private readonly questionBindings: OwnershipQuestionBindingStore;
   private readonly semanticPreparations: OwnershipSemanticPreparationStore;
+  private readonly semanticResults: OwnershipSemanticResultStore;
   private navigationGeneration: number | null = null;
 
   constructor(databasePath = ":memory:", role: GraphStoreRole = "project", ownershipGenerator?: OwnershipQuestionGeneratorPort, semanticPorts?: OwnershipSemanticTrustedPorts) {
@@ -70,10 +72,12 @@ export class GraphStore {
       return { binding, capsule, preimage: canonicalJson({ binding, capsule: capsule.preimage }) };
     }, captured => this.ownershipCapsules.validateSemanticPreparation(captured), semanticPorts);
     this.ownershipSemanticPolicy = new OwnershipSemanticPolicyStore(this.database, role);
+    this.semanticResults = new OwnershipSemanticResultStore(this.database, this);
     try {
       this.database.pragma("busy_timeout = 250");
       this.database.pragma("journal_mode = WAL");
       this.migrate(); this.remote.migrate(); this.ownershipCapsules.migrate(); this.ownershipSemanticPolicy.migrate(); this.questionBindings.migrate();
+      this.semanticResults.migrate();
       this.navigationGeneration = 0;
     } catch (error) { this.database.close(); throw error; }
   }
@@ -621,6 +625,7 @@ export class GraphStore {
   }
 
   close(): void {
+    this.semanticResults.close();
     this.semanticPreparations.close();
     this.questionBindings.close();
     this.ownershipSemanticPolicy.close();

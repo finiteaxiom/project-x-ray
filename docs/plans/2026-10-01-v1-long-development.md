@@ -113,6 +113,7 @@ Sol 先测量当前全量索引/查询/内存基线，设计按语言的保守�
 | 2D-Q3 完整正文当前性接线 | 后台独立接受，精确main集成复验通过；Git见最新审查 | Sol/root | 两目录各530回归/三包类型及root各16门真实索引SQL→full body/exact inner校验通过；原内层口径保持，两完整摘要/UTF8/当前性/一次门重核。见fullbody-currentness-independent-review；零task-slot-result-HTTP，semantic持久任务/transport/发布/恢复/GUI未验 |
 | 2D-S3-A2 语义持久任务内部核心 | 后台独立接受，精确main集成复验通过；Git见最新审查 | Sol/root | 两目录各357回归/三包类型；root实际旧14/16升级、八份两布局旧索引答题库/两连接/COMMIT与RAISE(IGNORE)故障复验通过。global17、project无17；仅内部SQL，不公开发送/停止许可。见task-core-independent-review；实际编排/transport/发布/统一恢复/GUI仍未验 |
 | 2D-L5 语义结果持久契约 | 纯契约独立接受；Git见最新审查 | Luna/root | root109/类型与16组真实索引答题材料接入通过；两摘要与A2一致，exact prepared拒绝自造证据，原SQL/成绩/材料/源码不变。见result-contract-independent-review；零task/HTTP/GUI，不代表SQL结果或发布完成 |
+| 2D-R1 内部语义结果SQL核心 | 来源修订缺陷闭环后后台独立接受、精确main集成；Git见最新审查 | Sol/root | 两目录各478回归/三包类型及各16组真实pre18库探针通过；错保存修订prepare/read/重开拒绝、正确历史与当前设置差异保持。main11/Sol12不混入，见result-store-independent-review；内部candidate不等于公开发布，当次许可/编排/统一停止恢复/GUI/真实HTTP仍未验 |
 | 3F-O 缓存observer接缝设计 | 修订设计独立接受 | Luna/协调方 | root 四文档/当前源码复审，O/R 及 estimator/terminal 关系、真实缺采集与协议矛盾区分、后续API错误独立；非实现/收益通过 |
 | 3F-C1 导航有效性取样端口 | 独立接受、精确集成提交7071ae4 | Sol/协调方 | Sol/main各98 graph回归、两包noEmit与真实SQLite探针通过，main原application147通过；嵌套COMMIT/ROLLBACK保守停比较、新实例身份明确。新增经验1，缓存/性能/GUI未验 |
 | 3F-C2 应用导航缓存/observer | 后台独立接受、精确集成并复验通过 | Sol/协调方 | root Sol43定向/225应用/111图，main229应用/114图，两边类型及真实双布局/12竞态探针通过。保留fresh校验、私有身份/4MiB/O/T门；性能/GUI未验，Git见最新审查 |

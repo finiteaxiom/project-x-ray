@@ -139,7 +139,12 @@ describe("graph", () => {
       expect(db(global).prepare("SELECT name FROM sqlite_master WHERE name='ownership_semantic_tasks'").get()).toEqual({ name: "ownership_semantic_tasks" });
       expect(db(project).prepare("SELECT name FROM sqlite_master WHERE name='ownership_semantic_tasks'").get()).toBeUndefined();
       for (const target of [global, global.remote]) for (const name of ["reserveSemantic", "registerSemantic", "finishSemantic", "releaseSemantic"]) expect(name in target).toBe(false);
-      for (const target of [global, project]) expect(db(target).prepare("SELECT name FROM sqlite_master WHERE name='ownership_semantic_results'").get()).toBeUndefined();
+      for (const target of [global, project]) {
+        expect(db(target).prepare("SELECT name FROM sqlite_master WHERE name='ownership_semantic_results'").get()).toEqual({ name: "ownership_semantic_results" });
+        expect(db(target).prepare("SELECT version FROM schema_migrations WHERE version=18").get()).toEqual({ version: 18 });
+        expect(db(target).prepare("SELECT count(*) n FROM ownership_semantic_results").get()).toEqual({ n: 0 });
+        for (const name of ["appendSemanticResult", "readSemanticResult", "compensateSemanticResult"]) expect(name in target).toBe(false);
+      }
     } finally { global.close(); project.close(); }
   });
   it("事务化保存并读取快照", () => {

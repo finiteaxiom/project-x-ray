@@ -1264,3 +1264,60 @@ S3-A2已实际验收提交推送49b484663286a4a57d22cdd8564126c163587b14。root�
 root核原Luna四文件冻结hash及394原字节清单：391不变、零缺失，index仅单export，两公共记录仅root回执。独立源码审查、4文件109/109与contracts noEmit通过；root16组四题型×双布局×空/非空ignore实际索引答题材料→Q3完整body/exact prepared→L5两摘要与A2内部算法核验通过。自造证据重算摘要仅成为DTO，exact prepared仍拒绝；原SQL/成绩/材料/源码保持，零task/registry/lease/HTTP。完整命令、hash及预算不可触达限制见2026-10-05-ownership-semantic-result-contract-independent-review.md。
 
 已实现及独立代码/回归验证=纯结果契约；真实GUI0。source结果持久化、权威T1/当前性、跨库completed发布补偿/统一停止恢复、模型兼容质量及其他批次外部门未验。AGENTS0，既有捕获/摘要规则覆盖。原Sol冻结待依赖精确同步及结果store正式派发；Luna本批冻结，不制造填槽准备任务。Git仅本已验窄范围另记真实SHA，四批仍有本地实现，继续automation，不第五批。
+
+## 2026-10-05 19:51：L5实际Git回执与R1正式派发
+
+root仅10文件已验L5三contracts源/测试及开发、独立、实施记录与准确A2旧Git回执/公共队列普通提交52db0c98dcd6e09590f32473597ceba5cb1d0f10；cached diff --check通过，push origin main实际exit0，独立ls-remote核https://github.com/finiteaxiom/project-x-ray.git main同SHA，提交后main清洁。无GUI/native/二进制或Sol旧WIP纳入。AGENTS0，边界见本批独立审查。
+
+按实际global17有task而source无result的缺口形成2D-R1内部source结果SQL实施计划2026-10-05-ownership-semantic-result-store-implementation.md，SHA256 F55F0846C496C664BE25BA83C548EB4BCB88B85C6B3B42B8E7297CC7F0D4BD2C。root仅精确同步已验L5两contracts源测试及barrel单追加export，旧index原字节备份保留；5170独立四契约109/109与contracts noEmit均exit0（1.40秒），依赖复验不是R1实现验收。main11/Sol12和其它旧WIP未覆盖。
+
+root保存同步后349原文件hash及graph/index/index.test/AGENTS原副本，baseline SHA256 7971E382B63321E02691A41A666A9F39E740695F11F119DA457F495C0B9E510B。send_message_to_thread成功派原Sol gpt-6.1-sol/medium仅5170实施R1：新内部store/test、自身记录、graph/index仅私有constructor/migrate/close与index.test对应角色回归；source版本18两角色合法旧布局，global17仍仅global。真实已保存材料与响应闭合、权威task完整identity/T1/phase/占用、source写前重核与写后状态、精确非成功补偿和旧升级/故障回归；零公开发布/发送/停止许可，无application/HTTP/GUI范围。
+
+wait_threads timeoutMs0确认新回合01a10be7-761b-7441-8597-488f43c4c74c active/inProgress，无error，原Sol已读基线计划开始工作；最近实际cursor f4858896-65d0-493b-be79-a6f1c83e64f0:2。原Luna上一交付completed/notLoaded、cursor eda937d1-a39b-4936-b9a6-1206c6fab661:1，源冻结，未派同文件任务。下一轮携最近实际游标紧凑查稳定交付后独立验收。R1实现/独立回归尚未验，不将派发作为完成；真实GUI0、模型/跨库发布/统一恢复及其它批次外部门保持。四批仍有本地工作，原automation继续；本地收尾/仅外部门后暂停定时与派发讨论，不第五批。本回执随下一稳定已验切片收尾，不循环提交空状态。
+
+## 2026-10-05 22:23：按用户请求重启原定时并恢复R1
+
+用户明确要求重启定时任务、检查开发聊天并继续原工作流。root实际automation.toml与view核原project-x-ray为PAUSED；使用automation_update更新ACTIVE后再次读文件核状态ACTIVE、原15分钟interval与原target_thread_id均保持，完整四批/停止门/静默prompt未改，没有创建新任务或新定时器。OpenAI Docs技能核官方Scheduled tasks文档，实际动作成功依据为工具及文件回读，不用文档代替运行证据。
+
+携最近真实cursor紧凑检查：原Sol R1回合01a10be7-761b-7441-8597-488f43c4c74c因usage limit failed/systemError，未形成交付；原Luna L5 completed/notLoaded冻结。root逐项核5170同步后349原文件全部hash不变、零缺失，新result store源/test/记录均不存在；HEAD仍455d4ad50830ee2495b70927e51caf830a4efbb8，旧WIP与已验L5依赖完整保留，不reset或重做。当前get_usage_limits普通使用允许，只读检查，未消费重置券/购买额度。
+
+root成功send_message_to_thread恢复原Sol gpt-6.1-sol/medium同R1计划/349基线/文件范围，原回合额度失败只记账户环境限制、不当产品缺陷。wait_threads timeoutMs0已确认新回合01a10c72-192e-7f22-a142-54cec87d5f58 active/inProgress且error null，最近cursor f4858896-65d0-493b-be79-a6f1c83e64f0:4。原Luna cursor eda937d1-a39b-4936-b9a6-1206c6fab661:1不变，结果契约冻结，未派同文件冲突任务。主HEAD52db0c98dcd6e09590f32473597ceba5cb1d0f10；本轮没有新实现/独立验收/Git动作，未提交只有root协调记录和R1计划。
+
+继续R1真实实现→冻结交付→root独立源码/回归验收→仅验收范围Git。GUI0、实际API/签名等外部门保持；仅原四批，收尾或全部剩外部门后暂停定时与派发讨论，不第五批。AGENTS0，账户中断无需新增规则，公共记录随下一已验切片收尾，不空状态循环提交。
+补充实际恢复确认：新Sol回合已回复继续原R1，完成当前基线读取工具，仍active/inProgress、error null；最新真实cursor f4858896-65d0-493b-be79-a6f1c83e64f0:5。并非只消息排队。
+
+## 2026-10-05 22:40：R1源表迁移断言具体范围补充
+
+紧凑检查原Sol R1仍active/inProgress；开发实际回归报告shared-remote-task-store.test.ts:171旧GraphStore global无结果表断言与本计划source18两角色空结果表冲突，开发保持冻结未擅改。root核实际该单测试源码及main/349基线hash F71170D3FC7D78F7C37228966CB80FADE7B59E254EC01B22498F92A8E90DD8FC一致。这是已授权迁移的新行为所需回归期望变化，不是产品缺陷或降低安全门，未把开发失败记录称为root独立复跑。
+
+root仅批准该单测试标题/表清单及增加两角色source18零结果/无public结果API断言；保留project无global14/registry/lease、global17任务隔离、重开字节一致与无public semantic dispatch，其他测试和生产shared核心冻结。原测试副本已保存原R1字节目录；补充计划精确同步5170，新计划SHA FB26FAC624C024D7BBBE3C5A2D33EEA7F412BF49851722EE3DAD80CBD63792D8，349基线保留，本计划变化属root协调来源。已成功给原Sol明确窄范围消息，继续真实核心/迁移回归，交付后独立验收，无新批次/GUI/网络/Git。
+
+本轮只有具体范围协调及独立迁移材料准备，R1实现/验收未完成，真实GUI0；AGENTS0，旧规则足够。开发正在修改，不并行跑同批重型/回归或集成源码，无变化不周期通知。
+root使用稳定main实际索引答题生成16份source18实施前旧库材料（四题型×双布局×空/非空排除规则），确认global17/source无18/结果表不存在，保存原表行/结构、真实grade/capsule及数据库hash。材料在忽略目录 .benchmarks/r1-independent/materials/c581951e-317d-4a86-a088-25afa8e6a528；无HTTP/模型、源码执行或递归删除。这里只准备之后真实升级/重开独立复验基准，未运行R1升级，不代表迁移验收。
+
+## 2026-10-05 22:59：R1胶囊迁移期望修正与恢复冻结收尾
+
+root携实际cursor7核原Sol上一回合completed/idle，交付明确未冻结：开发核心/shared/index141与三包类型通过，完整12文件先前454/456的剩余失败是capsule旧迁移清单未包含18。root核5170真实ownership-capsule-store.test.ts:216及SHA 9359C1E2001C7F9941437934CB1FCA0B21EC7348F6A6306673B08C2A69FA6F8C，原文件另存既有R1基线目录；这不是独立复跑结果。main原11与Sol原12分别保持，root明确仅批准该一处迁移数组追加18，其它题目/胶囊/评分/外键/源码/prepare-only/重开断言和生产核心冻结。349原基线不重置，root计划副本属于协调来源。
+
+实施计划已更新同步5170，最新SHA 9CDDF3BE429BD7AC3F2BEFE79CAC39AB862CBF14405EA5695CB0B13572EB75CE。send_message_to_thread成功恢复原Sol gpt-6.1-sol/medium继续原R1完整组合/三包类型与精确patch/hash冻结交付；wait_threads timeoutMs0确认新回合01a10c92-f9b7-7891-800e-8c132f47413a active/inProgress、error null，最近实际cursor f4858896-65d0-493b-be79-a6f1c83e64f0:8。Luna结果契约仍冻结，未制造填槽任务。root先审实际新核心/契约/回归边界，开发修改期间不并行执行同批测试或集成，冻结后独立验证16份真实旧库及必要故障。
+
+R1独立验收未完成，源码实现/开发自测/独立验证/真实GUI分别记录，GUI0，实际API/跨库发布/统一恢复等未验门保持。无新Git动作或AGENTS条目；仅原四批继续，本地收尾或全部剩外部门后暂停定时与派发讨论，不第五批。本记录随下一已验切片收尾，不循环提交状态。
+
+## 2026-10-05 23:26：R1冻结交付独立复验及来源修订缺陷退回
+
+root携真实cursor核原Sol R1 completed/notLoaded且明确冻结；原Luna仍冻结，无冲突派发。R1 manifest17842A87/patch6539C799与实际352文件hash逐项全等，344旧文件原字节不变、4授权旧文件/3新文件与1 root计划来源明确；git apply --reverse --check实际exit0，只读不应用。root独立原12文件462/462（76.30秒）及graph/application/contracts noEmit通过。原349基线不重置，冻结七文件另存自有Temp xray-r1-root-frozen-51f4dd0c9f0349d5baf65d647669c4a9；不覆盖Sol旧WIP。
+
+独立源码及真实SQL反例确认新store relations漏核保存capsule.sourceIdentity.ignoreRevision。root16组四题型×双布局×空/非空规则source18前库副本，经冻结实际核心正常prepare/append/read/failed补偿通过；仅把identity.ignoreRevision保存0→候选1或保存1→候选2、换taskId并重算全部摘要，16/16错误prepare接受，随后16/16真实A2及双库事务append/read/重开仍接受。原16库hash/ready材料/成绩保持；Sol现有缓存migration12另追加，未称为main R1集成验收。详细来源、真实命令/收据与边界见2026-10-05-ownership-semantic-result-store-independent-review.md。此为产品缺陷，不以462回归全过抵销。
+
+root成功派原Sol gpt-6.1-sol/medium仅原R1 store/test/自身记录窄修保存来源修订关系，包含prepare/read/已有错行重开固定拒绝和正常历史可读；不冒充当前workspace门、不扩契约/application/发布/恢复。wait_threads timeoutMs0确认新回合01a10cab-fefb-78d3-abae-33be33209150 active/inProgress、error null，实际cursor5e850447-53b4-4863-bd79-7f352fa9f11a:2。最近Luna真实cursor9682e900-0f3b-4fcf-b7ca-b62ec052becc:1，未重派已验L5。
+
+已实现内部候选核心，独立回归/类型通过但反例不通过，整体未验；main未集成、无Git写、GUI0、真实API/当次exact prepared许可/跨库发布/统一停止恢复等保持。AGENTS0，已有有限DTO来源与摘要规则覆盖，补具体回归。四批内修正继续；结束或只剩外部门后暂停定时及派发讨论，不第五批。
+
+
+## 2026-10-05 23:51：R1窄修独立接受及精确main集成
+
+root核修正版352文件hash与最终manifest0004684C、patch8BA029BA一致，反向检查exit0；相比上版仅store/test/自身记录3文件改变，其余349保持，原基线不重置。Sol独立原12文件478/478（86.22秒）及三包noEmit通过；原16真实旧库副本probe-fixed确认错保存ignoreRevision重算摘要prepare/read/重开拒绝且材料保持。main精确加入私有生命周期五处及授权测试/新核心，400原文件中仅四授权旧源测试改变、396保持；保留main11，不带Sol12或旧缓存WIP。
+
+main首完整组合477/478的唯一失败为root新测试适配漏列global既有11；只修这一期望为11/13/17，原完整12再跑478/478（81.29秒），三包noEmit已通过。main实际16份pre18库probe-main通过升级/正常A2 append/read、completed保留、当前设置增加与旧保存修订历史读取、失败新候选精确补偿以及错修订prepare/read/重开拒绝，原库hash不变。两份root新收据及具体失败诊断见ownership-semantic-result-store-independent-review；开发通过不代独立结果。
+
+仅R1内部SQL后台独立接受；constructor同步来源/摘要校验与prepare/read异步严格校验分别记录，不称裸candidate已发布。GUI0、真实HTTP/模型、当次exact prepared许可/全当前性应用发布/统一停止恢复仍未验。AGENTS0，已有来源及精确写后规则覆盖。本已验范围由root核Git范围/remote收尾；实际SHA执行后另记，不提前报推送完成。原四批仍有应用接线本地工作，保持定时与原双线程流程，不第五批。
