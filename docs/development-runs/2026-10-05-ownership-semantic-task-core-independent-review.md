@@ -43,3 +43,7 @@ root自己的`.benchmarks/a2-independent`探针不复用开发测试作为实验
 已实现及独立代码/回归已验证：内部语义任务SQL状态、共享占用和global17升级/失败关闭，main集成范围如上。真实GUI验证0。实际语义Q3两段持久编排、完整响应transport、结果发布/读取/补偿、全参与者停止恢复、政策同步失效与真实API兼容/质量仍未验；不能把本层reserve/promote/release当发送或停止许可。原其它三批GUI/native/EPERM/Windows发布/签名/干净机器未验清单不变。
 
 本轮AGENTS新增1条：SQLite写后同时核预期完整状态与占用；依据开发真实三个失败及root实际故障复验，现有规则只覆盖提交/绑定/停止，未覆盖合法但错误目标/零写返回。未将测试数量、临时夹具失败或性能值写成规则。Git仅已验窄范围，由root另记真实SHA；未验生产链与旧WIP不纳入。四批仍有本地可推进工作，继续原工作流，本地收尾或全剩外部门后暂停定时与派发讨论，不第五批。
+
+## 2026-10-05 18:55：S3-A2实际Git回执
+
+root普通提交49b484663286a4a57d22cdd8564126c163587b14，13文件仅已验三个旧graph源测试/两个新graph源测试、开发与独立记录/实施计划、准确Q3旧回执/公共队列/一条规则。cached diff --check通过，push origin main实际exit0；独立ls-remote核https://github.com/finiteaxiom/project-x-ray.git main同SHA，提交后main清洁。main389原文件仅七源/规则/公共记录变化、382原字节不变、零缺失；未纳入Sol旧WIP/GUI/native/二进制。实际已验范围及未验门见本专门审查，统一恢复、transport/结果发布和真实GUI/API保持开放。随后新增L5实施计划属于下一未提交协调范围，不改写本次提交内容。

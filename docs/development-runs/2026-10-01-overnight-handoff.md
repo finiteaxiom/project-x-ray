@@ -516,3 +516,17 @@ root核冻结patch B17641FD35CC26012A6DB20DD54D620F118E4D6D2039796BDFD8DE26A4EFB
 root实际旧16字节在实施前生成八份两布局真实索引答题库；冻结后两目录分别从原库复制升级17/重开，所有原表行/源码/grade/capsule/历史T1/旧标识保持、新任务零行、独立source及原库hash不变。实际旧14源生成库合法升级17、坏库拒绝。公共迁移坏16/半17/标识和COMMIT故障完整回滚；自有双连接promotion COMMIT失败仍reserved/task null/feature BUSY，活跃释放与亚毫秒回退拒绝，RAISE(IGNORE)拒绝、迟到旧release保留新feature占用。详细失败分类、命令和边界见2026-10-05-ownership-semantic-task-core-independent-review.md。
 
 已实现及独立代码/回归已验证=内部semantic SQL任务与共享global17；真实GUI0。无公共生产semantic写API/结果表，未证明模型发送、Q3实际两段编排、结果发布/补偿、全参与者停止恢复、真实API或其它批次外部门完成。AGENTS新增一条预期record/inflight写后核验，有已确认开发失败及root实际故障依据；夹具错误只记录。Git仅验收范围另记真实回执，未验生产WIP不纳入。四批仍有本地工作，继续原双聊天；本地收尾/仅外部门后暂停automation与派发讨论，不第五批。
+## 2026-10-05 18:55：S3-A2实际Git回执
+
+root普通提交49b484663286a4a57d22cdd8564126c163587b14，13文件仅已验三个旧graph源测试/两个新graph源测试、开发与独立记录/实施计划、准确Q3旧回执/公共队列/一条规则。cached diff --check通过，push origin main实际exit0；独立ls-remote核https://github.com/finiteaxiom/project-x-ray.git main同SHA，提交后main清洁。main389原文件仅七源/规则/公共记录变化、382原字节不变、零缺失；未纳入Sol旧WIP/GUI/native/二进制。实际已验范围及未验门见本专门审查，统一恢复、transport/结果发布和真实GUI/API保持开放。随后新增L5实施计划属于下一未提交协调范围，不改写本次提交内容。
+## 2026-10-05 18:56：下一必要结果契约切片派发依据
+
+S3-A2已实际验收提交推送49b484663286a4a57d22cdd8564126c163587b14。root核contracts已有response/L3 identity而无持久结果DTO与摘要验证，按已接受共享任务设计第6/7节，下一source append/global completed闭合需要该依赖。形成明确2D-L5实施计划2026-10-05-ownership-semantic-result-contract-implementation.md，SHA 0EA3D104E86A4AE58FFD690C54CC7EB2DF13B5C78476C6F7356B395715FD4553；仅main新contracts result.ts/test、index单export及Luna自有开发记录，pure builder/validator首await前完整捕获、实际binding/response摘要及时间/预算严格检查。
+
+此为原第二批必要实现，不重复准备/语料或第五批，不代表结果持久化/模型/发布已验。原Sol复杂SQL切片冻结；Luna日常纯契约可先实施，其交付稳定后root独立复验并明确派结果store/编排复杂切片，避免共享文件并发。root保存main原字节清单与index原副本，开发不Git、不改公共文档或AGENTS；无GUI/真实网络/密钥操作。下方实际派发回执另记，不把计划描述当启动成功。
+实际派发回执（2026-10-05 18:56）：send_message_to_thread成功派原Luna gpt-6-luna/max，随后wait_threads timeoutMs0确认新回合01a10bb4-9eea-7663-9eb8-f6b358625dd3为active/inProgress，最新实际cursor423719ee-ed60-4ace-8b99-f546f3b6c23b:2。root实施前394旧文件hash及index原副本已保存；两公共记录仅追加本回执属于root明确来源，不纳入Luna交付patch。Sol上一A2回合保持completed/idle与cursor478d1c71-ec84-43ea-b9d2-7f552c2add7c:12，未并发派依赖未齐的结果store/发布任务。project-x-ray原15分钟automation实际ACTIVE；四批仍有本地工作，不提前暂停，不第五批。
+## 2026-10-05 19:46：L5纯结果契约独立接受
+
+root核原Luna四文件冻结hash及394原字节清单：391不变、零缺失，index仅单export，两公共记录仅root回执。独立源码审查、4文件109/109与contracts noEmit通过；root16组四题型×双布局×空/非空ignore实际索引答题材料→Q3完整body/exact prepared→L5两摘要与A2内部算法核验通过。自造证据重算摘要仅成为DTO，exact prepared仍拒绝；原SQL/成绩/材料/源码保持，零task/registry/lease/HTTP。完整命令、hash及预算不可触达限制见2026-10-05-ownership-semantic-result-contract-independent-review.md。
+
+已实现及独立代码/回归验证=纯结果契约；真实GUI0。source结果持久化、权威T1/当前性、跨库completed发布补偿/统一停止恢复、模型兼容质量及其他批次外部门未验。AGENTS0，既有捕获/摘要规则覆盖。原Sol冻结待依赖精确同步及结果store正式派发；Luna本批冻结，不制造填槽准备任务。Git仅本已验窄范围另记真实SHA，四批仍有本地实现，继续automation，不第五批。
