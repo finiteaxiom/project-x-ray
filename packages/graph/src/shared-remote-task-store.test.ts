@@ -8,6 +8,7 @@ import { canonicalJson, remoteCapturedIdentitySchema, ownershipSemanticCapturedI
   type RemoteCapturedIdentity, type RemoteTaskRecord } from "@project-xray/contracts";
 import { GraphStore } from "./index.js";
 import { RemoteExplanationStore } from "./remote-explanation-store.js";
+import { OwnershipSemanticTaskStore, semanticTaskObjects } from "./ownership-semantic-task-store.js";
 
 const connections: Database.Database[] = [], stores: GraphStore[] = [];
 const h = "a".repeat(64), time = "2026-10-01T00:00:00.000Z";
@@ -41,11 +42,10 @@ function semantic(id = identity()) {
     semanticProtocolVersion: "ownership-semantic-assessment/1.0.0", semanticScoringVersion: "1.0.0", purpose: "ownership-semantic-assessment",
     disclosureVersion: "ownership-semantics/1.0.0", provider: "openai", model: "fixture-model", assessmentPackageId: h });
 }
-// Owned SQL fixture only. No semantic task table or production registration/permission API.
+// Owned SQL fixture only. Legal17 task metadata never establishes dispatch or permission.
 function artificial(db: Database.Database, id = semantic(), slot = true) {
-  const payload = canonicalJson(id), hash = digest(payload);
-  db.prepare("INSERT INTO remote_task_registry VALUES(?,?,?,?,?,?,?,?,?)").run(id.taskId, id.purpose, id.ownerSessionId, id.repositoryId, id.contextHandle, id.contextEpoch, hash, payload, time);
-  if (slot) db.prepare("INSERT INTO remote_provider_lease VALUES('openai',?,?,?,'registered',?)").run(id.taskId, id.purpose, hash, time);
+  const core = new OwnershipSemanticTaskStore(db, "global");
+  db.transaction(() => { core.reserve(id, time); core.promote(id); if (!slot) { core.finish(id, null, time); core.release(id); } }).immediate();
   return id;
 }
 function damage(db: Database.Database, trigger: string, mutate: () => void): void {
@@ -63,6 +63,7 @@ function legacyTask(phase: "dispatched" | "completed" = "dispatched"): RemoteTas
   return { identity: identity(), phase, createdAt: time, completedAt: phase === "completed" ? time : null, code: null };
 }
 function installed14(db: Database.Database): void {
+  installed16(db);
   // Restore the four exact installed14 objects, not a loosely equivalent legacy schema.
   for (const name of ["remote_lease_insert", "remote_lease_no_update", "remote_feature_insert", "remote_feature_acquire"]) {
     let sql = (db.prepare("SELECT sql FROM sqlite_master WHERE name=?").get(name) as { sql: string }).sql;
@@ -74,9 +75,54 @@ function installed14(db: Database.Database): void {
   }
   db.exec("DELETE FROM schema_migrations WHERE version=16");
 }
+function installed16(db: Database.Database): void {
+  if (!db.prepare("SELECT 1 FROM schema_migrations WHERE version=17").get()) return;
+  const insert = (db.prepare("SELECT sql FROM sqlite_master WHERE name='remote_lease_insert'").get() as { sql: string }).sql.split("\n    SELECT CASE WHEN NEW.purpose='ownership-semantic-assessment'")[0]! + "END";
+  const update = `CREATE TRIGGER remote_lease_no_update BEFORE UPDATE ON remote_provider_lease BEGIN
+    SELECT CASE WHEN OLD.stage<>'reserved' OR NEW.stage<>'registered' OR NEW.provider IS NOT OLD.provider
+      OR NEW.task_id IS NOT OLD.task_id OR NEW.purpose IS NOT OLD.purpose OR NEW.identity_digest IS NOT OLD.identity_digest
+      OR NEW.created_at IS NOT OLD.created_at OR NEW.purpose<>'feature-explanation' OR NOT EXISTS(
+        SELECT 1 FROM explanation_tasks t WHERE t.task_id=NEW.task_id AND t.inflight=1 AND t.phase='dispatched')
+      THEN RAISE(ABORT,'XRAY_SHARED_INVALID') END; END`;
+  const remove = `CREATE TRIGGER remote_lease_delete BEFORE DELETE ON remote_provider_lease
+    WHEN OLD.purpose='feature-explanation' BEGIN SELECT CASE WHEN NOT EXISTS(
+      SELECT 1 FROM explanation_tasks t WHERE t.task_id=OLD.task_id AND t.inflight=0 AND t.phase<>'dispatched')
+      THEN RAISE(ABORT,'XRAY_SHARED_INVALID') END; END`;
+  for (const [name, sql] of [["remote_lease_insert", insert], ["remote_lease_no_update", update], ["remote_lease_delete", remove]]) { db.exec(`DROP TRIGGER ${name}`); db.exec(sql!); }
+  for (const object of [...semanticTaskObjects].reverse()) db.exec(`DROP ${object.type.toUpperCase()} ${object.name}`);
+  db.exec("DELETE FROM schema_migrations WHERE version=17");
+}
 afterEach(() => { vi.useRealTimers(); for (const store of stores.splice(0)) if (raw(store).open) store.close(); for (const db of connections.splice(0)) if (db.open) db.close(); });
 
 describe("global shared SQL task compatibility", () => {
+  it("actual16 legal reserved semantic survives17 without invented task or T1", () => {
+    const store = open(), db = raw(store), id = semantic(); installed16(db);
+    const payload = canonicalJson(id);
+    db.transaction(() => {
+      db.prepare("INSERT INTO remote_task_registry VALUES(?,?,?,?,?,?,?,?,?)").run(id.taskId, id.purpose, id.ownerSessionId, id.repositoryId, id.contextHandle, id.contextEpoch, digest(payload), payload, time);
+      db.prepare("INSERT INTO remote_provider_lease VALUES('openai',?,?,?,'reserved',?)").run(id.taskId, id.purpose, digest(payload), time);
+    }).immediate();
+    db.exec("CREATE TABLE historical_source(payload TEXT); INSERT INTO historical_source VALUES('historical bytes')");
+    const before = [db.prepare("SELECT * FROM remote_task_registry").all(), db.prepare("SELECT * FROM remote_provider_lease").all(), db.prepare("SELECT * FROM historical_source").all(), db.prepare("SELECT * FROM schema_migrations WHERE version IN(14,16)").all()];
+    store.remote.migrate();
+    expect([db.prepare("SELECT * FROM remote_task_registry").all(), db.prepare("SELECT * FROM remote_provider_lease").all(), db.prepare("SELECT * FROM historical_source").all(), db.prepare("SELECT * FROM schema_migrations WHERE version IN(14,16)").all()]).toEqual(before);
+    expect(new OwnershipSemanticTaskStore(db, "global").read(id.taskId)).toBeNull();
+    expect(db.prepare("SELECT version FROM schema_migrations WHERE version=17").get()).toEqual({ version: 17 });
+  });
+  it.each(["registered-no-task", "orphan", "broken16", "partial17", "marker-insert", "commit"])("actual16 %s rejects17 with exact schema/row rollback", failure => {
+    const store = open(), db = raw(store); installed16(db);
+    if (["registered-no-task", "orphan"].includes(failure)) {
+      const id = semantic(), payload = canonicalJson(id);
+      db.prepare("INSERT INTO remote_task_registry VALUES(?,?,?,?,?,?,?,?,?)").run(id.taskId, id.purpose, id.ownerSessionId, id.repositoryId, id.contextHandle, id.contextEpoch, digest(payload), payload, time);
+      if (failure === "registered-no-task") db.prepare("INSERT INTO remote_provider_lease VALUES('openai',?,?,?,'registered',?)").run(id.taskId, id.purpose, digest(payload), time);
+    }
+    if (failure === "broken16") db.exec("DROP TRIGGER remote_feature_update");
+    if (failure === "partial17") db.exec(semanticTaskObjects[0].sql);
+    if (failure === "marker-insert") db.exec("CREATE TRIGGER reject17 BEFORE INSERT ON schema_migrations WHEN NEW.version=17 BEGIN SELECT RAISE(ABORT,'private'); END");
+    if (failure === "commit") db.exec("CREATE TABLE fault_parent(id INTEGER PRIMARY KEY); CREATE TABLE fault_child(id INTEGER REFERENCES fault_parent(id) DEFERRABLE INITIALLY DEFERRED); CREATE TRIGGER reject17 AFTER INSERT ON schema_migrations WHEN NEW.version=17 BEGIN INSERT INTO fault_child VALUES(1); END");
+    const before = snapshot(db); expect(() => store.remote.migrate()).toThrow(expect.objectContaining(safe)); expect(snapshot(db)).toBe(before);
+    expect(db.prepare("SELECT version FROM schema_migrations WHERE version=17").get()).toBeUndefined();
+  });
   it.each(["dispatched", "completed"] as const)("strict installed14 upgrades16 preserving %s history and marker", phase => {
     const store = open(), id = configured(store), db = raw(store); start(store, id);
     if (phase === "completed") { store.remote.finish(id.taskId, null); store.remote.releaseDispatch(id.taskId); }
@@ -122,7 +168,7 @@ describe("global shared SQL task compatibility", () => {
     expect(snapshot(raw(reopened))).toBe(before);
     const project = open(":memory:", "project"); expect(raw(project).prepare("SELECT 1 FROM schema_migrations WHERE version=14").get()).toBeUndefined();
     for (const table of ["remote_task_registry", "remote_provider_lease"]) expect(raw(project).prepare("SELECT 1 FROM sqlite_master WHERE name=?").get(table)).toBeUndefined();
-    expect(raw(reopened).prepare("SELECT name FROM sqlite_master WHERE name IN ('ownership_semantic_tasks','ownership_semantic_results')").all()).toEqual([]);
+    expect(raw(reopened).prepare("SELECT name FROM sqlite_master WHERE name IN ('ownership_semantic_tasks','ownership_semantic_results')").all()).toEqual([{ name: "ownership_semantic_tasks" }]);
     expect("registerSemanticDispatch" in reopened.remote).toBe(false);
   });
   it.each(["dispatched", "completed"] as const)("migration preserves legacy %s1 identity/time/slot and old history bytes", phase => {
@@ -165,9 +211,9 @@ describe("global shared SQL task compatibility", () => {
     }
   });
   it("semantic artificial slot blocks feature; feature slot rejects other purpose atomically", () => {
-    const store = open(), id = configured(store), db = raw(store); artificial(db); const before = snapshot(db);
+    const store = open(), id = configured(store), db = raw(store); const sem = artificial(db); const before = snapshot(db);
     expect(() => start(store, id)).toThrow(expect.objectContaining({ code: "BUSY" })); expect(snapshot(db)).toBe(before);
-    db.exec("DELETE FROM remote_provider_lease"); start(store, id); const beforeOther = snapshot(db);
+    const core = new OwnershipSemanticTaskStore(db, "global"); db.transaction(() => { core.finish(sem, null, time); core.release(sem); }).immediate(); start(store, id); const beforeOther = snapshot(db);
     expect(() => db.transaction(() => artificial(db)).immediate()).toThrow(); expect(snapshot(db)).toBe(beforeOther);
     expect(db.prepare("SELECT count(*) count FROM remote_provider_lease").get()).toEqual({ count: 1 });
   });

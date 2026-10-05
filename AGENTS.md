@@ -209,6 +209,8 @@ LLM 输出永远不是一级证据。LLM 可以对分析器返回的证据进行
 
 只按“执行反馈与规则沉淀”的门槛维护；详细过程保存在对应开发记录中。
 
+- SQLite 状态动作写后须核实际完整记录及占用是否等于本次预期，不能只核数据自洽；触发器可能产生合法但错误的终态、提前释放或以 RAISE(IGNORE) 零写。用这些真实故障验证固定拒绝和整事务回滚；方法返回仍不能证明外层 COMMIT 或 worker 已停止。[语义任务核心独立验收](docs/development-runs/2026-10-05-ownership-semantic-task-core-independent-review.md)
+
 - 远程请求的预算与身份摘要须针对最终 canonical 正文的 UTF-8 字节计算，覆盖模型、schema、说明、输出预算及内层 JSON 的再次转义；不能用包大小或内部摘要替代。用真实构造器“内层合法、完整正文超限”的引号/反斜杠边界验证拒绝且原材料不变，保留原本地严格响应校验。[完整正文独立验收](docs/development-runs/2026-10-05-ownership-semantic-responses-independent-review.md)
 
 - 使用持久答题历史认证原题时，在保存与历史读取/重开均核对实际SQL截点严格早于对应提交的真实行号；生成器或排序引擎不支持不能跳过时间顺序检查。用本次/后来提交充当发行历史并重算全部摘要的真实回归确认拒绝，同时覆盖正常失败重答和发行后回退时间追加。自洽摘要不证明发行先于提交，行号不代表整体防篡改日志。[原题绑定独立复验](docs/development-runs/2026-10-05-ownership-question-binding-independent-review.md)

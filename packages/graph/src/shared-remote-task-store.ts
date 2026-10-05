@@ -6,6 +6,7 @@ import {
   type RemoteTaskRecord,
 } from "@project-xray/contracts";
 import type { GraphStoreRole } from "./remote-explanation-store.js";
+import { semanticTaskObjects, validateSemanticTaskState } from "./ownership-semantic-task-store.js";
 
 const FEATURE = "feature-explanation";
 const SEMANTIC = "ownership-semantic-assessment";
@@ -94,6 +95,25 @@ const reservationObjects = objects.map(object => {
     END`;
   return { ...object, sql };
 });
+// Migration17 layers semantic guards over the preserved14/16 definitions.
+const semanticSharedObjects = reservationObjects.map(object => {
+  let sql = object.sql;
+  if (object.name === "remote_lease_insert") sql = sql.slice(0, -3) + `
+    SELECT CASE WHEN NEW.purpose='${SEMANTIC}' AND ((NEW.stage='reserved' AND EXISTS(SELECT 1 FROM ownership_semantic_tasks WHERE task_id=NEW.task_id))
+      OR (NEW.stage='registered' AND NOT EXISTS(SELECT 1 FROM ownership_semantic_tasks WHERE task_id=NEW.task_id AND inflight=1)))
+      THEN RAISE(ABORT,'XRAY_SHARED_INVALID') END; END`;
+  if (object.name === "remote_lease_no_update") sql = `CREATE TRIGGER remote_lease_no_update BEFORE UPDATE ON remote_provider_lease BEGIN
+    SELECT CASE WHEN OLD.stage<>'reserved' OR NEW.stage<>'registered' OR NEW.provider IS NOT OLD.provider
+      OR NEW.task_id IS NOT OLD.task_id OR NEW.purpose IS NOT OLD.purpose OR NEW.identity_digest IS NOT OLD.identity_digest OR NEW.created_at IS NOT OLD.created_at
+      OR (NEW.purpose='${FEATURE}' AND NOT EXISTS(SELECT 1 FROM explanation_tasks WHERE task_id=NEW.task_id AND inflight=1 AND phase='dispatched'))
+      OR (NEW.purpose='${SEMANTIC}' AND NOT EXISTS(SELECT 1 FROM ownership_semantic_tasks WHERE task_id=NEW.task_id AND inflight=1 AND phase='dispatched'))
+      THEN RAISE(ABORT,'XRAY_SHARED_INVALID') END; END`;
+  if (object.name === "remote_lease_delete") sql = `CREATE TRIGGER remote_lease_delete BEFORE DELETE ON remote_provider_lease BEGIN
+    SELECT CASE WHEN (OLD.purpose='${FEATURE}' AND NOT EXISTS(SELECT 1 FROM explanation_tasks WHERE task_id=OLD.task_id AND inflight=0 AND phase<>'dispatched'))
+      OR (OLD.purpose='${SEMANTIC}' AND NOT EXISTS(SELECT 1 FROM ownership_semantic_tasks WHERE task_id=OLD.task_id AND inflight=0 AND phase<>'dispatched'))
+      THEN RAISE(ABORT,'XRAY_SHARED_INVALID') END; END`;
+  return { ...object, sql };
+});
 
 /** Internal SQL compatibility core. There is deliberately no semantic task/permission API. */
 export class SharedRemoteTaskStore {
@@ -130,7 +150,8 @@ export class SharedRemoteTaskStore {
     return task;
   }
   private schema(legacy = false): void {
-    for (const object of legacy ? objects : reservationObjects) {
+    const installed = !legacy && !!this.db.prepare("SELECT 1 FROM schema_migrations WHERE version=17").get();
+    for (const object of legacy ? objects : installed ? [...semanticSharedObjects, ...semanticTaskObjects] : reservationObjects) {
       const found = this.db.prepare("SELECT sql FROM sqlite_master WHERE type=? AND name=?").get(object.type, object.name) as { sql: string } | undefined;
       if (!found || found.sql.trim() !== object.sql.trim()) invalid();
     }
@@ -143,6 +164,7 @@ export class SharedRemoteTaskStore {
     // Detect broken14 before legacy IF NOT EXISTS statements could silently repair it.
     const old = this.db.prepare("SELECT 1 FROM schema_migrations WHERE version=14").get(), upgraded = this.db.prepare("SELECT 1 FROM schema_migrations WHERE version=16").get();
     if (upgraded && !old) invalid();
+    if (this.db.prepare("SELECT 1 FROM schema_migrations WHERE version=17").get() && (!old || !upgraded)) invalid();
     if (old) this.assertState(!upgraded);
   }
   migrate(): void {
@@ -170,6 +192,15 @@ export class SharedRemoteTaskStore {
           this.db.exec(`DROP TRIGGER ${object.name}`); this.db.exec(object.sql);
         }
         this.db.prepare("INSERT INTO schema_migrations(version,applied_at) VALUES(16,?)").run(this.time(new Date().toISOString()));
+      }
+      this.assertState();
+      if (!this.db.prepare("SELECT 1 FROM schema_migrations WHERE version=17").get()) {
+        if (this.db.prepare("SELECT 1 FROM sqlite_master WHERE name='ownership_semantic_tasks' OR name LIKE 'semantic_task_%'").get()) invalid();
+        for (const object of semanticTaskObjects) this.db.exec(object.sql);
+        for (const object of semanticSharedObjects.filter((object, index) => object.sql !== reservationObjects[index]!.sql)) {
+          this.db.exec(`DROP TRIGGER ${object.name}`); this.db.exec(object.sql);
+        }
+        this.db.prepare("INSERT INTO schema_migrations(version,applied_at) VALUES(17,?)").run(this.time(new Date().toISOString()));
       }
       this.assertState();
     }).immediate();
@@ -202,6 +233,7 @@ export class SharedRemoteTaskStore {
       if (entry.row.inflight === 1 && !leases.some(lease => lease.task_id === id && lease.purpose === FEATURE)) invalid();
     }
     for (const [id, entry] of registry) if (entry.parsed.purpose === FEATURE && !tasks.has(id) && (legacy || !leases.some(lease => lease.task_id === id && lease.stage === "reserved" && lease.purpose === FEATURE))) invalid();
+    if (!legacy) validateSemanticTaskState(this.db, registries, leases, !!this.db.prepare("SELECT 1 FROM schema_migrations WHERE version=17").get());
   }
   featureTask(taskId: string): RemoteTaskRecord | null {
     this.open(); if (!remoteUuidSchema.safeParse(taskId).success) invalid();

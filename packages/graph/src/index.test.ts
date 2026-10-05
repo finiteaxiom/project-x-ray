@@ -134,7 +134,12 @@ describe("graph", () => {
         expect(db(global).prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?").get(name)).toEqual({ name });
         expect(db(project).prepare("SELECT name FROM sqlite_master WHERE name=?").get(name)).toBeUndefined();
       }
-      expect(db(global).prepare("SELECT name FROM sqlite_master WHERE name='ownership_semantic_tasks'").get()).toBeUndefined();
+      expect(db(global).prepare("SELECT version FROM schema_migrations WHERE version=17").get()).toEqual({ version: 17 });
+      expect(db(project).prepare("SELECT version FROM schema_migrations WHERE version=17").get()).toBeUndefined();
+      expect(db(global).prepare("SELECT name FROM sqlite_master WHERE name='ownership_semantic_tasks'").get()).toEqual({ name: "ownership_semantic_tasks" });
+      expect(db(project).prepare("SELECT name FROM sqlite_master WHERE name='ownership_semantic_tasks'").get()).toBeUndefined();
+      for (const target of [global, global.remote]) for (const name of ["reserveSemantic", "registerSemantic", "finishSemantic", "releaseSemantic"]) expect(name in target).toBe(false);
+      for (const target of [global, project]) expect(db(target).prepare("SELECT name FROM sqlite_master WHERE name='ownership_semantic_results'").get()).toBeUndefined();
     } finally { global.close(); project.close(); }
   });
   it("事务化保存并读取快照", () => {
