@@ -174,6 +174,30 @@ export class OwnershipCapsuleStore {
       return { result: { status: captured.capsule.status, questionBinding: "prepare-only", attempt: captured.attempt, capsule: captured.capsule }, package: semanticPackage };
     } catch (error) { throw safe(error); }
   }
+  /** Same-connection synchronous capture; no public read object is accepted as authority. */
+  captureForSemanticPreparation(attemptId: string, question: OwnershipQuestion) {
+    this.open(); if (!this.db.inTransaction) fail();
+    const row = this.db.prepare("SELECT * FROM ownership_attempts WHERE attempt_id=?").get(attemptId) as AttemptRow | undefined;
+    const capRow = this.db.prepare("SELECT * FROM ownership_semantic_capsules WHERE attempt_id=?").get(attemptId) as CapsuleRow | undefined;
+    if (!row || !capRow) fail();
+    const attempt = JSON.parse(row.payload) as OwnershipAttempt; ownershipAttemptSchema.parse(attempt);
+    const capsule = ownershipCapsuleSchema.parse(JSON.parse(capRow.payload));
+    if (capsule.status !== "ready" || row.attempt_id !== attempt.attemptId || row.repository_id !== attempt.repositoryId || row.snapshot_id !== attempt.snapshotId
+      || row.concept_id !== attempt.concept.id || row.completed_at !== attempt.completedAt || capRow.attempt_id !== attemptId || capRow.repository_id !== attempt.repositoryId
+      || capRow.snapshot_id !== attempt.snapshotId || capRow.status !== capsule.status || capRow.version !== capsule.version || capRow.attempt_hash !== capsule.attemptHash
+      || capRow.capsule_hash !== capsule.capsuleHash || digest(ownershipAttemptPreimage(attempt)) !== capsule.attemptHash || digest(ownershipCapsulePreimage(capsule)) !== capsule.capsuleHash
+      || digest(ownershipQuestionPreimage(question)) !== capsule.questionFingerprint) fail();
+    const material = this.material(attempt.repositoryId, attempt.snapshotId); this.assertCapsuleSource(capsule, material);
+    this.assertQuestion(question, attempt, capsule, material.snapshot);
+    const projection = this.submissionProjection({ attempt, capsule, question, source: { activation: material.activation, analysisIdentity: material.snapshot.analysisIdentity, sourceManifestHash: material.manifestHash, ignoreRevision: capsule.sourceIdentity.ignoreRevision ?? 0 } }, material);
+    if (!projection || digest(ownershipSubmissionProjectionPreimage(projection)) !== capsule.submissionProjectionHash) fail();
+    return { attempt: capture(attempt), capsule: capture(capsule), question: capture(question), material: capture(material),
+      preimage: canonicalJson({ attempt, capsule, question, material, projection }) };
+  }
+  async validateSemanticPreparation(captured: ReturnType<OwnershipCapsuleStore["captureForSemanticPreparation"]>): Promise<OwnershipSemanticPackage> {
+    this.open(); await validateOwnershipCapsule(captured.capsule, captured.question, captured.attempt);
+    const result = await this.ready(captured.attempt, captured.capsule, captured.material); this.open(); return result;
+  }
   private revision(value: number): void { if (!Number.isSafeInteger(value) || value < 0) fail(); }
   private materialIdentity(material: Material): string { return canonicalJson({ snapshot: material.snapshot, manifestHash: material.manifestHash, sourceHashes: material.sources.map(source => ({ filePath: source.filePath, hash: digest(source.content), contentHash: source.contentHash, language: source.language })) }); }
   private material(repositoryId: string, snapshotId: string): Material {

@@ -229,4 +229,12 @@ export class OwnershipQuestionBindingStore {
       }).deferred();
     } catch { return fail(); }
   }
+  /** Internal synchronous capture, used only inside the preparation store's SQL view. */
+  captureForSemanticPreparation(attemptId: string) {
+    this.open(); this.schema(); if (!this.db.inTransaction) fail();
+    const record = this.readRecord(attemptId);
+    if (!record || record.status !== "verified-generator" || this.verify(record, this.material(record.repositoryId, record.snapshotId)) !== "verified-generator") fail();
+    const question = (JSON.parse(record.questionPreimage) as { question: OwnershipQuestion }).question;
+    return { record: structuredClone(record), question: structuredClone(question), historyPreimage: canonicalJson(this.history(record.repositoryId, record.basis.historyCut.maxAttemptRowid)) };
+  }
 }

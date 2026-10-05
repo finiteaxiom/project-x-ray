@@ -18,6 +18,9 @@ import { captureComparison, cloneRepository, comparisonStateFingerprint, getGitH
 import { GraphStore, overviewFromSnapshot, queryFlow, searchNodes, type NavigationValiditySample } from "@project-xray/graph";
 import { buildOwnershipRubricCapsule, createQuestions, createOwnershipQuestionGeneratorPort, gradeAnswer, type OwnershipRubricSource } from "@project-xray/ownership";
 import { canonicalJson, ownershipQuestionRequestSchema, ownershipQuestionSchema, ownershipSubmissionSchema } from "@project-xray/contracts";
+import { prepareOwnershipSemanticRequest } from "@project-xray/llm";
+import { OwnershipSemanticPreparationError, type OwnershipSemanticTrustedPorts } from "@project-xray/graph";
+import { OwnershipSemanticPreparationApplication } from "./ownership-semantic-preparation.js";
 import { RemoteExplanationApplication, type RemoteProviderPort, type RemoteCredentialPort } from "./remote-explanation.js";
 export { RemoteExplanationApplication, type RemoteApplicationPorts, type RemoteProviderPort, type RemoteCredentialPort } from "./remote-explanation.js";
 
@@ -216,6 +219,16 @@ function captureOwnershipData<T>(input: T): T {
 }
 
 export class XRayApplication {
+  private semanticGeneration = 0;
+  private semanticFlow: OwnershipSemanticPreparationApplication | undefined;
+  private readonly semanticPorts: OwnershipSemanticTrustedPorts = {
+    adapter: prepareOwnershipSemanticRequest,
+    main: {
+      capture: (request, authority, settings, source) => this.captureSemanticMain(request, authority, settings, source),
+      assert: (captured, request, authority, settings, source) => { if (canonicalJson(this.captureSemanticMain(request, authority, settings, source)) !== canonicalJson(captured)) throw new OwnershipSemanticPreparationError("CONTEXT_CHANGED"); },
+      checkWorkspace: async (request, signal) => { if (this.ownershipClosed || signal.aborted) throw new OwnershipSemanticPreparationError("CANCELLED"); return this.getSnapshotState(request); },
+    },
+  };
   private readonly ownershipGenerator = createOwnershipQuestionGeneratorPort();
   private readonly questionIssuances = new WeakMap<OwnershipQuestion, { store: GraphStore; issuance: Readonly<object> }>();
   private readonly legacyStore: GraphStore;
@@ -234,7 +247,7 @@ export class XRayApplication {
   private navigationObservation: NavigationObservation | null = null;
 
   constructor(options: XRayApplicationOptions) {
-    this.legacyStore = new GraphStore(options.databasePath, "global", this.ownershipGenerator);
+    this.legacyStore = new GraphStore(options.databasePath, "global", this.ownershipGenerator, this.semanticPorts);
     this.cacheRoot = options.cacheRoot;
     this.projectDatabaseRoot = options.projectDatabaseRoot;
     this.onProgress = options.onProgress;
@@ -248,7 +261,7 @@ export class XRayApplication {
     mkdirSync(root, { recursive: true });
     for (const name of readdirSync(root).filter((item) => item.endsWith(".sqlite"))) {
       try {
-        const repositoryId = name.slice(0, -7); const store = new GraphStore(join(root, name), "project", this.ownershipGenerator); const latest = store.getLatestOverview();
+        const repositoryId = name.slice(0, -7); const store = new GraphStore(join(root, name), "project", this.ownershipGenerator, this.semanticPorts); const latest = store.getLatestOverview();
         this.stores.set(repositoryId, store);
         if (latest) {
           this.snapshotStores.set(latest.snapshotId, store);
@@ -309,7 +322,7 @@ export class XRayApplication {
     const known = this.snapshotStores.get(ref.snapshotId);
     if (!known && this.projectDatabaseRoot && !this.stores.has(ref.repositoryId)) {
       const databasePath = join(this.projectDatabaseRoot, `${ref.repositoryId}.sqlite`);
-      if (existsSync(databasePath)) this.stores.set(ref.repositoryId, new GraphStore(databasePath, "project", this.ownershipGenerator));
+      if (existsSync(databasePath)) this.stores.set(ref.repositoryId, new GraphStore(databasePath, "project", this.ownershipGenerator, this.semanticPorts));
     }
     const project = this.stores.get(ref.repositoryId), store = known ?? project ?? this.legacyStore;
     const before = this.navigationProbe(store);
@@ -375,6 +388,20 @@ export class XRayApplication {
     return installed;
   }
 
+  /** Local semantic preparation only; no transport, task registration or credentials. */
+  createOwnershipSemanticPreparations(): OwnershipSemanticPreparationApplication {
+    if (this.ownershipClosed) throw new OwnershipSemanticPreparationError("INVALID_RECEIPT");
+    return this.semanticFlow ??= new OwnershipSemanticPreparationApplication(this.legacyStore, request => this.semanticStores(request));
+  }
+  private semanticStores(request: import("@project-xray/contracts").OwnershipSemanticPrepareRequest) {
+    return { source: this.requireSnapshot(request).store, settings: this.storeForRepository(request.repositoryId) };
+  }
+  private captureSemanticMain(request: import("@project-xray/contracts").OwnershipSemanticPrepareRequest, authority: GraphStore, settings: GraphStore, source: GraphStore) {
+    const stores = this.semanticStores(request);
+    if (this.ownershipClosed || !this.current || authority !== this.legacyStore || stores.source !== source || stores.settings !== settings
+      || this.current.repositoryId !== request.repositoryId || this.current.snapshotId !== request.snapshotId || !Number.isSafeInteger(this.semanticGeneration)) throw new OwnershipSemanticPreparationError("CONTEXT_CHANGED");
+    return { generation: this.semanticGeneration, reference: { repositoryId: this.current.repositoryId, snapshotId: this.current.snapshotId, activation: this.currentActivation } };
+  }
   /** Trusted worker wiring only. No provider or credential reader is configured by default. */
   createRemoteExplanations(ports: { provider?: RemoteProviderPort; credentials?: RemoteCredentialPort; onTask?: (task: import("@project-xray/contracts").RemoteTaskRecord) => void } = {}): RemoteExplanationApplication {
     return new RemoteExplanationApplication({
@@ -390,7 +417,7 @@ export class XRayApplication {
       },
       currentReference: () => {
         if (this.projectDatabaseRoot) for (const name of readdirSync(this.projectDatabaseRoot).filter(item => item.endsWith(".sqlite"))) {
-          const id = name.slice(0, -7); if (!this.stores.has(id)) this.stores.set(id, new GraphStore(join(this.projectDatabaseRoot, name), "project", this.ownershipGenerator));
+          const id = name.slice(0, -7); if (!this.stores.has(id)) this.stores.set(id, new GraphStore(join(this.projectDatabaseRoot, name), "project", this.ownershipGenerator, this.semanticPorts));
         }
         return [this.legacyStore, ...this.stores.values()].map(store => store.getActiveReference()).filter((item): item is NonNullable<typeof item> => item !== null).sort((a, b) => b.activation.localeCompare(a.activation))[0] ?? null;
       },
@@ -508,7 +535,7 @@ export class XRayApplication {
     const store = this.storeForRepository(repositoryId);
     const published = store.saveSnapshot(finalizeAnalysisSnapshot(snapshot), sources.map((item) => ({ filePath: item.projectPath, contentHash: item.contentHash, language: item.language, content: item.content })), true, settings.revision, this.currentActivation);
     throwIfAborted(options.signal);
-    this.snapshotStores.set(published.snapshotId, store); this.current = overviewFromSnapshot(published); this.currentActivation = store.getCurrentActivation(); this.clearQuestions();
+    this.snapshotStores.set(published.snapshotId, store); this.current = overviewFromSnapshot(published); this.currentActivation = store.getCurrentActivation(); this.semanticGeneration++; this.clearQuestions();
     return published;
     } finally { secureScope.close(); }
   }
@@ -516,14 +543,14 @@ export class XRayApplication {
   private storeForRepository(repositoryId: string): GraphStore {
     if (!this.projectDatabaseRoot) return this.legacyStore;
     const existing = this.stores.get(repositoryId); if (existing) return existing;
-    const store = new GraphStore(join(this.projectDatabaseRoot, `${repositoryId}.sqlite`), "project", this.ownershipGenerator); this.stores.set(repositoryId, store); return store;
+    const store = new GraphStore(join(this.projectDatabaseRoot, `${repositoryId}.sqlite`), "project", this.ownershipGenerator, this.semanticPorts); this.stores.set(repositoryId, store); return store;
   }
 
   private requireSnapshot(ref: SnapshotRef): { snapshot: ProjectSnapshot; store: GraphStore } {
     const known = this.snapshotStores.get(ref.snapshotId);
     if (!known && this.projectDatabaseRoot && !this.stores.has(ref.repositoryId)) {
       const databasePath = join(this.projectDatabaseRoot, `${ref.repositoryId}.sqlite`);
-      if (existsSync(databasePath)) this.stores.set(ref.repositoryId, new GraphStore(databasePath, "project", this.ownershipGenerator));
+      if (existsSync(databasePath)) this.stores.set(ref.repositoryId, new GraphStore(databasePath, "project", this.ownershipGenerator, this.semanticPorts));
     }
     const snapshot = known?.loadSnapshot(ref.snapshotId)
       ?? this.stores.get(ref.repositoryId)?.loadSnapshot(ref.snapshotId)
@@ -754,7 +781,7 @@ export class XRayApplication {
     } finally { if (request) observation?.settle(request); }
   }
 
-  close(): void { this.navigationSlot = null; this.navigationObservation?.dispose(); this.ownershipClosed = true; this.clearQuestions(); for (const store of new Set([this.legacyStore, ...this.stores.values()])) store.close(); }
+  close(): void { this.navigationSlot = null; this.navigationObservation?.dispose(); this.ownershipClosed = true; this.semanticGeneration++; this.semanticFlow?.close(); this.clearQuestions(); for (const store of new Set([this.legacyStore, ...this.stores.values()])) store.close(); }
 
   private async analyzeComparisonSide(base: ProjectSnapshot, side: CapturedSide, policy: IgnorePolicy, ignoreRevision: number, signal?: AbortSignal, progress?: (completed: number, total: number, currentFile: string) => void): Promise<ProjectSnapshot> {
     const sources: IndexedSource[] = side.sources.map((item) => ({ absolutePath: resolve(base.rootPath, item.projectPath), projectPath: item.projectPath, content: item.content, contentHash: item.contentHash, language: item.language }));
@@ -779,7 +806,7 @@ export class XRayApplication {
 
   private requireStore(ref: SnapshotRef): GraphStore {
     const known = this.snapshotStores.get(ref.snapshotId); if (known?.getOverview(ref.snapshotId)?.repositoryId === ref.repositoryId) return known;
-    if (this.projectDatabaseRoot && !this.stores.has(ref.repositoryId)) { const databasePath = join(this.projectDatabaseRoot, `${ref.repositoryId}.sqlite`); if (existsSync(databasePath)) this.stores.set(ref.repositoryId, new GraphStore(databasePath, "project", this.ownershipGenerator)); }
+    if (this.projectDatabaseRoot && !this.stores.has(ref.repositoryId)) { const databasePath = join(this.projectDatabaseRoot, `${ref.repositoryId}.sqlite`); if (existsSync(databasePath)) this.stores.set(ref.repositoryId, new GraphStore(databasePath, "project", this.ownershipGenerator, this.semanticPorts)); }
     for (const store of [this.stores.get(ref.repositoryId), this.legacyStore]) { if (store?.getOverview(ref.snapshotId)?.repositoryId === ref.repositoryId) { this.snapshotStores.set(ref.snapshotId, store); return store; } }
     throw new Error("项目或快照不存在");
   }

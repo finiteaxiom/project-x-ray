@@ -4,6 +4,9 @@ import { RemoteExplanationStore, type GraphStoreRole } from "./remote-explanatio
 import { OwnershipSemanticPolicyStore } from "./ownership-semantic-policy-store.js";
 import { OwnershipQuestionBindingStore, type OwnershipQuestionIssuance } from "./ownership-question-binding-store.js";
 import type { OwnershipQuestionGeneratorPort } from "@project-xray/contracts";
+import { OwnershipSemanticPreparationStore, OwnershipSemanticPreparationError, type OwnershipSemanticTrustedPorts, type PreparedSemanticBinding, type SemanticRevisionReceipt } from "./ownership-semantic-preparation-store.js";
+export { OwnershipSemanticPreparationError, SEMANTIC_PREPARATION_TIMEOUT_MS, captureSemanticPrepareRequest, semanticPreparationFailure } from "./ownership-semantic-preparation-store.js";
+export type { OwnershipSemanticTrustedPorts, PreparedSemanticBinding, SemanticRevisionReceipt, ConsumedSemanticPreparation } from "./ownership-semantic-preparation-store.js";
 import type { OwnershipSemanticAuthorization, OwnershipSemanticGrantCommand, OwnershipSemanticRevokeCommand } from "@project-xray/contracts";
 import { OwnershipCapsuleStore, OwnershipCapsuleStoreError, type OwnershipCapsuleWriteInput, type OwnershipSourceCapture, type PreparedOwnershipWrite, type OwnershipCapsuleRead, type OwnershipSemanticPackageRead } from "./ownership-capsule-store.js";
 export type { OwnershipSemanticPackageRead } from "./ownership-capsule-store.js";
@@ -51,15 +54,21 @@ export class GraphStore {
   private readonly ownershipCapsules: OwnershipCapsuleStore;
   private readonly ownershipSemanticPolicy: OwnershipSemanticPolicyStore;
   private readonly questionBindings: OwnershipQuestionBindingStore;
+  private readonly semanticPreparations: OwnershipSemanticPreparationStore;
   private navigationGeneration: number | null = null;
 
-  constructor(databasePath = ":memory:", role: GraphStoreRole = "project", ownershipGenerator?: OwnershipQuestionGeneratorPort) {
+  constructor(databasePath = ":memory:", role: GraphStoreRole = "project", ownershipGenerator?: OwnershipQuestionGeneratorPort, semanticPorts?: OwnershipSemanticTrustedPorts) {
     if (role !== "global" && role !== "project") throw new RemoteExplanationError("POLICY_INVALID");
     this.database = new Database(databasePath);
     this.remote = new RemoteExplanationStore(this.database, role);
     this.ownershipCapsules = new OwnershipCapsuleStore(this.database, this, () => this.questionBindings);
     this.questionBindings = new OwnershipQuestionBindingStore(this.database, ownershipGenerator,
       (repositoryId, snapshotId, capsule) => this.ownershipCapsules.captureQuestionBindingMaterial(repositoryId, snapshotId, capsule), repositoryId => this.listOwnershipAttempts(repositoryId));
+    this.semanticPreparations = new OwnershipSemanticPreparationStore(this.database, this, attemptId => {
+      const binding = this.questionBindings.captureForSemanticPreparation(attemptId);
+      const capsule = this.ownershipCapsules.captureForSemanticPreparation(attemptId, binding.question);
+      return { binding, capsule, preimage: canonicalJson({ binding, capsule: capsule.preimage }) };
+    }, captured => this.ownershipCapsules.validateSemanticPreparation(captured), semanticPorts);
     this.ownershipSemanticPolicy = new OwnershipSemanticPolicyStore(this.database, role);
     try {
       this.database.pragma("busy_timeout = 250");
@@ -578,6 +587,14 @@ export class GraphStore {
   issueOwnershipQuestions(request: import("@project-xray/contracts").OwnershipQuestionRequest, settings: GraphStore = this) { return this.questionBindings.issue(request, settings); }
   revokeOwnershipQuestion(issuance: OwnershipQuestionIssuance): void { this.questionBindings.revoke(issuance); }
   loadOwnershipQuestionBinding(attemptId: string) { return this.questionBindings.load(attemptId); }
+  prepareOwnershipSemanticBinding(request: import("@project-xray/contracts").OwnershipSemanticPrepareRequest, authority: GraphStore, settings: GraphStore, signal: AbortSignal): Promise<PreparedSemanticBinding> { return this.semanticPreparations.prepare(request, authority, settings, signal); }
+  withOwnershipSemanticAuthorityLock<T>(work: () => T): T {
+    if (this.remote.role !== "global" || !this.database.open) throw new OwnershipSemanticPreparationError("NOT_AUTHORIZED");
+    return this.database.transaction(work).immediate();
+  }
+  revokeOwnershipSemanticBinding(token: PreparedSemanticBinding): void { this.semanticPreparations.revoke(token); }
+  withOwnershipSemanticRevisions<T>(token: PreparedSemanticBinding, work: (receipt: SemanticRevisionReceipt) => T): T { return this.semanticPreparations.withRevisions(token, work); }
+  consumeOwnershipSemanticRevision(receipt: SemanticRevisionReceipt) { return this.semanticPreparations.consume(receipt); }
   prepareOwnershipAttemptWithCapsule(input: OwnershipCapsuleWriteInput, settings: GraphStore = this): Promise<PreparedOwnershipWrite> {
     if (!(settings instanceof GraphStore)) return Promise.reject(new OwnershipCapsuleStoreError());
     return this.ownershipCapsules.prepare(input, settings);
@@ -604,6 +621,7 @@ export class GraphStore {
   }
 
   close(): void {
+    this.semanticPreparations.close();
     this.questionBindings.close();
     this.ownershipSemanticPolicy.close();
     this.ownershipCapsules.close();

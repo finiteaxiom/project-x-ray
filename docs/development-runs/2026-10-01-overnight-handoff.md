@@ -409,3 +409,45 @@ root核原Sol明确冻结13文件hash、323旧清单（8授权变化/315未变/�
 主目录从真实原副本逐53块集成，365清单仅8授权源变化、357不变、零缺失；main activation/cache/barrel及旧迁移断言与Sol差异保留，不整份复制。只Q1后台接受：真实发题/原评分/三行原子/关闭重开核验；GUI0、Q2/语义任务/transport/模型及其余批次仍未验，不把verified-generator当当前或外发许可。AGENTS新增截点经验1条，首次await已有规则覆盖不重复。无重型/native/Electron/网络/秘密扫描/导入代码执行。Git实际回执后核。
 
 实际原Sol completed/idle :75，Luna原idle :36；开发不得Git。四批尚有可推进本地链路工作，继续原双线程，收尾或全剩外部条件后暂停原automation及派发讨论，不第五批。
+
+
+## 2026-10-05 11:59：实际Git回执与权限变化后的调度边界
+
+权限变化前Q1已验18文件普通提交推送9d9b3b238038cd675ee52054f84e48be05374e63；当时独立ls-remote核origin/main同SHA、cached diff --check通过、提交后main清洁。当前再次只读rev-parse仍同SHA。此提交仅已验Q1后台及准确记录/一条经验，无Sol旧WIP、GUI、native或二进制。
+
+root在实际源码/已接受S4-D第6节基础上形成2026-10-05-ownership-semantic-currentness-implementation.md：内部私有准备→真实固定adapter→global/settings/source同步重核→锁内一次消费，零语义任务/占用/结果/网络；actual adapterRequestDigest与未来HTTP bodyDigest区分，不伪造task identity。权限变化前已精确复制到5170，当前只读两目录SHA均09C6724568F14634CF241B111BD2DF8A66CF89803CD7232462DC1B433DA054FD。只是已形成的实施计划，**尚未派发或实现Q2**。
+
+当前managed权限仅main工作目录可写，.git与5170只读，网络受限、approval never。不用别的聊天绕过这个限制，不执行新的Git或工作树写入。timeout0实际游标已重置：Luna 28e03d75-929e-48c9-a044-8bf7fd3e58c7:1，上一回合completed/notLoaded；Sol 0f838fed-d42b-49b3-a29b-9a399c012637:1，修正回合completed/notLoaded，无新交付。原旧游标没有被硬当作当前状态。
+
+automation_update(view)及send_message_to_thread(Q1接受回执/继续冻结)均实际返回“MCP tool call requires approval, but approval policy is never”。消息未送达，定时任务状态未被工具确认或改变，不把尝试报为成功；Q2未派发，原两开发保持已有冻结。需用户恢复对应工作树/Git及聊天/自动化工具权限后继续原计划。此为当前权限/工具阻碍，非产品或测试失败，AGENTS不新增。未尝试提权、修改安全设置、GUI或网络外发。主目录仅保存准确交接及计划，不重复回归或制造替代准备任务。
+
+原四批仍有本地实现和检查，**不标全部完成**；下一阶段受当前权限阻碍，GUI/API/签名/干净机器门仍未验。四批结束暂停派发/定时任务讨论与不第五批门保持；当前工具受限时不能谎称自动化已暂停。
+
+
+## 2026-10-05：用户恢复完全访问，Q2正式派发
+
+用户明确恢复完全访问并授权现在派任务，原权限阻碍已解除。root重新读取当前规则/队列/最新审查交接，main仍9d9b3b238038cd675ee52054f84e48be05374e63，仅原准确协调记录与Q2计划待收尾；5170实际根目录/HEAD455d4ad及全部旧WIP保持。Q1 application与binding-store修正版hash保持。两目录Q2计划SHA均09C6724568F14634CF241B111BD2DF8A66CF89803CD7232462DC1B433DA054FD。
+
+已成功send_message_to_thread正式派原Sol GPT-6.1 Sol/medium仅5170实施Q2；实际新回合01a10a42-c8b5-7dc1-a4fb-002352f84bc9 active/inProgress，最新游标0f838fed-d42b-49b3-a29b-9a399c012637:3。root发现Sol缺之前已接受的2C-L固定adapter，立即通知其停在基线准备，未开始Q2源修改；精确同步此前不存在的两个llm文件及index单export，原index字节备份/旧差异保留，规范文本全等main。source/test SHA分别E8A0C95788FA4332BBC61A87DD97A960B3E0166E5EE7D20011C911F0E92768C1、DDFE1AEF6AFE88DC1A74B43C8F77D75E4BA1B23B810E86150E2B78B8E5F2D6A7，Sol index最终1622093744604A5D219873806899E988EB4082F5239DD933F76E530F5A68BCC8。该依赖同步是root已验模块接入，不算Q2擅改LLM；正式实现基线按同步后实际字节另建，原预备manifest留存。
+
+root在Sol实际运行ownership-semantic-prompt.test单文件14/14及llm noEmit通过，已成功发送可继续Q2的明确通知。只是依赖同步复验，非Q2来源/当前性/receipt已验收。Q2计划保持零网络/零task-slot-result、不读凭据、不操作用户授权、实际source/原题/adapter与独立政策全重核，一次私有receipt；正式交付后root独立验收。Luna上一回合completed/notLoaded，游标28e03d75-929e-48c9-a044-8bf7fd3e58c7:1，保持冻结不冲突，不为填槽制造准备任务。
+
+automation管理view现在调用成功；root只读具体automation配置核project-x-ray heartbeat状态ACTIVE、间隔15分钟、目标为本协调聊天。没有重复创建或更改计划/通知策略。消息送达和任务active均有真实工具回执，取代先前未送达状态；此前失败记录保留历史。无新Git、重型/native/Electron/GUI、外发或导入代码执行，AGENTS0新增（Q1已提交经验保持）。协调记录随下一稳定已验切片收尾，不循环提交。本地四批工作继续，四批收尾或全剩外部门后暂停定时任务/派发讨论，不第五批。
+
+## 2026-10-05：Q2 首冻结独立回归通过，懒加载缺陷派回修正
+
+root 核 Sol Q2 首冻结 patch SHA3CA29B8B8FBFD76D28573B637C14C3B65A73F83E6899C00F3B9097BF759F1B02、manifest4302EDF68F09FE2B96AF10B199D7138A73509937FE7C231AEC49232A3BCAA59A；331 基线仅四授权既有源变化，327 不变、零缺失，五新增文件及反向 patch 检查通过。root 独立13文件443/443、五包noEmit及两布局原始请求捕获/TTL/消费后取消/重新准备探针通过，真实 task/slot 行仍零。
+
+但额外真实晚出现数据库探针确认产品缺陷：watcher 初始空项目库 → 第二自有应用真实索引和可信答题 → watcher.getSnapshotState 惰性打开 → watcher.indexProject 激活 → 合法独立政策/context/provider 后 prepare 仍 NOT_CONFIGURED。四条 lazy GraphStore 路径漏固定 semanticPorts，不能以普通443通过接受。详细复现、范围、hash、命令及未验门见2026-10-05-ownership-semantic-currentness-independent-review.md。
+
+root 主目录仅试集成首四源/五新文件，371 原文件基线已备份，main activation/cache/迁移差异保留；同原始两布局四门和五包类型通过，main集成13文件443/443（191.95秒）退出0；同一原始懒载失败在main也复现。371基线仅四源及三协调记录变化、其余364文件不变、零缺失。首Q2不接受、不Git。已成功派原Sol/medium仅5170原Q2边界修正、补真实懒载接线回归，实际回合01a10a7b-2b14-7402-ac7e-319ff66f84ba active/inProgress，最新cursor0f838fed-d42b-49b3-a29b-9a399c012637:7。Luna保持冻结notLoaded :1，不并发写同批；root不测试Sol活动源，待冻结复验原失败。
+
+main HEAD仍9d9b3b238038cd675ee52054f84e48be05374e63，无新提交/推送。实际origin现为https://github.com/finiteaxiom/project-x-ray.git，独立ls-remote origin/main仍同9d9b3b2；保留当前远程设置，不沿用旧缓存名称。已实现=首Q2有缺陷；独立代码/回归已验证=上述首冻结与失败复现；真实GUI已验证=0；Q2接受/模型/task/HTTP/发布/恢复及其他批次未验门保持。AGENTS0，未完成闭环不提前沉淀；无重型/GUI/凭据/外发/导入代码执行。四批继续，收尾暂停及不第五批门不变。
+
+## 2026-10-05：Q2 懒加载修正独立接受，main 精确集成复验
+
+root 核 Sol 修订 patch EEA98B5218EA586454254EB7EE0E579B9C1B8D60E6D7B927A959E25CDD2A004B、manifest 34824C405C298498F4EF310A5E47B969243DB34FBFA4CAD63C13FB95B293C74F；331 原文件仍仅四授权源变化/327 不变，九冻结 hash 一致。真实七个构造统一固定端口、四种晚出现库入口及默认拒绝/close/主 A→B→A 回归补齐。两个目录同一原始懒载失败探针现在实际 prepare 成功。main 371 基线仅四源及三协调记录变化/364 不变，原 activation/cache/observer/迁移差异保留，未复制旧 Sol WIP。
+
+root main 最终14文件493/493（235.14秒）及五包noEmit通过。Sol 同一完整命令492过1旧Git报告测试超原5000ms（5084ms）且清理EBUSY；原因未确认，两目录轻量回归当时并行。main结束后不改源码/断言/时限，在Sol独立复跑原index.test.ts，24/24、49.13秒、无EBUSY；其余469项在完整命令通过，Sol五包类型通过。准确失败/复跑、实际命令、hash和接受边界见2026-10-05-ownership-semantic-currentness-independent-review.md，不写成Sol一次493全过。
+
+已实现并独立代码/回归验证=Q2内部本地材料当前性准备及同步一次屏障；真实GUI已验证=0；semantic task/实际HTTP body/传输/发布/统一参与者恢复/模型质量仍未验，其他三批门保持。零task-slot-result写入/凭据读取/网络/用户授权操作/重型/导入代码执行。AGENTS0新增：原缺陷已闭环但已有规则覆盖。原Sol完成idle :20、Luna notLoaded :1，均源冻结、开发不得Git；本次已验范围由root核实际差异及远程再收尾。四批仍有本地范围可推进，不暂停或启动第五批。
