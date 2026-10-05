@@ -6,6 +6,16 @@ import { tmpdir } from "node:os";
 import { GRAPH_QUERY_VERSION, MODULE_OVERVIEW_VERSION, type GraphQueryRequest, type OwnershipAttempt, type ProjectSnapshot } from "@project-xray/contracts";
 import { GraphStore } from "./index.js";
 
+it("reservation lifecycle adds no migration or public material/dispatch bridge", () => {
+  const store = new GraphStore(":memory:", "global");
+  const db = (store as unknown as { database: Database.Database }).database;
+  const versions = db.prepare("SELECT version FROM schema_migrations ORDER BY version").all();
+  expect(() => store.cancelOwnershipSemanticReservation({} as never)).toThrow();
+  expect(db.prepare("SELECT version FROM schema_migrations ORDER BY version").all()).toEqual(versions);
+  for (const name of ["takeReservation", "reserveSemanticIdentity", "publishSemanticResult", "dispatchSemantic"]) expect(store).not.toHaveProperty(name);
+  store.close(); expect(() => store.cancelOwnershipSemanticReservation({} as never)).toThrow();
+});
+
 const snapshot: ProjectSnapshot = {
   repositoryId: "repo", snapshotId: "snap", name: "sample", rootPath: "C:/sample", sourceType: "local", createdAt: "2026-01-01T00:00:00.000Z",
   analysisIdentity: { graphIrVersion: "1", analyzerVersions: { test: "1" }, configurationHash: "c", sourceFingerprint: "f" }, sourceFiles: [],

@@ -1321,3 +1321,17 @@ root核修正版352文件hash与最终manifest0004684C、patch8BA029BA一致，�
 main首完整组合477/478的唯一失败为root新测试适配漏列global既有11；只修这一期望为11/13/17，原完整12再跑478/478（81.29秒），三包noEmit已通过。main实际16份pre18库probe-main通过升级/正常A2 append/read、completed保留、当前设置增加与旧保存修订历史读取、失败新候选精确补偿以及错修订prepare/read/重开拒绝，原库hash不变。两份root新收据及具体失败诊断见ownership-semantic-result-store-independent-review；开发通过不代独立结果。
 
 仅R1内部SQL后台独立接受；constructor同步来源/摘要校验与prepare/read异步严格校验分别记录，不称裸candidate已发布。GUI0、真实HTTP/模型、当次exact prepared许可/全当前性应用发布/统一停止恢复仍未验。AGENTS0，已有来源及精确写后规则覆盖。本已验范围由root核Git范围/remote收尾；实际SHA执行后另记，不提前报推送完成。原四批仍有应用接线本地工作，保持定时与原双线程流程，不第五批。
+
+## 2026-10-05 23:56：R1实际Git回执与原第二批B1派发
+
+root已提交推送R1 f095bfc7a6e1b28e2a7dfc39571fe5966885ee06，13文件精确已验范围，cached diff --check通过，已知origin/main推送前52db0c9、push exit0及独立ls-remote同f095bfc，提交后main清洁。没有合并/开发Git或未验GUI入提交。R1独立记录回执及下述新计划/协调记录属于后续未提交记录，不能自称已在此SHA。
+
+依据实际Q3 private Prepared完整材料、consume有限返回/旧应用finally撤销和A2内部DTO入口缺口，root派原Sol实施2D-B1可信语义持久预占用零网络后台，限定新reservation graph/application模块、Q3新私有捕获及index窄委派；原contracts/adapter/A2/shared/remote/R1/旧应用/desktop/UI等冻结。新计划ownership-semantic-reservation-implementation.md已精确同步5170，hash34F73F9C1910BB918C57D1F0738E93E1F289083F14F973ACD09FAFD2F255BD05；root核七份Q3/L5/实际adapter关键依赖双目录hash一致，不整覆盖Git或WIP。目标实际commit reserved/不造dispatched/结果/发送许可，先完成必要持久边界，不扩原四批。
+
+send_message_to_thread成功；wait_threads timeoutMs0实际确认原Sol回合01a10cc7-5e20-7611-8e5d-8257842d59a1 active/inProgress、error null，最近实际cursor5e850447-53b4-4863-bd79-7f352fa9f11a:9。原Luna冻结/游标9682e900-0f3b-4fcf-b7ca-b62ec052becc:1，不为填槽制造任务。automation实际toml ACTIVE、原15分钟频率与原target不变，四批尚有本地必要接线，暂不暂停；本地收尾或仅外部门后按用户停止门暂停，不第五批。GUI0、真实API/发布/统一停止恢复未验，AGENTS0。
+
+## 2026-10-06 00:38：B1可信预占用后台独立接受及精确main集成
+
+root核Sol最终358文件hash全匹配，before353仅四授权旧文件/五新文件、349保持，反向patch检查exit0。独立原14文件582/582（149.69秒）与四包noEmit通过；实际索引原题答题/Q3正文/真实SQL16门probe通过。main原404仅四授权旧源测试变化、400保持，index保留main11不混Sol缓存12；精确集成后同14文件582/582（149.97秒）、四包noEmit与16门独立probe全部通过。收据、完整来源和集成上下文诊断见2026-10-06-ownership-semantic-reservation-independent-review.md。
+
+接受仅真实私有材料→global外层COMMIT reserved→opaque票据→封闭未发送取消；附属锁持至权威终态、实际取消RAISE(IGNORE)/deferred COMMIT回滚、close/reopen保留占用及原成绩/源码不变通过。零dispatch/结果/HTTP，不将synthetic许可或关闭称GUI/全停止证明。AGENTS0，已有配置锁及SQL规则覆盖。Git仅已验范围由root执行后登记真实SHA。原四批后续发送/发布/统一停止恢复仍有本地工作，GUI0及API/签名外部门保留；定时继续，不第五批。

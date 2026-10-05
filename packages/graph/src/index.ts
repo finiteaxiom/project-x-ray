@@ -3,9 +3,12 @@ import { createHash } from "node:crypto";
 import { RemoteExplanationStore, type GraphStoreRole } from "./remote-explanation-store.js";
 import { OwnershipSemanticPolicyStore } from "./ownership-semantic-policy-store.js";
 import { OwnershipSemanticResultStore } from "./ownership-semantic-result-store.js";
+import { OwnershipSemanticReservationStore, type SemanticReservation, type SemanticReservedMetadata } from "./ownership-semantic-reservation-store.js";
+export type { SemanticReservation, SemanticReservedMetadata } from "./ownership-semantic-reservation-store.js";
+export type { PreparedSemanticReservation } from "./ownership-semantic-preparation-store.js";
 import { OwnershipQuestionBindingStore, type OwnershipQuestionIssuance } from "./ownership-question-binding-store.js";
 import type { OwnershipQuestionGeneratorPort } from "@project-xray/contracts";
-import { OwnershipSemanticPreparationStore, OwnershipSemanticPreparationError, type OwnershipSemanticTrustedPorts, type PreparedSemanticBinding, type SemanticRevisionReceipt } from "./ownership-semantic-preparation-store.js";
+import { OwnershipSemanticPreparationStore, OwnershipSemanticPreparationError, type OwnershipSemanticTrustedPorts, type PreparedSemanticBinding, type SemanticRevisionReceipt, type PreparedSemanticReservation } from "./ownership-semantic-preparation-store.js";
 export { OwnershipSemanticPreparationError, SEMANTIC_PREPARATION_TIMEOUT_MS, captureSemanticPrepareRequest, semanticPreparationFailure } from "./ownership-semantic-preparation-store.js";
 export type { OwnershipSemanticTrustedPorts, PreparedSemanticBinding, SemanticRevisionReceipt, ConsumedSemanticPreparation } from "./ownership-semantic-preparation-store.js";
 import type { OwnershipSemanticAuthorization, OwnershipSemanticGrantCommand, OwnershipSemanticRevokeCommand } from "@project-xray/contracts";
@@ -57,6 +60,8 @@ export class GraphStore {
   private readonly questionBindings: OwnershipQuestionBindingStore;
   private readonly semanticPreparations: OwnershipSemanticPreparationStore;
   private readonly semanticResults: OwnershipSemanticResultStore;
+  private readonly semanticReservations: OwnershipSemanticReservationStore;
+  private readonly reservationAuthorities = new WeakMap<object, GraphStore>();
   private navigationGeneration: number | null = null;
 
   constructor(databasePath = ":memory:", role: GraphStoreRole = "project", ownershipGenerator?: OwnershipQuestionGeneratorPort, semanticPorts?: OwnershipSemanticTrustedPorts) {
@@ -73,6 +78,7 @@ export class GraphStore {
     }, captured => this.ownershipCapsules.validateSemanticPreparation(captured), semanticPorts);
     this.ownershipSemanticPolicy = new OwnershipSemanticPolicyStore(this.database, role);
     this.semanticResults = new OwnershipSemanticResultStore(this.database, this);
+    this.semanticReservations = new OwnershipSemanticReservationStore(this.database, this);
     try {
       this.database.pragma("busy_timeout = 250");
       this.database.pragma("journal_mode = WAL");
@@ -599,6 +605,25 @@ export class GraphStore {
   revokeOwnershipSemanticBinding(token: PreparedSemanticBinding): void { this.semanticPreparations.revoke(token); }
   withOwnershipSemanticRevisions<T>(token: PreparedSemanticBinding, work: (receipt: SemanticRevisionReceipt) => T): T { return this.semanticPreparations.withRevisions(token, work); }
   consumeOwnershipSemanticRevision(receipt: SemanticRevisionReceipt) { return this.semanticPreparations.consume(receipt); }
+  prepareOwnershipSemanticReservation(request: import("@project-xray/contracts").OwnershipSemanticPrepareRequest, authority: GraphStore, settings: GraphStore, signal: AbortSignal): Promise<PreparedSemanticReservation> {
+    return this.semanticPreparations.prepareReservation(request, authority, settings, signal);
+  }
+  revokeOwnershipSemanticReservationPreparation(token: PreparedSemanticReservation): void { this.semanticPreparations.revokeReservation(token); }
+  reserveOwnershipSemantic(token: PreparedSemanticReservation): SemanticReservedMetadata {
+    try {
+      const { authority, settings } = this.semanticPreparations.reservationStores(token);
+      const metadata = authority.semanticReservations.reserve(this.semanticPreparations, token, this, settings.database, this.database);
+      this.reservationAuthorities.set(metadata.reservation, authority); return metadata;
+    } finally { this.semanticPreparations.revokeReservation(token); }
+  }
+  cancelOwnershipSemanticReservation(ticket: SemanticReservation): void {
+    const authority = this.reservationAuthorities.get(ticket);
+    if (!this.database.open || !authority) throw new OwnershipSemanticPreparationError("INVALID_RECEIPT");
+    authority.semanticReservations.cancel(ticket, this); this.reservationAuthorities.delete(ticket);
+  }
+  revokeOwnershipSemanticReservation(ticket: SemanticReservation): void {
+    this.reservationAuthorities.get(ticket)?.semanticReservations.revoke(ticket); this.reservationAuthorities.delete(ticket);
+  }
   prepareOwnershipAttemptWithCapsule(input: OwnershipCapsuleWriteInput, settings: GraphStore = this): Promise<PreparedOwnershipWrite> {
     if (!(settings instanceof GraphStore)) return Promise.reject(new OwnershipCapsuleStoreError());
     return this.ownershipCapsules.prepare(input, settings);
@@ -625,6 +650,7 @@ export class GraphStore {
   }
 
   close(): void {
+    this.semanticReservations.close();
     this.semanticResults.close();
     this.semanticPreparations.close();
     this.questionBindings.close();

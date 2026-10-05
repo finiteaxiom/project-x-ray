@@ -27,4 +27,11 @@ describe("semantic preparation internal boundary", () => {
       expect(() => store.consumeOwnershipSemanticRevision({} as never)).toThrow("所有权语义准备失败");
     } finally { store.close(); }
   });
+  it("independent reservation gate never accepts an ordinary token after revoke or close", () => {
+    const store = new GraphStore(":memory:", "global"), token = Object.freeze(Object.create(null));
+    store.revokeOwnershipSemanticReservationPreparation(token);
+    expect(() => store.reserveOwnershipSemantic(token)).toThrow("所有权语义准备失败");
+    store.close();
+    expect(() => store.reserveOwnershipSemantic(token)).toThrow("所有权语义准备失败");
+  });
 });

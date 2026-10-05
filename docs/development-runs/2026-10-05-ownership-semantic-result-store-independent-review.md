@@ -33,3 +33,7 @@ main首轮原12文件477/478：新升级测试查询改12→11后，global期望
 root main probe-main.ts实际16/16通过，收据 .benchmarks/r1-independent/runs/a76c79ac-f376-43d9-8fa6-ada03e6d73d1/receipt.json：真实pre18升级仅追加18及空结果对象，全部旧表行与ready材料保持，没有Sol12；真实A2占用及结果append/read完成；completed候选补偿拒绝且成功历史保持。实际设置修订增加并同snapshot再次晋升后，正确历史仍可读，使用正确保存修订的新候选仍可prepare；新失败候选可精确补偿，旧completed不变。错保存修订恰好等于当前设置修订仍prepare拒绝、零写；直接SQL错行read/重开拒绝且内容保持。原16库hash保持。上述探针均调用实际模块/SQLite，无HTTP、密钥、GUI或导入代码执行；自有材料保留，零递归删除。
 
 只独立接受R1内部SQL核心及其精确main支持，不接受整条语义发送/发布。构造重开执行同步schema/摘要/列与保存来源关系校验，完整异步L5/ready response重验在prepare/read执行；不得把constructor说成所有语义校验已完成。裸内部candidate不是published/current/mastery；真实外层COMMIT、当次exact prepared许可、全当前性、跨库completed门与补偿编排、统一参与者停止恢复仍属后续必需门。GUI0，真实模型质量/兼容、签名/干净Windows仍未验。AGENTS新增/修订0，已有来源投影与写后状态规则覆盖，本轮用缺陷和回归闭环补证据。仅验收范围由root核差异/远程后Git收尾，真实SHA执行后另记。
+
+## 实际Git回执
+
+root普通提交f095bfc7a6e1b28e2a7dfc39571fe5966885ee06，13文件仅已验R1产品/测试/自身与独立记录、实施计划及准确协调记录/上一L5回执。cached diff --check通过，无未暂存产品范围；已知origin为finiteaxiom/project-x-ray、main，推送前remote/main原52db0c9，push exit0，另ls-remote确认remote/main精确同f095bfc。提交后main清洁，无合并/重置或开发Git。此回执及后续B1派发是下一协调记录范围，不自称已包含在该SHA。

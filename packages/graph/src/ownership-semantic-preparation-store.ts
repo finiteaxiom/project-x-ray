@@ -1,11 +1,12 @@
 import type Database from "better-sqlite3";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { types as nodeTypes } from "node:util";
 import { canonicalJson, IGNORE_POLICY_VERSION, ownershipSemanticPrepareRequestSchema, type OwnershipSemanticPackage,
   type OwnershipSemanticPrepareRequest, type RemoteActivation, type RemoteContext, type RemoteProviderSettings, type OwnershipSemanticAuthorization } from "@project-xray/contracts";
 import type { GraphStore } from "./index.js";
 import type { OwnershipCapsuleStore } from "./ownership-capsule-store.js";
 import type { OwnershipQuestionBindingStore } from "./ownership-question-binding-store.js";
+import { ownershipSemanticCapturedIdentitySchema, type OwnershipSemanticCapturedIdentity } from "@project-xray/contracts";
 
 export const SEMANTIC_PREPARATION_TIMEOUT_MS = 30_000;
 export type SemanticPreparationCode = "INVALID_INPUT" | "INVALID_MATERIAL" | "NOT_CURRENT" | "NOT_AUTHORIZED" | "NOT_CONFIGURED" | "CONTEXT_CHANGED" | "INVALID_RECEIPT" | "CANCELLED" | "TIMEOUT" | "REQUEST_TOO_LARGE" | "BUSY";
@@ -74,6 +75,9 @@ declare const preparedBrand: unique symbol;
 declare const receiptBrand: unique symbol;
 export type PreparedSemanticBinding = Readonly<{ [preparedBrand]: true }>;
 export type SemanticRevisionReceipt = Readonly<{ [receiptBrand]: true }>;
+declare const reservationPreparationBrand: unique symbol;
+/** Separate lifecycle; never accepted by the Q3 once-only revision gate. */
+export type PreparedSemanticReservation = Readonly<{ [reservationPreparationBrand]: true }>;
 export interface ConsumedSemanticPreparation {
   readonly assessmentPackageId: string; readonly adapterRequestDigest: string; readonly requestBytes: number;
   readonly bodyDigest: string; readonly bodyBytes: number; readonly responsesPreparation: SemanticResponsesPreparation;
@@ -102,13 +106,14 @@ export class OwnershipSemanticPreparationStore {
   #closed = false;
   #prepared = new WeakMap<object, Prepared>();
   #revisions = new WeakMap<object, Revision>();
+  #reservationPrepared = new WeakMap<object, Prepared>();
   private readonly ports: OwnershipSemanticTrustedPorts | undefined;
   constructor(private readonly db: Database.Database, private readonly owner: GraphStore,
     private readonly capture: (attemptId: string) => Capture,
     private readonly validate: (capture: CapsuleCapture) => Promise<OwnershipSemanticPackage>, ports?: OwnershipSemanticTrustedPorts) {
     this.ports = ports ? Object.freeze({ adapter: ports.adapter, main: Object.freeze({ ...ports.main }) }) : undefined;
   }
-  close(): void { this.#closed = true; this.#prepared = new WeakMap(); this.#revisions = new WeakMap(); }
+  close(): void { this.#closed = true; this.#prepared = new WeakMap(); this.#revisions = new WeakMap(); this.#reservationPrepared = new WeakMap(); }
   revoke(token: PreparedSemanticBinding): void { this.#prepared.delete(token); }
   private open(): void { if (this.#closed || !this.db.open) fail("INVALID_RECEIPT"); if (!this.ports) fail("NOT_CONFIGURED"); }
   private identity(request: OwnershipSemanticPrepareRequest, authority: GraphStore, settings: GraphStore): GlobalIdentity {
@@ -197,5 +202,55 @@ export class OwnershipSemanticPreparationStore {
         bodyDigest: prepared.responses.bodyDigest, bodyBytes: prepared.responses.requestBytes, responsesPreparation: prepared.responses,
         provider: prepared.identity.provider.provider, model: prepared.identity.provider.model!, outputTokens: prepared.identity.provider.outputTokens, preparedReference: token });
     } catch (error) { throw semanticPreparationFailure(error); }
+  }
+
+  async prepareReservation(raw: OwnershipSemanticPrepareRequest, authority: GraphStore, settings: GraphStore, signal: AbortSignal): Promise<PreparedSemanticReservation> {
+    // Reuse the actual compiled full-body validation, then move its private material
+    // into an independent map. The intermediate Q3 token never leaves this class.
+    const old = await this.prepare(raw, authority, settings, signal);
+    const prepared = this.#prepared.get(old); this.#prepared.delete(old);
+    if (!prepared) fail("INVALID_RECEIPT");
+    try {
+      this.db.transaction(() => this.reservationCurrent(prepared)).deferred();
+      const token = Object.freeze(Object.create(null)) as PreparedSemanticReservation;
+      this.#reservationPrepared.set(token, prepared); return token;
+    } catch (error) { throw semanticPreparationFailure(error); }
+  }
+  revokeReservation(token: PreparedSemanticReservation): void { this.#reservationPrepared.delete(token); }
+  /** Internal lookup used by GraphStore to select its actual private SQL instances. */
+  reservationStores(token: PreparedSemanticReservation) {
+    this.open(); const prepared = this.#reservationPrepared.get(token); if (!prepared) fail("INVALID_RECEIPT");
+    return { authority: prepared.authority, settings: prepared.settings };
+  }
+  private reservationCurrent(prepared: Prepared): void {
+    this.current(prepared);
+    // A saved capsule revision is evidence; the current settings revision is a
+    // separate freshness condition. Equal policy hashes cannot substitute for it.
+    if (prepared.capture.capsule.capsule.sourceIdentity.ignoreRevision !== prepared.identity.ignoreRevision) fail("NOT_CURRENT");
+  }
+  /** Internal, synchronous and once-only. No caller identity/body or validator port. */
+  takeReservation(token: PreparedSemanticReservation, authority: GraphStore) {
+    this.open(); const prepared = this.#reservationPrepared.get(token); this.#reservationPrepared.delete(token);
+    if (!prepared || prepared.authority !== authority) fail("INVALID_RECEIPT");
+    const recheck = () => this.reservationCurrent(prepared);
+    // Called only after all actual databases are locked by the internal ledger.
+    recheck();
+    const { capsule } = prepared.capture.capsule;
+    const { activation, authorization, provider, context } = prepared.identity;
+    const identity: OwnershipSemanticCapturedIdentity = ownershipSemanticCapturedIdentitySchema.parse({
+      protocolVersion: "1.0.0", repositoryId: prepared.request.repositoryId, snapshotId: prepared.request.snapshotId,
+      activation: activation.activation, analysisResultFingerprint: activation.analysisResultFingerprint,
+      sourceManifestHash: activation.sourceManifestHash, configurationHash: activation.configurationHash,
+      ignorePolicyHash: activation.ignorePolicyHash, ignoreRevision: capsule.sourceIdentity.ignoreRevision,
+      questionId: capsule.questionId, questionVersion: capsule.questionVersion, questionFingerprint: capsule.questionFingerprint,
+      attemptId: prepared.request.attemptId, attemptHash: capsule.attemptHash, deterministicScoringVersion: capsule.deterministicScoringVersion,
+      rubricVersion: "1.0.0", rubricHash: capsule.rubric.rubricHash,
+      semanticProtocolVersion: "ownership-semantic-assessment/1.0.0", semanticScoringVersion: "1.0.0",
+      purpose: prepared.request.purpose, disclosureVersion: authorization.disclosureVersion, authorizationRevision: authorization.revision,
+      provider: provider.provider, model: provider.model, providerRevision: provider.revision, credentialRevision: provider.credentialRevision,
+      contextHandle: context.contextHandle, contextEpoch: context.epoch, ownerSessionId: context.ownerSessionId, taskId: randomUUID(),
+      assessmentPackageId: prepared.assessmentPackageId, bodyDigest: prepared.responses.bodyDigest, limitsVersion: "1.0.0",
+    });
+    return { identity, recheck };
   }
 }
