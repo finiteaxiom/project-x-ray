@@ -18,7 +18,7 @@ export function semanticPreparationFailure(error: unknown): OwnershipSemanticPre
   const code = error && typeof error === "object" && !nodeTypes.isProxy(error)
     ? Object.getOwnPropertyDescriptor(error, "code")?.value ?? Object.getOwnPropertyDescriptor(error, "diagnosticCode")?.value : null;
   return new OwnershipSemanticPreparationError(code === "SQLITE_BUSY" || code === "SQLITE_LOCKED" || code === "BUSY" ? "BUSY"
-    : code === "REQUEST_TOO_LARGE" || code === "LIMIT_EXCEEDED" ? "REQUEST_TOO_LARGE"
+    : code === "REQUEST_TOO_LARGE" || code === "PROMPT_REQUEST_TOO_LARGE" || code === "LIMIT_EXCEEDED" ? "REQUEST_TOO_LARGE"
       : code === "IGNORE_SETTINGS_CONFLICT" || code === "SNAPSHOT_NOT_CURRENT" || code === "NOT_CURRENT" ? "NOT_CURRENT"
         : code === "CONTEXT_CHANGED" ? "CONTEXT_CHANGED" : "INVALID_MATERIAL");
 }
@@ -50,9 +50,16 @@ export function awaitSemanticStep<T>(promise: Promise<T>, signal: AbortSignal): 
   });
 }
 export interface SemanticMainCapture { readonly generation: number; readonly reference: { repositoryId: string; snapshotId: string; activation: string } }
+interface SemanticPromptPreparation {
+  readonly serializedRequest: string; readonly requestBytes: number; readonly responseSchema: unknown;
+}
+interface SemanticResponsesPreparation {
+  readonly body: string; readonly bodyDigest: string; readonly requestBytes: number;
+  readonly prepared: SemanticPromptPreparation;
+}
 /** Constructed only by XRayApplication from its actual state/mapping and compiled adapter. */
 export interface OwnershipSemanticTrustedPorts {
-  readonly adapter: (input: { semanticPackage: OwnershipSemanticPackage; submittedAnswer: string }) => Promise<{ readonly serializedRequest: string; readonly requestBytes: number; readonly responseSchema: unknown }>;
+  readonly adapter: (input: { semanticPackage: OwnershipSemanticPackage; submittedAnswer: string; model: string; maxOutputTokens: number }) => Promise<SemanticResponsesPreparation>;
   readonly main: {
     capture(request: OwnershipSemanticPrepareRequest, authority: GraphStore, settings: GraphStore, source: GraphStore): SemanticMainCapture;
     assert(captured: SemanticMainCapture, request: OwnershipSemanticPrepareRequest, authority: GraphStore, settings: GraphStore, source: GraphStore): void;
@@ -69,11 +76,13 @@ export type PreparedSemanticBinding = Readonly<{ [preparedBrand]: true }>;
 export type SemanticRevisionReceipt = Readonly<{ [receiptBrand]: true }>;
 export interface ConsumedSemanticPreparation {
   readonly assessmentPackageId: string; readonly adapterRequestDigest: string; readonly requestBytes: number;
+  readonly bodyDigest: string; readonly bodyBytes: number; readonly responsesPreparation: SemanticResponsesPreparation;
   readonly provider: "openai"; readonly model: string; readonly outputTokens: number; readonly preparedReference: PreparedSemanticBinding;
 }
 interface Prepared {
   request: OwnershipSemanticPrepareRequest; authority: GraphStore; settings: GraphStore; main: SemanticMainCapture; identity: GlobalIdentity;
-  capture: Capture; adapter: { serializedRequest: string; requestBytes: number; responseSchema: unknown }; adapterRequestDigest: string;
+  capture: Capture; adapter: SemanticPromptPreparation; adapterRequestDigest: string;
+  responses: SemanticResponsesPreparation; responsesPreimage: string;
   assessmentPackageId: string; signal: AbortSignal; expiresAt: number;
 }
 interface Revision { prepared: Prepared; token: PreparedSemanticBinding; consumed: boolean }
@@ -120,6 +129,9 @@ export class OwnershipSemanticPreparationStore {
     const actual = this.capture(prepared.request.attemptId);
     if (actual.preimage !== prepared.capture.preimage || !actual.capsule.material.current || actual.capsule.material.activation !== prepared.identity.activation.activation) fail("INVALID_MATERIAL");
     if (digest(prepared.adapter.serializedRequest) !== prepared.adapterRequestDigest || Buffer.byteLength(prepared.adapter.serializedRequest, "utf8") !== prepared.adapter.requestBytes) fail();
+    if (prepared.responses.prepared !== prepared.adapter || canonicalJson(prepared.responses) !== prepared.responsesPreimage
+      || digest(prepared.responses.body) !== prepared.responses.bodyDigest || Buffer.byteLength(prepared.responses.body, "utf8") !== prepared.responses.requestBytes
+      || prepared.responses.requestBytes > 65536) fail();
   }
   async prepare(raw: OwnershipSemanticPrepareRequest, authority: GraphStore, settings: GraphStore, signal: AbortSignal): Promise<PreparedSemanticBinding> {
     try {
@@ -137,14 +149,25 @@ export class OwnershipSemanticPreparationStore {
       if (captured.capsule.attempt.repositoryId !== request.repositoryId || captured.capsule.attempt.snapshotId !== request.snapshotId || !captured.capsule.material.current
         || captured.capsule.material.activation !== identity.activation.activation) fail("NOT_CURRENT");
       const semanticPackage = await awaitSemanticStep(this.validate(captured.capsule), signal);
-      const adapter = await awaitSemanticStep(this.ports!.adapter({ semanticPackage, submittedAnswer: captured.capsule.attempt.semanticText }), signal);
+      const responses = await awaitSemanticStep(this.ports!.adapter({ semanticPackage, submittedAnswer: captured.capsule.attempt.semanticText,
+        model: identity.provider.model!, maxOutputTokens: identity.provider.outputTokens }), signal);
+      const adapter = responses.prepared;
       const bytes = Buffer.byteLength(adapter.serializedRequest, "utf8");
       if (bytes > 65536 || adapter.requestBytes !== bytes) fail("REQUEST_TOO_LARGE");
       const body = JSON.parse(adapter.serializedRequest);
       if (body.protocolVersion !== "ownership-semantic-assessment/1.0.0" || Object.keys(body).sort().join() !== "data,protocolVersion,responseSchema,systemInstructions"
         || !equal(body.data?.semanticPackage, semanticPackage) || !equal(body.responseSchema, adapter.responseSchema) || typeof body.systemInstructions !== "string") fail();
+      const fullBytes = Buffer.byteLength(responses.body, "utf8");
+      if (fullBytes > 65536 || responses.requestBytes !== fullBytes) fail("REQUEST_TOO_LARGE");
+      const fullBody = JSON.parse(responses.body);
+      if (!Object.isFrozen(responses) || !Object.isFrozen(adapter) || digest(responses.body) !== responses.bodyDigest || canonicalJson(fullBody) !== responses.body
+        || Object.keys(fullBody).sort().join() !== "input,instructions,max_output_tokens,model,store,stream,text"
+        || fullBody.model !== identity.provider.model || fullBody.max_output_tokens !== identity.provider.outputTokens || fullBody.store !== false || fullBody.stream !== false
+        || fullBody.instructions !== body.systemInstructions || !equal(fullBody.input, [{ role: "user", content: [{ type: "input_text", text: canonicalJson({ protocolVersion: body.protocolVersion, data: body.data }) }] }])
+        || fullBody.text?.format?.type !== "json_schema" || fullBody.text.format.name !== "xray_ownership_semantic_assessment_v1" || fullBody.text.format.strict !== true) fail();
       await checkWorkspace();
-      const prepared: Prepared = { request, authority, settings, main, identity, capture: captured, adapter: structuredClone(adapter),
+      const prepared: Prepared = { request, authority, settings, main, identity, capture: captured, adapter,
+        responses, responsesPreimage: canonicalJson(responses),
         adapterRequestDigest: digest(adapter.serializedRequest), assessmentPackageId: semanticPackage.assessmentPackageId, signal, expiresAt: Date.now() + SEMANTIC_PREPARATION_TIMEOUT_MS };
       this.db.transaction(() => this.current(prepared)).deferred();
       const token = Object.freeze(Object.create(null)) as PreparedSemanticBinding; this.#prepared.set(token, prepared); return token;
@@ -171,6 +194,7 @@ export class OwnershipSemanticPreparationStore {
       revision.consumed = true; this.current(revision.prepared);
       const { prepared, token } = revision;
       return Object.freeze({ assessmentPackageId: prepared.assessmentPackageId, adapterRequestDigest: prepared.adapterRequestDigest, requestBytes: prepared.adapter.requestBytes,
+        bodyDigest: prepared.responses.bodyDigest, bodyBytes: prepared.responses.requestBytes, responsesPreparation: prepared.responses,
         provider: prepared.identity.provider.provider, model: prepared.identity.provider.model!, outputTokens: prepared.identity.provider.outputTokens, preparedReference: token });
     } catch (error) { throw semanticPreparationFailure(error); }
   }

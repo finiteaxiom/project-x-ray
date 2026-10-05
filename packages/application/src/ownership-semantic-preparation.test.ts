@@ -88,6 +88,7 @@ async function change(f: Awaited<ReturnType<typeof fixture>>, kind: string) {
   }
   if (kind === "policy") { const old = f.authority.loadOwnershipSemanticAuthorization(f.ref.repositoryId); f.authority.revokeOwnershipSemanticAuthorization({ repositoryId: f.ref.repositoryId, expectedRevision: old.revision, purpose: old.purpose, disclosureVersion: old.disclosureVersion }); grant(f.authority, f.ref.repositoryId); }
   if (kind === "provider") { const old = f.authority.remote.provider(), { revision: _r, ...value } = old; f.authority.remote.saveProvider(old.revision, { ...value, outputTokens: 1024 }); f.authority.remote.saveProvider(old.revision + 1, value); }
+  if (kind === "provider-model") { const old = f.authority.remote.provider(), { revision: _r, ...value } = old; f.authority.remote.saveProvider(old.revision, { ...value, model: "gpt-4.1" }); f.authority.remote.saveProvider(old.revision + 1, value); }
   if (kind === "context") { f.authority.remote.commitTrustedContext(f.context.ownerSessionId, null); f.authority.remote.commitTrustedContext(f.context.ownerSessionId, f.source.remote.activation(f.ref.repositoryId, f.ref.snapshotId)); }
   if (kind === "activation") { const sources = f.snapshot.sourceFiles.map(file => ({ filePath: file.filePath, ...f.source.readSnapshotSource(f.ref.snapshotId, file.filePath)! })); f.source.saveSnapshot(f.snapshot, sources, true, f.settings.loadIgnoreSettings(f.ref.repositoryId).revision); }
   if (kind === "main") { const other = `${f.root}-other`; await mkdir(other); await writeFile(join(other, "other.ts"), "export function other() { return 1; }"); await f.app.indexProject(other); await f.app.indexProject(f.root); }
@@ -132,9 +133,17 @@ describe("trusted local semantic preparation", () => {
     const token = await f.flow.prepare(f.request), loaded = await f.source.loadOwnershipSemanticPackage(f.attempt.attemptId);
     if (loaded.status !== "ready") throw Error("fixture");
     const actual = await llm.prepareOwnershipSemanticRequest({ semanticPackage: loaded.package, submittedAnswer: f.attempt.semanticText });
+    const full = await llm.prepareOwnershipSemanticResponsesRequest({ semanticPackage: loaded.package, submittedAnswer: f.attempt.semanticText, model: "gpt-4.1-mini", maxOutputTokens: 2048 });
     let escaped!: SemanticRevisionReceipt;
     const consumed = f.flow.withRevisions(token, receipt => { escaped = receipt; return f.flow.consume(receipt); });
     expect(consumed).toMatchObject({ assessmentPackageId: loaded.package.assessmentPackageId, adapterRequestDigest: createHash("sha256").update(actual.serializedRequest).digest("hex"), requestBytes: actual.requestBytes, provider: "openai", model: "gpt-4.1-mini", outputTokens: 2048, preparedReference: token });
+    expect(consumed.bodyDigest).toBe(createHash("sha256").update(full.body, "utf8").digest("hex")); expect(consumed.bodyBytes).toBe(Buffer.byteLength(full.body, "utf8"));
+    expect(consumed.bodyDigest).not.toBe(consumed.adapterRequestDigest); expect(consumed.responsesPreparation.body).toBe(full.body);
+    expect(JSON.parse(consumed.responsesPreparation.body)).toMatchObject({ model: "gpt-4.1-mini", max_output_tokens: 2048, store: false, stream: false });
+    const response = { version: "1.0.0", assessmentPackageId: loaded.package.assessmentPackageId, criteria: loaded.package.rubric.criteria.map(c => ({ criterionId: c.criterionId,
+      verdict: "supported", explanation: "bounded local protocol fixture", evidenceIds: c.requiredEvidenceIds, limitationIds: [], answerRanges: [{ start: 0, end: 1 }] })) };
+    await expect(llm.validatePreparedOwnershipSemanticResponse(consumed.responsesPreparation.prepared as llm.PreparedOwnershipSemanticRequest, response)).resolves.toMatchObject({ assessmentPackageId: loaded.package.assessmentPackageId });
+    await expect(llm.validatePreparedOwnershipSemanticResponse(structuredClone(consumed.responsesPreparation.prepared) as llm.PreparedOwnershipSemanticRequest, response)).rejects.toMatchObject({ code: "NOT_PREPARED" });
     expect(actual.serializedRequest).toContain('"systemInstructions"'); expect(actual.serializedRequest).toContain('"responseSchema"'); expect(actual.serializedRequest).toContain('"data"');
     expect(() => f.flow.consume(escaped)).toThrow("所有权语义准备失败"); expect(() => f.flow.withRevisions(token, () => undefined)).toThrow("所有权语义准备失败");
     expect([rows(f.authority), rows(f.settings), rows(f.source)]).toEqual(before);
@@ -165,13 +174,33 @@ describe("trusted local semantic preparation", () => {
     expect(raw(f.authority).prepare("SELECT count(*) n FROM explanation_tasks").get()).toEqual({ n: 0 });
     expect(raw(f.authority).prepare("SELECT count(*) n FROM remote_task_registry").get()).toEqual({ n: 0 });
   });
-  it.each(["provider", "context"])("post-adapter recheck rejects restored %s while actual adapter returns", async kind => {
-    const g = gate(), compiled = llm.prepareOwnershipSemanticRequest;
-    vi.spyOn(llm, "prepareOwnershipSemanticRequest").mockImplementationOnce(async input => { const actual = await compiled(input); g.enter(); await g.held; return actual; });
+  it.each(["provider", "provider-model", "context"])("post-adapter recheck rejects restored %s while actual adapter returns", async kind => {
+    const g = gate(), compiled = llm.prepareOwnershipSemanticResponsesRequest;
+    vi.spyOn(llm, "prepareOwnershipSemanticResponsesRequest").mockImplementationOnce(async input => { const actual = await compiled(input); g.enter(); await g.held; return actual; });
     const f = await fixture(), outcome = f.flow.prepare(f.request).catch(error => error); await g.entered;
     try { await change(f, kind); } finally { g.release(); }
     expect(await outcome).toMatchObject({ message: "所有权语义准备失败" });
     expect(raw(f.authority).prepare("SELECT count(*) n FROM explanation_tasks").get()).toEqual({ n: 0 });
+  });
+  it.each(["caller", "cancel", "timeout", "replace", "close"] as const)("actual full constructor return wait preserves %s boundary and exact reference", async kind => {
+    const g = gate(), compiled = llm.prepareOwnershipSemanticResponsesRequest; let exact: llm.PreparedOwnershipSemanticResponsesRequest | undefined;
+    vi.spyOn(llm, "prepareOwnershipSemanticResponsesRequest").mockImplementationOnce(async input => { exact = await compiled(input); g.enter(); await g.held; return exact; });
+    const f = await fixture(), before = [rows(f.authority), rows(f.source)], controller = new AbortController();
+    if (kind === "timeout") vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
+    const pending = f.flow.prepare(f.request, { signal: controller.signal }).then(token => ({ token }), error => ({ error })); await g.entered;
+    let replacement: PreparedSemanticBinding | undefined;
+    if (kind === "caller") { f.request.attemptId = "changed"; f.request.contextHandle = randomUUID(); }
+    if (kind === "cancel") controller.abort();
+    if (kind === "timeout") await vi.advanceTimersByTimeAsync(SEMANTIC_PREPARATION_TIMEOUT_MS + 1);
+    if (kind === "replace") replacement = await f.flow.prepare(f.request);
+    if (kind === "close") { f.app.close(); handles.delete(f.app); }
+    g.release(); const outcome = await pending;
+    if (kind === "caller") {
+      if (!("token" in outcome)) throw outcome.error;
+      const consumed = f.flow.withRevisions(outcome.token, r => f.flow.consume(r)); expect(consumed.responsesPreparation).toBe(exact); expect(consumed.responsesPreparation.prepared).toBe(exact!.prepared);
+    } else { expect(outcome).toMatchObject({ error: { message: "所有权语义准备失败" } }); if (kind === "timeout") expect(outcome).toMatchObject({ error: { code: "TIMEOUT" } }); }
+    if (replacement) expect(f.flow.withRevisions(replacement, r => f.flow.consume(r)).preparedReference).toBe(replacement);
+    if (kind !== "close") expect([rows(f.authority), rows(f.source)]).toEqual(before);
   });
   it.each(["configuration", "policy", "provider", "context", "activation", "query", "cut", "source", "answer"])("barrier observes committed %s after async preparation and runs no callback", async kind => {
     const f = await fixture(), token = await f.flow.prepare(f.request); await change(f, kind); const work = vi.fn();
@@ -288,5 +317,21 @@ describe("trusted local semantic preparation", () => {
     const before = [rows(f.authority), rows(f.source)];
     await expect(f.flow.prepare({ ...f.request, attemptId: latest.attemptId })).rejects.toMatchObject({ code: "REQUEST_TOO_LARGE" });
     expect([rows(f.authority), rows(f.source)]).toEqual(before); expect(f.source.listOwnershipAttempts(f.ref.repositoryId).at(-1)?.semanticText).toBe(answer);
+  }, 20_000);
+  it("ready SQL package and valid inner prompt still reject outer body overflow without clipping", async () => {
+    const f = await fixture("variable-flow", false, false, true, true), first = await f.source.loadOwnershipSemanticPackage(f.attempt.attemptId);
+    if (first.status !== "ready") throw Error("Expected actual SQL package");
+    const base = await llm.prepareOwnershipSemanticResponsesRequest({ semanticPackage: first.package, submittedAnswer: f.attempt.semanticText, model: "gpt-4.1-mini", maxOutputTokens: 2048 });
+    const room = 65536 - base.requestBytes + 32, answer = f.attempt.semanticText + "文".repeat(Math.floor(room / 3)) + "x".repeat(room % 3);
+    expect(room).toBeGreaterThan(0); expect(Buffer.byteLength(answer)).toBeLessThanOrEqual(16384);
+    await f.app.createOwnershipQuestions({ ...f.ref, count: 20, scope: { kind: "project" }, conceptId: f.question.concept.id });
+    await f.app.gradeOwnershipAnswer({ ...f.ref, questionId: f.question.id, questionVersion: f.question.version, answer, selfConfidence: .5,
+      structuredAnswer: f.attempt.structuredAnswer as OwnershipSubmission["structuredAnswer"], citations: f.attempt.citations });
+    const latest = f.source.listOwnershipAttempts(f.ref.repositoryId).at(-1)!, loaded = await f.source.loadOwnershipSemanticPackage(latest.attemptId);
+    expect(loaded.status).toBe("ready"); if (loaded.status !== "ready") throw Error("Outer gate must be reached");
+    const inner = await llm.prepareOwnershipSemanticRequest({ semanticPackage: loaded.package, submittedAnswer: answer }); expect(inner.requestBytes).toBeLessThanOrEqual(65536);
+    await expect(llm.prepareOwnershipSemanticResponsesRequest({ semanticPackage: loaded.package, submittedAnswer: answer, model: "gpt-4.1-mini", maxOutputTokens: 2048 })).rejects.toMatchObject({ code: "REQUEST_TOO_LARGE" });
+    const before = [rows(f.authority), rows(f.source)]; await expect(f.flow.prepare({ ...f.request, attemptId: latest.attemptId })).rejects.toMatchObject({ code: "REQUEST_TOO_LARGE", message: "所有权语义准备失败" });
+    expect([rows(f.authority), rows(f.source)]).toEqual(before); expect(latest.semanticText).toBe(answer);
   }, 20_000);
 });

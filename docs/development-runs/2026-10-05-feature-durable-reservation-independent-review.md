@@ -47,3 +47,5 @@ root保留原探针/故障机制，仅另存修正预期副本，先运行probe-
 两目录六源原规范文本全等，root先备份main实际384原文件与六源字节，再精确复制六源/测试和开发记录七文件；不是整个Sol分支/HEAD/AGENTS/index覆盖。main原activation/cache/observer及迁移区别保持。git diff --check通过。新规则1条：外部端口效果不能随SQL rollback撤销；持久reserve提交后才调用、尝试latch先置、abort非停止证明。依据原失败及两目录修正闭环，区别于既有跨库结果发布规则。
 
 已实现并独立代码/回归验证=feature持久预占用与提交失败隔离；真实GUI已验证=0；未验=故障reserved实际全参与者停止后恢复/可用性、semantic任务/fullbody当前性接线/transport/发布、实际API兼容/质量、GUI及其他批次原门。本切片不扩大四批，Git仅root已验范围收尾，不含旧WIP/GUI/二进制。
+
+实际Git回执：bc608aaa291c1bd0a8747646791ef740bd97c53d 普通commit/push，独立远端main同SHA；仅上述12文件已验范围。四批未全部完成，后续Q3按明确计划独立派发。

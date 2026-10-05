@@ -109,7 +109,8 @@ Sol 先测量当前全量索引/查询/内存基线，设计按语言的保守�
 | 2D-Q1 新提交可信原题绑定 | 两缺陷修正后后台独立接受，精确main集成 | Sol/root | 两目录各259项/四包类型及两原始真实探针通过；Sol323仅8授权变化，main365仅8源变化，原迁移/缓存差异保留。三行原子/完整generator/历史截点门通过，新增经验1；见ownership-question-binding-independent-review及最新Git回执。Q2/任务/HTTP/GUI仍未验 |
 | 2D-Q2 内部当前性准备/同步屏障 | 懒载缺陷闭环，后台独立接受及main精确集成复验通过；Git见最新审查 | Sol/root | 原探针两目录成功；main493/五包类型、Sol469加旧index24独立复跑/五包类型通过，完整命令原超时失败保留。331仅四源/327不变，main371仅四源三文档/364不变；见ownership-semantic-currentness-independent-review。零task/网络，HTTP/发布/恢复/GUI仍未验 |
 | 2D-L4 实际语义Responses正文 | 纯模块独立接受；实际Git见最新审查 | Luna/root | root201回归/LLM noEmit、双布局真实索引答题材料→full body/exact prepared校验通过，原材料与源码不变/授权denied/零task。见ownership-semantic-responses-independent-review；真实compatibility/模型/transport/GUI未验 |
-| S3-B feature持久预占用 | 后台独立接受、精确main集成复验 | Sol/root | 两目录各221回归/两包类型通过；原COMMIT故障首pending/lease1/second BUSY/peak1，晚到重开及旧recover零清理；真实旧14升级保留/坏库拒绝，global16。见feature-durable-reservation-independent-review；统一停止恢复/semantic任务/真实HTTP/GUI仍未验 |
+| S3-B feature持久预占用 | 后台独立接受、精确main集成提交推送bc608aa | Sol/root | 两目录各221回归/两包类型通过；原COMMIT故障首pending/lease1/second BUSY/peak1，晚到重开及旧recover零清理；真实旧14升级保留/坏库拒绝，global16。见feature-durable-reservation-independent-review；统一停止恢复/semantic任务/真实HTTP/GUI仍未验 |
+| 2D-Q3 完整正文当前性接线 | 后台独立接受，精确main集成复验通过；Git见最新审查 | Sol/root | 两目录各530回归/三包类型及root各16门真实索引SQL→full body/exact inner校验通过；原内层口径保持，两完整摘要/UTF8/当前性/一次门重核。见fullbody-currentness-independent-review；零task-slot-result-HTTP，semantic持久任务/transport/发布/恢复/GUI未验 |
 | 3F-O 缓存observer接缝设计 | 修订设计独立接受 | Luna/协调方 | root 四文档/当前源码复审，O/R 及 estimator/terminal 关系、真实缺采集与协议矛盾区分、后续API错误独立；非实现/收益通过 |
 | 3F-C1 导航有效性取样端口 | 独立接受、精确集成提交7071ae4 | Sol/协调方 | Sol/main各98 graph回归、两包noEmit与真实SQLite探针通过，main原application147通过；嵌套COMMIT/ROLLBACK保守停比较、新实例身份明确。新增经验1，缓存/性能/GUI未验 |
 | 3F-C2 应用导航缓存/observer | 后台独立接受、精确集成并复验通过 | Sol/协调方 | root Sol43定向/225应用/111图，main229应用/114图，两边类型及真实双布局/12竞态探针通过。保留fresh校验、私有身份/4MiB/O/T门；性能/GUI未验，Git见最新审查 |
@@ -148,7 +149,7 @@ Sol 先测量当前全量索引/查询/内存基线，设计按语言的保守�
 
 复用 `project-x-ray` heartbeat，不创建重复定时器。每次读取本计划及最新审查记录，使用聊天 cursor 紧凑检查；有待审成果必须推进实际差异/回归/交互，不仅查询状态。执行中可读其他批次资料、准备有用验收工作；不并发修改同批文件或运行重型检查。
 
-仅通知新验收结果、实质缺陷、必须用户处理的阻碍。无变化保持安静，不重复通知。某项受阻时记录具体原因和已验证范围，推进可独立的授权工作。四批收敛后审查六项用户路径、开放验收、已复现缺陷和实测瓶颈，在docs/plans中建立下一轮可审查计划，包含代码依据、目标、优先级、文件/依赖边界及完成门槛，再按复杂度派发原双线程；不凭旧TODO制造任务。只有审查后确认没有可推进的范围内工作、剩余均等待用户/外部变化时才暂停自动跟进，不能无限空跑。暂停不把未验收改成完成。用户暂停或取消优先于本计划。
+仅通知新验收结果、实质缺陷、必须用户处理的阻碍。无变化保持安静，不重复通知。某项受阻时记录具体原因和已验证范围，推进可独立的授权工作。按2026-10-04最新停止门，四批所有可推进的本地实现与独立检查收尾后暂停project-x-ray及开发派发，先向用户汇报并讨论后续规划，不自行规划或启动第五批。若剩余均等待GUI恢复、API账户/密钥、签名、用户或外部变化，同样保留逐批未验收清单并暂停，不能无限空跑。暂停不把未验收改成完成。用户暂停或取消优先于本计划。
 
 ## 本轮规则评估
 

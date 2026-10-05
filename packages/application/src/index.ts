@@ -18,7 +18,7 @@ import { captureComparison, cloneRepository, comparisonStateFingerprint, getGitH
 import { GraphStore, overviewFromSnapshot, queryFlow, searchNodes, type NavigationValiditySample } from "@project-xray/graph";
 import { buildOwnershipRubricCapsule, createQuestions, createOwnershipQuestionGeneratorPort, gradeAnswer, type OwnershipRubricSource } from "@project-xray/ownership";
 import { canonicalJson, ownershipQuestionRequestSchema, ownershipQuestionSchema, ownershipSubmissionSchema } from "@project-xray/contracts";
-import { prepareOwnershipSemanticRequest } from "@project-xray/llm";
+import { prepareOwnershipSemanticResponsesRequest } from "@project-xray/llm";
 import { OwnershipSemanticPreparationError, type OwnershipSemanticTrustedPorts } from "@project-xray/graph";
 import { OwnershipSemanticPreparationApplication } from "./ownership-semantic-preparation.js";
 import { RemoteExplanationApplication, type RemoteProviderPort, type RemoteCredentialPort } from "./remote-explanation.js";
@@ -222,7 +222,7 @@ export class XRayApplication {
   private semanticGeneration = 0;
   private semanticFlow: OwnershipSemanticPreparationApplication | undefined;
   private readonly semanticPorts: OwnershipSemanticTrustedPorts = {
-    adapter: prepareOwnershipSemanticRequest,
+    adapter: prepareOwnershipSemanticResponsesRequest,
     main: {
       capture: (request, authority, settings, source) => this.captureSemanticMain(request, authority, settings, source),
       assert: (captured, request, authority, settings, source) => { if (canonicalJson(this.captureSemanticMain(request, authority, settings, source)) !== canonicalJson(captured)) throw new OwnershipSemanticPreparationError("CONTEXT_CHANGED"); },
