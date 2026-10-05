@@ -13,6 +13,8 @@ export type GraphStoreRole = "global" | "project";
 type PayloadRow = { payload: string };
 const digest = (value: unknown): string => createHash("sha256").update(canonicalJson(value)).digest("hex");
 const now = (): string => new Date().toISOString();
+declare const reservationBrand: unique symbol;
+export type FeatureDispatchReservation = Readonly<{ [reservationBrand]: true }>;
 export function remoteStoreFailure(error: unknown): RemoteExplanationError {
   try {
     const code = error && typeof error === "object" && "code" in error ? error.code : undefined;
@@ -33,6 +35,7 @@ function revision(value: number): number {
 /** Shares GraphStore's connection. No secrets or provider response bodies are stored here. */
 export class RemoteExplanationStore {
   private readonly sharedTasks: SharedRemoteTaskStore;
+  private readonly reservations = new WeakMap<object, { identity: RemoteCapturedIdentity; createdAt: string; attempted: boolean }>();
   constructor(private readonly db: Database.Database, readonly role: GraphStoreRole) { this.sharedTasks = new SharedRemoteTaskStore(db, role); }
 
   migrate(): void {
@@ -183,6 +186,55 @@ export class RemoteExplanationStore {
     this.sharedTasks.assertAvailable(identity.taskId, true);
     const task = remotePersistentTaskRecordSchema.parse({ identity, phase: "dispatched", createdAt: now(), completedAt: null, code: null });
     this.sharedTasks.insertFeature(task, 1); return task;
+  }
+  reserveDispatch(identity: RemoteCapturedIdentity): FeatureDispatchReservation {
+    this.global(); if (!this.db.inTransaction) throw new RemoteExplanationError("POLICY_INVALID");
+    identity = remoteCapturedIdentitySchema.parse(identity); this.assertPermission(identity);
+    const context = this.context(identity.contextHandle);
+    const reference = remoteActivationSchema.parse({ repositoryId: identity.repositoryId, snapshotId: identity.snapshotId, activation: identity.activation,
+      analysisResultFingerprint: identity.analysisResultFingerprint, configurationHash: identity.configurationHash, ignorePolicyHash: identity.ignorePolicyHash, sourceManifestHash: identity.sourceManifestHash });
+    if (context.ownerSessionId !== identity.ownerSessionId || context.epoch !== identity.contextEpoch || canonicalJson(context.reference) !== canonicalJson(reference)) throw new RemoteExplanationError("CONTEXT_CHANGED");
+    const createdAt = now(); this.sharedTasks.reserveFeature(identity, createdAt);
+    const receipt = Object.freeze(Object.create(null)) as FeatureDispatchReservation;
+    this.reservations.set(receipt, { identity: structuredClone(identity), createdAt, attempted: false }); return receipt;
+  }
+  private reservation(receipt: FeatureDispatchReservation) {
+    this.global(); const value = this.reservations.get(receipt);
+    if (!this.db.open || !this.db.inTransaction || !value) throw new RemoteExplanationError("POLICY_INVALID"); return value;
+  }
+  registerReservedDispatch(receipt: FeatureDispatchReservation): RemoteTaskRecord {
+    const captured = this.reservation(receipt); if (captured.attempted) throw new RemoteExplanationError("REVISION_CONFLICT");
+    this.assertPermission(captured.identity);
+    const context = this.context(captured.identity.contextHandle);
+    const id = captured.identity;
+    if (context.ownerSessionId !== id.ownerSessionId || context.epoch !== id.contextEpoch
+      || canonicalJson(context.reference) !== canonicalJson({ repositoryId: id.repositoryId, snapshotId: id.snapshotId, activation: id.activation,
+        analysisResultFingerprint: id.analysisResultFingerprint, configurationHash: id.configurationHash, ignorePolicyHash: id.ignorePolicyHash, sourceManifestHash: id.sourceManifestHash })) throw new RemoteExplanationError("CONTEXT_CHANGED");
+    const createdAt = this.sharedTasks.reservedFeature(captured.identity);
+    if (createdAt !== captured.createdAt) throw new RemoteExplanationError("POLICY_INVALID");
+    const task = remotePersistentTaskRecordSchema.parse({ identity: captured.identity, phase: "dispatched", createdAt, completedAt: null, code: null });
+    this.sharedTasks.promoteFeature(task, 1); return task;
+  }
+  reservedDispatchCreatedAt(receipt: FeatureDispatchReservation): string {
+    const captured = this.reservation(receipt); const createdAt = this.sharedTasks.reservedFeature(captured.identity);
+    if (createdAt !== captured.createdAt) throw new RemoteExplanationError("POLICY_INVALID"); return createdAt;
+  }
+  markReservedDispatchAttempt(receipt: FeatureDispatchReservation): void {
+    const captured = this.reservation(receipt), task = this.task(captured.identity.taskId);
+    if (captured.attempted || task?.phase !== "dispatched" || task.createdAt !== captured.createdAt || canonicalJson(task.identity) !== canonicalJson(captured.identity)) throw new RemoteExplanationError("POLICY_INVALID");
+    // Private memory deliberately survives rollback of the promotion transaction.
+    captured.attempted = true;
+  }
+  finishUndispatchedReservation(receipt: FeatureDispatchReservation, code: RemoteFailureCode): RemoteTaskRecord {
+    const captured = this.reservation(receipt); if (captured.attempted) throw new RemoteExplanationError("POLICY_INVALID");
+    const old = this.task(captured.identity.taskId);
+    if (old) {
+      if (old.phase === "dispatched" || old.createdAt !== captured.createdAt || canonicalJson(old.identity) !== canonicalJson(captured.identity)) throw new RemoteExplanationError("POLICY_INVALID");
+      return old;
+    }
+    const createdAt = this.sharedTasks.reservedFeature(captured.identity), completedAt = now(); this.sharedTasks.validateTerminalTime(createdAt, completedAt);
+    const task = remotePersistentTaskRecordSchema.parse({ identity: captured.identity, phase: code === "CANCELLED" ? "cancelled" : code === "INTERRUPTED" ? "interrupted" : "failed", createdAt, completedAt, code });
+    this.sharedTasks.promoteFeature(task, 0); return task;
   }
   recordUndispatchedCancellation(identity: RemoteCapturedIdentity, createdAt: string): RemoteTaskRecord {
     this.global(); if (!this.db.inTransaction) throw new RemoteExplanationError("POLICY_INVALID");

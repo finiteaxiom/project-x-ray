@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import Database from "better-sqlite3";
 import { createHash, randomUUID } from "node:crypto";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -8,7 +8,7 @@ import { canonicalSnapshotResult, type ProjectSnapshot, type RemoteCapturedIdent
 import { GraphStore } from "./index.js";
 
 const roots: string[] = []; const handles: { close(): void }[] = [];
-afterEach(() => { for (const handle of handles.splice(0).reverse()) handle.close(); for (const root of roots.splice(0)) { if (!resolve(root).startsWith(resolve(tmpdir()) + sep)) throw new Error("临时目录边界无效"); rmSync(root, { recursive: true, force: true }); } });
+afterEach(() => { vi.useRealTimers(); for (const handle of handles.splice(0).reverse()) handle.close(); for (const root of roots.splice(0)) { if (!resolve(root).startsWith(resolve(tmpdir()) + sep)) throw new Error("临时目录边界无效"); rmSync(root, { recursive: true, force: true }); } });
 const content = "export function login(){ return 1 }\n";
 const hash = (text: string) => createHash("sha256").update(text).digest("hex");
 const source = { filePath: "a.ts", contentHash: hash(content), language: "TypeScript", content };
@@ -35,6 +35,40 @@ function fixture(legacy = false) {
 }
 
 describe("remote policy persistence", () => {
+  it("private reservation keeps first T1 through late promotion, rejects replay and foreign receipts", () => {
+    const f = fixture(); f.authority.remote.saveAuthorization("repo", 0, true); f.authority.remote.saveProvider(0, { provider: "openai", model: "model", credentialStatus: "configured", credentialRevision: 1, outputTokens: 32 });
+    const id = { ...f.identity, authorizationRevision: 1, providerRevision: 1, credentialRevision: 1 }; vi.useFakeTimers(); vi.setSystemTime("2026-10-05T01:00:00Z");
+    const receipt = f.authority.remote.immediate(() => f.authority.remote.reserveDispatch(id)), db = new Database(f.authorityPath); handles.push(db);
+    expect(db.prepare("SELECT created_at,stage FROM remote_provider_lease").get()).toEqual({ created_at: "2026-10-05T01:00:00.000Z", stage: "reserved" });
+    const other = new GraphStore(f.authorityPath, "global"); handles.push(other);
+    expect(() => other.remote.immediate(() => other.remote.registerReservedDispatch(receipt))).toThrow(expect.objectContaining({ code: "POLICY_INVALID" }));
+    expect(() => f.authority.remote.immediate(() => f.authority.remote.registerReservedDispatch(structuredClone(receipt)))).toThrow(expect.objectContaining({ code: "POLICY_INVALID" }));
+    vi.setSystemTime("2026-10-05T02:00:00Z"); const task = f.authority.remote.immediate(() => { const task = f.authority.remote.registerReservedDispatch(receipt); f.authority.remote.markReservedDispatchAttempt(receipt); return task; });
+    expect(task.createdAt).toBe("2026-10-05T01:00:00.000Z");
+    expect(() => f.authority.remote.immediate(() => f.authority.remote.registerReservedDispatch(receipt))).toThrow();
+    expect(() => f.authority.remote.immediate(() => f.authority.remote.finishUndispatchedReservation(receipt, "CANCELLED"))).toThrow();
+    vi.setSystemTime("2026-10-05T00:00:00Z"); expect(() => f.authority.remote.finish(id.taskId, null)).toThrow(expect.objectContaining({ code: "POLICY_INVALID" })); expect(f.authority.remote.task(id.taskId)?.phase).toBe("dispatched");
+    vi.setSystemTime("2026-10-05T03:00:00Z"); f.authority.remote.finish(id.taskId, null); f.authority.remote.releaseDispatch(id.taskId);
+  });
+  it.each(["delete", "commit"])("zero-dispatch cleanup %s failure retains reservation and safely retries", kind => {
+    const f = fixture(); f.authority.remote.saveAuthorization("repo", 0, true); f.authority.remote.saveProvider(0, { provider: "openai", model: "model", credentialStatus: "configured", credentialRevision: 1, outputTokens: 32 });
+    const id = { ...f.identity, authorizationRevision: 1, providerRevision: 1, credentialRevision: 1 }, receipt = f.authority.remote.immediate(() => f.authority.remote.reserveDispatch(id)), db = new Database(f.authorityPath); handles.push(db);
+    const before = db.prepare("SELECT * FROM remote_provider_lease").all();
+    if (kind === "delete") db.exec("CREATE TRIGGER cleanup_fault BEFORE DELETE ON remote_provider_lease BEGIN SELECT RAISE(ABORT,'private'); END");
+    else db.exec("CREATE TABLE clean_parent(id INTEGER PRIMARY KEY); CREATE TABLE clean_guard(id INTEGER REFERENCES clean_parent(id) DEFERRABLE INITIALLY DEFERRED); CREATE TRIGGER cleanup_fault AFTER INSERT ON explanation_tasks BEGIN INSERT INTO clean_guard VALUES(1); END");
+    expect(() => f.authority.remote.immediate(() => f.authority.remote.finishUndispatchedReservation(receipt, "CANCELLED"))).toThrow(expect.objectContaining({ code: "POLICY_INVALID" }));
+    expect(db.prepare("SELECT * FROM remote_provider_lease").all()).toEqual(before); expect(f.authority.remote.task(id.taskId)).toBeNull();
+    db.exec("DROP TRIGGER cleanup_fault"); const terminal = f.authority.remote.immediate(() => f.authority.remote.finishUndispatchedReservation(receipt, "CANCELLED"));
+    expect(terminal.createdAt).toBe((before[0] as { created_at: string }).created_at); expect(db.prepare("SELECT * FROM remote_provider_lease").all()).toEqual([]);
+  });
+  it("attempt latch survives transaction rollback and cannot become zero-dispatch cleanup", () => {
+    const f = fixture(); f.authority.remote.saveAuthorization("repo", 0, true); f.authority.remote.saveProvider(0, { provider: "openai", model: "model", credentialStatus: "configured", credentialRevision: 1, outputTokens: 32 });
+    const id = { ...f.identity, authorizationRevision: 1, providerRevision: 1, credentialRevision: 1 }, receipt = f.authority.remote.immediate(() => f.authority.remote.reserveDispatch(id));
+    expect(() => f.authority.remote.immediate(() => { f.authority.remote.registerReservedDispatch(receipt); f.authority.remote.markReservedDispatchAttempt(receipt); throw Error("controlled rollback"); })).toThrow();
+    expect(f.authority.remote.task(id.taskId)).toBeNull();
+    expect(() => f.authority.remote.immediate(() => f.authority.remote.finishUndispatchedReservation(receipt, "CANCELLED"))).toThrow(expect.objectContaining({ code: "POLICY_INVALID" }));
+    expect(() => f.authority.remote.recoverInterrupted()).toThrow(expect.objectContaining({ code: "POLICY_INVALID" }));
+  });
   it("shared registry retains first feature creation time through trusted policy termination and release", () => {
     const f = fixture(); f.authority.remote.saveAuthorization("repo", 0, true);
     f.authority.remote.saveProvider(0, { provider: "openai", model: "model", credentialStatus: "configured", credentialRevision: 1, outputTokens: 32 });

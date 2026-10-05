@@ -1202,3 +1202,17 @@ Luna冻结L4三LLM文件与自有记录后，root核hash及index单export，独�
 root同时在5170及main实际源码/SQLite确认原feature提交失败窗口：deferred FK使同步dispatch后的COMMIT失败，首受控Promise仍pending且signal已abort，lease0；新prepare/start第二completed、峰值未settled dispatch2。零真实HTTP，不把abort当停止。形成并精确复制2026-10-05-feature-durable-reservation-implementation.md，SHA8F425EE22C3FD6EEE41825FD993D57AE4A67BF7D9A9A1BD15C2912DDEAFF73AC；先备份5170实际336旧文件/六允许源。成功派原Sol GPT-6.1 Sol/medium仅5170实施两次全门durable reserve/T1 promotion与不确定slot保留，global16仅此分配，六graph/application源测试与自有记录，不改LLM/旧WIP/desktop或其他源，不Git。
 
 真实Sol回合01a10aac-9730-75c0-855b-07f8b539613e active/inProgress、最近cursor0f838fed-d42b-49b3-a29b-9a399c012637:23；Luna冻结确认回合completed/idle、cursor28e03d75-929e-48c9-a044-8bf7fd3e58c7:8。下轮仍从最近实际游标compact检查，不当永久状态。旧feature恢复遇reserved/uncertain须零写失败关闭，实际全参与者停止后恢复另门未验，不能以迁移或布尔模拟解锁。四批有本地工作继续原workflow/automation，收尾或全剩外部门后暂停派发与定时任务讨论，不第五批。无新重型/GUI/真实凭据外发/导入代码执行；实际已验L4 Git范围另核，未含Sol未验修正。
+## 2026-10-05 17:03：实际L4 Git回执及额度中断后恢复
+
+root上一稳定切片普通提交/推送066db9ebfebe530fd14bab6d34d53719503ecf48，12文件仅已验L4三LLM文件、开发/独立记录、明确实施计划及准确公共记录/一条经验；无Sol未验修正、GUI、native或二进制。cached diff --check通过。此次用户重启定时任务后再次独立ls-remote核实际origin/main同SHA，主HEAD同SHA、目录清洁，L4 source/test hash保持。201项及双布局实际探针为上一独立验收证据，本轮未重复运行，不把记录改写成新的测试。
+
+重新读取实际规则、队列及最新交接并以timeout0查询原两个聊天：应用重启后旧内存cursor不可用，用新工具实际游标续查。Luna最新冻结回合completed/notLoaded，新cursor423719ee-ed60-4ace-8b99-f546f3b6c23b:1；S3-B旧Sol回合01a10aac-9730-75c0-855b-07f8b539613e实际failed/usage-limit，不是交付完成，新cursor478d1c71-ec84-43ea-b9d2-7f552c2add7c:1。当前usage工具ordinaryUsageAllowed=true、五小时used4%，不购买/不操作重置额度。
+
+root核5170 HEAD455d4ad与原336字节清单，仅四授权文件变化：application remote-explanation.ts/test、graph remote-explanation-store.ts/shared-remote-task-store.ts；其余332不变、零缺失，自有开发记录尚不存在。原计划SHA8F425EE22C3FD6EEE41825FD993D57AE4A67BF7D9A9A1BD15C2912DDEAFF73AC保持，四中断文件另作root字节副本，保留全部旧WIP，不重置/重做。partial未独立验收，不测试活动源或提交。root成功send_message_to_thread恢复原Sol/medium仅原六文件计划，实际新回合01a10b4d-218c-7f93-9148-44acdc8d5e90 active/inProgress，派发后实际cursor478d1c71-ec84-43ea-b9d2-7f552c2add7c:2；后续仍按最新实际值续查。Luna保持已交付源冻结，不为填满聊天制造任务；root准备按实际冻结修正复验原失败窗口。
+
+用户已重启原project-x-ray；automation管理view调用成功，具体配置实际ACTIVE/15分钟/本协调线程，未重复创建或改通知策略。四批本地工作继续、真实GUI0，实际远程兼容/模型、统一停止恢复及其他批次未验门保留；收尾或全剩外部门时暂停定时任务及派发讨论，不第五批。本轮恢复核查无新增AGENTS规则、无新Git、重型/电脑操作/秘密扫描/HTTP或导入代码执行；上一L4经验和提交保持。
+## 2026-10-05 17:27：S3-B后台修正独立接受
+
+root核Sol冻结六允许源/测试及记录、336原文件仅六变化/330不变，patch891061CA3889E66ED10EA5ED8D7F865E4058C9554EF6E874C699FF942360AA1C。两目录各六文件221/221及graph/application noEmit通过；原deferred COMMIT失败探针现在首pending且lease1、second BUSY、calls/peak1，晚到/重开/旧recover均不清占位。实际旧字节模块建立14库升级16保留历史，坏14拒绝零修复。main384原基线精确七文件集成，旧index/缓存/迁移差异保持。详见2026-10-05-feature-durable-reservation-independent-review。AGENTS新增durable外部调用经验1条，有原失败与两目录修正闭环；不是通用停止证明。
+
+已实现及独立代码/回归验证=feature持久预占用；真实GUI0；统一实际停止后恢复、semantic任务/完整body当前性接线/HTTP/发布、真实远程质量及其他三批门仍未验。四批本地工作继续，原Sol冻结待root下批明确派发，Luna冻结；不自行第五批。Git仅root已验窄范围收尾，实际SHA另记；无重型/电脑操作/真实凭据访问或外发。

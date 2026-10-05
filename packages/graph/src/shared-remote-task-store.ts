@@ -75,6 +75,26 @@ const objects = [
     BEGIN SELECT RAISE(ABORT,'XRAY_SHARED_INVALID'); END` },
 ] as const;
 
+// Migration14 remains byte-for-byte defined above so old installed objects can be verified.
+const reservationObjects = objects.map(object => {
+  let sql: string = object.sql;
+  if (object.name === "remote_lease_insert") sql = sql.replace("(NEW.stage<>'registered' OR NOT EXISTS(", "((NEW.stage='reserved' AND EXISTS(SELECT 1 FROM explanation_tasks WHERE task_id=NEW.task_id)) OR (NEW.stage='registered' AND NOT EXISTS(").replace("t.inflight=1))", "t.inflight=1)))");
+  if (object.name === "remote_lease_no_update") sql = `CREATE TRIGGER remote_lease_no_update BEFORE UPDATE ON remote_provider_lease BEGIN
+    SELECT CASE WHEN OLD.stage<>'reserved' OR NEW.stage<>'registered' OR NEW.provider IS NOT OLD.provider
+      OR NEW.task_id IS NOT OLD.task_id OR NEW.purpose IS NOT OLD.purpose OR NEW.identity_digest IS NOT OLD.identity_digest
+      OR NEW.created_at IS NOT OLD.created_at OR NEW.purpose<>'${FEATURE}' OR NOT EXISTS(
+        SELECT 1 FROM explanation_tasks t WHERE t.task_id=NEW.task_id AND t.inflight=1 AND t.phase='dispatched')
+      THEN RAISE(ABORT,'XRAY_SHARED_INVALID') END; END`;
+  if (object.name === "remote_feature_insert") sql = sql.replace("EXISTS(SELECT 1 FROM remote_provider_lease)", "EXISTS(SELECT 1 FROM remote_provider_lease WHERE task_id<>NEW.task_id OR purpose<>'feature-explanation' OR stage<>'reserved')");
+  if (object.name === "remote_feature_acquire") sql = `CREATE TRIGGER remote_feature_acquire AFTER INSERT ON explanation_tasks
+    WHEN NEW.inflight=1 BEGIN
+      UPDATE remote_provider_lease SET stage='registered' WHERE task_id=NEW.task_id AND purpose='${FEATURE}' AND stage='reserved';
+      INSERT INTO remote_provider_lease SELECT 'openai',r.task_id,r.purpose,r.identity_digest,'registered',r.created_at
+        FROM remote_task_registry r WHERE r.task_id=NEW.task_id AND NOT EXISTS(SELECT 1 FROM remote_provider_lease WHERE task_id=NEW.task_id);
+    END`;
+  return { ...object, sql };
+});
+
 /** Internal SQL compatibility core. There is deliberately no semantic task/permission API. */
 export class SharedRemoteTaskStore {
   constructor(private readonly db: Database.Database, private readonly role: GraphStoreRole) {}
@@ -109,8 +129,8 @@ export class SharedRemoteTaskStore {
     if (task.completedAt !== null && Date.parse(this.time(task.completedAt)) < Date.parse(task.createdAt)) invalid();
     return task;
   }
-  private schema(): void {
-    for (const object of objects) {
+  private schema(legacy = false): void {
+    for (const object of legacy ? objects : reservationObjects) {
       const found = this.db.prepare("SELECT sql FROM sqlite_master WHERE type=? AND name=?").get(object.type, object.name) as { sql: string } | undefined;
       if (!found || found.sql.trim() !== object.sql.trim()) invalid();
     }
@@ -121,7 +141,9 @@ export class SharedRemoteTaskStore {
     if (this.role === "project") return;
     this.locked();
     // Detect broken14 before legacy IF NOT EXISTS statements could silently repair it.
-    if (this.db.prepare("SELECT 1 FROM schema_migrations WHERE version=14").get()) this.assertState();
+    const old = this.db.prepare("SELECT 1 FROM schema_migrations WHERE version=14").get(), upgraded = this.db.prepare("SELECT 1 FROM schema_migrations WHERE version=16").get();
+    if (upgraded && !old) invalid();
+    if (old) this.assertState(!upgraded);
   }
   migrate(): void {
     if (this.role === "project") return;
@@ -142,7 +164,14 @@ export class SharedRemoteTaskStore {
         for (const object of objects.filter(object => object.type === "trigger")) this.db.exec(object.sql);
         this.db.prepare("INSERT INTO schema_migrations(version,applied_at) VALUES(14,?)").run(this.time(new Date().toISOString()));
       }
-      this.schema(); this.assertState();
+      if (!this.db.prepare("SELECT 1 FROM schema_migrations WHERE version=16").get()) {
+        this.assertState(true);
+        for (const object of reservationObjects.filter((object, index) => object.sql !== objects[index]!.sql)) {
+          this.db.exec(`DROP TRIGGER ${object.name}`); this.db.exec(object.sql);
+        }
+        this.db.prepare("INSERT INTO schema_migrations(version,applied_at) VALUES(16,?)").run(this.time(new Date().toISOString()));
+      }
+      this.assertState();
     }).immediate();
   }
   private insertRegistry(task: RemoteTaskRecord): void {
@@ -152,8 +181,8 @@ export class SharedRemoteTaskStore {
       task.identity.ownerSessionId, task.identity.repositoryId, task.identity.contextHandle, task.identity.contextEpoch,
       hash(payload), payload, this.time(task.createdAt));
   }
-  assertState(): void {
-    this.open(); this.schema();
+  assertState(legacy = false): void {
+    this.open(); this.schema(legacy);
     const registries = this.db.prepare("SELECT * FROM remote_task_registry").all() as Row[];
     const registry = new Map(registries.map(row => [row.task_id, { row, parsed: this.registry(row) }]));
     const rows = this.db.prepare("SELECT * FROM explanation_tasks").all() as Row[];
@@ -164,7 +193,7 @@ export class SharedRemoteTaskStore {
       const entry = registry.get(lease.task_id);
       if (!entry || lease.provider !== "openai" || lease.purpose !== entry.parsed.purpose || lease.identity_digest !== entry.row.identity_digest
         || lease.created_at !== entry.parsed.createdAt || (lease.stage !== "registered" && lease.stage !== "reserved")) invalid();
-      if (lease.purpose === FEATURE && (lease.stage !== "registered" || tasks.get(lease.task_id)?.row.inflight !== 1)) invalid();
+      if (lease.purpose === FEATURE && (lease.stage === "registered" ? tasks.get(lease.task_id)?.row.inflight !== 1 : legacy || tasks.has(lease.task_id))) invalid();
     }
     for (const [id, entry] of tasks) {
       const registered = registry.get(id);
@@ -172,7 +201,7 @@ export class SharedRemoteTaskStore {
         || registered.parsed.createdAt !== entry.task.createdAt) invalid();
       if (entry.row.inflight === 1 && !leases.some(lease => lease.task_id === id && lease.purpose === FEATURE)) invalid();
     }
-    for (const [id, entry] of registry) if (entry.parsed.purpose === FEATURE && !tasks.has(id)) invalid();
+    for (const [id, entry] of registry) if (entry.parsed.purpose === FEATURE && !tasks.has(id) && (legacy || !leases.some(lease => lease.task_id === id && lease.stage === "reserved" && lease.purpose === FEATURE))) invalid();
   }
   featureTask(taskId: string): RemoteTaskRecord | null {
     this.open(); if (!remoteUuidSchema.safeParse(taskId).success) invalid();
@@ -190,6 +219,26 @@ export class SharedRemoteTaskStore {
     this.feature({ task_id: task.identity.taskId, owner_session_id: task.identity.ownerSessionId, phase: task.phase, payload: JSON.stringify(task), inflight });
     this.insertRegistry(task);
     this.db.prepare("INSERT INTO explanation_tasks VALUES(?,?,?,?,?)").run(task.identity.taskId, task.identity.ownerSessionId, task.phase, JSON.stringify(task), inflight);
+    this.assertFeatureWrite(task, inflight);
+  }
+  reserveFeature(identity: RemoteTaskRecord["identity"], createdAt: string): void {
+    this.locked(); this.assertAvailable(identity.taskId, true); remoteCapturedIdentitySchema.parse(identity);
+    this.insertRegistry({ identity, phase: "preparing", createdAt: this.time(createdAt), completedAt: null, code: null });
+    this.db.prepare("INSERT INTO remote_provider_lease SELECT 'openai',task_id,purpose,identity_digest,'reserved',created_at FROM remote_task_registry WHERE task_id=?").run(identity.taskId);
+    this.assertState();
+  }
+  reservedFeature(identity: RemoteTaskRecord["identity"]): string {
+    this.locked(); this.assertState();
+    const row = this.db.prepare("SELECT * FROM remote_task_registry WHERE task_id=?").get(identity.taskId) as Row | undefined;
+    const lease = this.db.prepare("SELECT * FROM remote_provider_lease WHERE task_id=?").get(identity.taskId) as Row | undefined;
+    if (!row || !lease || lease.stage !== "reserved" || this.registry(row).purpose !== FEATURE || canonicalJson(this.registry(row).identity) !== canonicalJson(identity)) invalid();
+    return this.registry(row).createdAt;
+  }
+  promoteFeature(task: RemoteTaskRecord, inflight: 0 | 1): void {
+    this.locked(); if (this.reservedFeature(task.identity) !== task.createdAt) invalid();
+    this.feature({ task_id: task.identity.taskId, owner_session_id: task.identity.ownerSessionId, phase: task.phase, payload: JSON.stringify(task), inflight });
+    this.db.prepare("INSERT INTO explanation_tasks VALUES(?,?,?,?,?)").run(task.identity.taskId, task.identity.ownerSessionId, task.phase, JSON.stringify(task), inflight);
+    if (!inflight) this.db.prepare("DELETE FROM remote_provider_lease WHERE task_id=? AND purpose=? AND stage='reserved'").run(task.identity.taskId, FEATURE);
     this.assertFeatureWrite(task, inflight);
   }
   assertFeatureWrite(task: RemoteTaskRecord, inflight: 0 | 1): void {
@@ -210,6 +259,6 @@ export class SharedRemoteTaskStore {
   }
   assertFeatureRecovery(): void {
     this.locked(); this.assertState();
-    if (this.db.prepare("SELECT 1 FROM remote_provider_lease WHERE purpose<>?").get(FEATURE)) invalid();
+    if (this.db.prepare("SELECT 1 FROM remote_provider_lease WHERE purpose<>? OR stage='reserved'").get(FEATURE)) invalid();
   }
 }

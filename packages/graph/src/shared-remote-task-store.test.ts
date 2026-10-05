@@ -62,9 +62,60 @@ function legacy(task: RemoteTaskRecord, inflight: number, unique = true) {
 function legacyTask(phase: "dispatched" | "completed" = "dispatched"): RemoteTaskRecord {
   return { identity: identity(), phase, createdAt: time, completedAt: phase === "completed" ? time : null, code: null };
 }
+function installed14(db: Database.Database): void {
+  // Restore the four exact installed14 objects, not a loosely equivalent legacy schema.
+  for (const name of ["remote_lease_insert", "remote_lease_no_update", "remote_feature_insert", "remote_feature_acquire"]) {
+    let sql = (db.prepare("SELECT sql FROM sqlite_master WHERE name=?").get(name) as { sql: string }).sql;
+    if (name === "remote_lease_insert") sql = sql.replace("((NEW.stage='reserved' AND EXISTS(SELECT 1 FROM explanation_tasks WHERE task_id=NEW.task_id)) OR (NEW.stage='registered' AND NOT EXISTS(", "(NEW.stage<>'registered' OR NOT EXISTS(").replace("t.inflight=1)))", "t.inflight=1))");
+    if (name === "remote_lease_no_update") sql = "CREATE TRIGGER remote_lease_no_update BEFORE UPDATE ON remote_provider_lease\n    BEGIN SELECT RAISE(ABORT,'XRAY_SHARED_INVALID'); END";
+    if (name === "remote_feature_insert") sql = sql.replace("EXISTS(SELECT 1 FROM remote_provider_lease WHERE task_id<>NEW.task_id OR purpose<>'feature-explanation' OR stage<>'reserved')", "EXISTS(SELECT 1 FROM remote_provider_lease)");
+    if (name === "remote_feature_acquire") sql = "CREATE TRIGGER remote_feature_acquire AFTER INSERT ON explanation_tasks\n    WHEN NEW.inflight=1 BEGIN INSERT INTO remote_provider_lease SELECT 'openai',r.task_id,r.purpose,r.identity_digest,'registered',r.created_at\n      FROM remote_task_registry r WHERE r.task_id=NEW.task_id; END";
+    db.exec(`DROP TRIGGER ${name}`); db.exec(sql);
+  }
+  db.exec("DELETE FROM schema_migrations WHERE version=16");
+}
 afterEach(() => { vi.useRealTimers(); for (const store of stores.splice(0)) if (raw(store).open) store.close(); for (const db of connections.splice(0)) if (db.open) db.close(); });
 
 describe("global shared SQL task compatibility", () => {
+  it.each(["dispatched", "completed"] as const)("strict installed14 upgrades16 preserving %s history and marker", phase => {
+    const store = open(), id = configured(store), db = raw(store); start(store, id);
+    if (phase === "completed") { store.remote.finish(id.taskId, null); store.remote.releaseDispatch(id.taskId); }
+    installed14(db);
+    db.exec("CREATE TABLE historical_source(payload TEXT); INSERT INTO historical_source VALUES('historical bytes')");
+    const old = [db.prepare("SELECT * FROM explanation_tasks").all(), db.prepare("SELECT * FROM remote_task_registry").all(), db.prepare("SELECT * FROM remote_provider_lease").all(), db.prepare("SELECT * FROM schema_migrations WHERE version=14").all()];
+    store.remote.migrate();
+    expect([db.prepare("SELECT * FROM explanation_tasks").all(), db.prepare("SELECT * FROM remote_task_registry").all(), db.prepare("SELECT * FROM remote_provider_lease").all(), db.prepare("SELECT * FROM schema_migrations WHERE version=14").all()]).toEqual(old);
+    expect(db.prepare("SELECT * FROM historical_source").all()).toEqual([{ payload: "historical bytes" }]);
+    expect(db.prepare("SELECT 1 FROM schema_migrations WHERE version=16").get()).toBeDefined(); const after = snapshot(db); store.remote.migrate(); expect(snapshot(db)).toBe(after);
+  });
+  it.each(["schema", "digest", "time"])("broken installed14 %s fails before upgrading or repairing", kind => {
+    const store = open(), id = configured(store), db = raw(store); start(store, id); installed14(db);
+    if (kind === "schema") db.exec("DROP TRIGGER remote_lease_insert");
+    if (kind === "digest") damage(db, "remote_registry_immutable", () => db.prepare("UPDATE remote_task_registry SET identity_digest=?").run("b".repeat(64)));
+    if (kind === "time") damage(db, "remote_registry_immutable", () => db.exec("UPDATE remote_task_registry SET created_at='invalid'"));
+    const before = snapshot(db); expect(() => store.remote.migrate()).toThrow(expect.objectContaining(safe)); expect(snapshot(db)).toBe(before);
+    expect(db.prepare("SELECT 1 FROM schema_migrations WHERE version=16").get()).toBeUndefined();
+  });
+  it("upgrade16 deferred COMMIT failure restores exact installed14 objects and rows", () => {
+    const store = open(), id = configured(store), db = raw(store); start(store, id); installed14(db);
+    db.exec("CREATE TABLE m16_parent(id INTEGER PRIMARY KEY); CREATE TABLE m16_guard(id INTEGER REFERENCES m16_parent(id) DEFERRABLE INITIALLY DEFERRED); CREATE TRIGGER fail16 AFTER INSERT ON schema_migrations WHEN NEW.version=16 BEGIN INSERT INTO m16_guard VALUES(1); END");
+    const before = snapshot(db); expect(() => store.remote.migrate()).toThrow(expect.objectContaining(safe)); expect(snapshot(db)).toBe(before);
+    db.exec("DROP TRIGGER fail16"); store.remote.migrate(); expect(store.remote.task(id.taskId)?.phase).toBe("dispatched");
+  });
+  it("project never installs16; two global connections serialize committed reserve and promotion", () => {
+    const project = open(":memory:", "project"); expect(raw(project).prepare("SELECT 1 FROM schema_migrations WHERE version=16").get()).toBeUndefined();
+    const path = join(mkdtempSync(join(tmpdir(), "xray-reserve-")), "global.sqlite"), store = open(path), id = configured(store), other = open(path), second = { ...id, taskId: randomUUID() };
+    const receipt = store.remote.immediate(() => {
+      const r = store.remote.reserveDispatch(id);
+      expect(() => other.remote.immediate(() => other.remote.reserveDispatch(second))).toThrow(expect.objectContaining({ code: "BUSY" })); return r;
+    });
+    expect(() => other.remote.immediate(() => other.remote.reserveDispatch(second))).toThrow(expect.objectContaining({ code: "BUSY" }));
+    store.remote.immediate(() => { store.remote.registerReservedDispatch(receipt); store.remote.markReservedDispatchAttempt(receipt); });
+    store.remote.finish(id.taskId, null); store.remote.releaseDispatch(id.taskId);
+    const next = other.remote.immediate(() => other.remote.reserveDispatch(second)); expect(() => store.remote.releaseDispatch(id.taskId)).not.toThrow();
+    expect(raw(other).prepare("SELECT task_id,stage FROM remote_provider_lease").get()).toEqual({ task_id: second.taskId, stage: "reserved" });
+    other.remote.immediate(() => other.remote.finishUndispatchedReservation(next, "CANCELLED"));
+  });
   it("global14 is idempotent, project has neither table nor14, no semantic task/result or public API", () => {
     const path = join(mkdtempSync(join(tmpdir(), "xray-shared-core-")), "global.sqlite");
     const store = open(path), before = snapshot(raw(store)); store.close(); const reopened = open(path);

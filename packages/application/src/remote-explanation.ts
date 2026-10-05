@@ -31,7 +31,8 @@ export interface RemoteApplicationPorts {
   now?: () => number;
 }
 interface CachedPreview { public: RemotePreview; identity: RemoteCapturedIdentity; prepared: PreparedEvidencePackage }
-interface Running { identity: RemoteCapturedIdentity; controller: AbortController; createdAt: string }
+type FeatureReservation = ReturnType<GraphStore["remote"]["reserveDispatch"]>;
+interface Running { identity: RemoteCapturedIdentity; controller: AbortController; createdAt: string; reservation?: FeatureReservation; dispatchAttempted?: boolean }
 const clone = <T>(value: T): T => structuredClone(value);
 function containsCredential(value: unknown, credential: string): boolean {
   if (typeof value === "string") return value.includes(credential);
@@ -169,6 +170,7 @@ export class RemoteExplanationApplication {
 
   async start(raw: RemoteStartRequest): Promise<RemoteTaskRecord> {
     let identity: RemoteCapturedIdentity | undefined; let registered = false;
+    let reservation: FeatureReservation | undefined; let dispatchAttempted = false;
     let publicationStores: { settings: GraphStore; source: GraphStore } | undefined;
     let terminal: RemoteTaskRecord | undefined; let releaseAllowed = false; let primaryFailure: RemoteExplanationError | undefined;
     const controller = new AbortController(); const deadline = this.now() + REMOTE_LIMITS.taskMs;
@@ -196,9 +198,23 @@ export class RemoteExplanationApplication {
       if (prepared.evidencePackage.packageId !== cached.public.packageId || remoteHashSchema.parse(provider.bodyDigest(clone(prepared), clone(settings))) !== cached.public.bodyDigest || canonicalJson(prepared) !== canonicalJson(cached.prepared)) throw new RemoteExplanationError("PREVIEW_EXPIRED");
       this.checkpoint(controller, deadline);
       let network: Promise<unknown> | undefined;
-      const dispatched = this.gate(identity, () => {
+      const verifyBody = (stores: { source: GraphStore }) => {
         this.ports.authority.remote.assertPermission(ownedIdentity); this.checkpoint(controller, deadline);
-        const task = this.ports.authority.remote.registerDispatch(ownedIdentity);
+        if (canonicalJson(this.ports.authority.remote.provider()) !== canonicalJson(settings)
+          || remoteHashSchema.parse(provider.bodyDigest(clone(prepared), clone(settings))) !== ownedIdentity.bodyDigest
+          || canonicalJson(this.build({ repositoryId: ownedIdentity.repositoryId, snapshotId: ownedIdentity.snapshotId, contextHandle: ownedIdentity.contextHandle, purpose: "feature-explanation", query: cached.public.evidencePackage.query }, check.validationLimitations, stores.source)) !== canonicalJson(prepared)) throw new RemoteExplanationError("PREVIEW_EXPIRED");
+      };
+      const reserved = this.gate(identity, stores => {
+        verifyBody(stores); const receipt = this.ports.authority.remote.reserveDispatch(ownedIdentity);
+        return { receipt, createdAt: this.ports.authority.remote.reservedDispatchCreatedAt(receipt) };
+      });
+      reservation = reserved.receipt;
+      const running = this.running.get(identity.taskId)!; running.reservation = reservation; running.createdAt = reserved.createdAt;
+      const dispatched = this.gate(identity, stores => {
+        verifyBody(stores);
+        this.ports.authority.remote.assertPermission(ownedIdentity); this.checkpoint(controller, deadline);
+        const task = this.ports.authority.remote.registerReservedDispatch(reserved.receipt);
+        this.ports.authority.remote.markReservedDispatchAttempt(reserved.receipt); dispatchAttempted = true; running.dispatchAttempted = true;
         network = provider.dispatch({ prepared: clone(prepared), settings: clone(settings), bodyDigest: ownedIdentity.bodyDigest, credential: credential.credential, signal: controller.signal, taskDeadline: deadline });
         if (!network || typeof network.then !== "function") throw new RemoteExplanationError("PROVIDER_FAILED");
         // Observe immediately if the following synchronous commit fails; never retry.
@@ -238,6 +254,11 @@ export class RemoteExplanationApplication {
           primaryFailure = remoteStoreFailure(cleanupError); throw primaryFailure;
         }
       } else {
+        if (reservation && !dispatchAttempted) {
+          primaryFailure = remoteStoreFailure(error);
+          try { this.ports.authority.remote.immediate(() => this.ports.authority.remote.finishUndispatchedReservation(reservation!, primaryFailure!.code)); }
+          catch { throw primaryFailure; } // Cleanup failure keeps the durable slot and original error.
+        }
         const cancelled = identity ? this.ports.authority.remote.task(identity.taskId) : null;
         if (cancelled?.phase === "cancelled" && cancelled.code === "CANCELLED" && canonicalJson(cancelled.identity) === canonicalJson(identity)) {
           terminal = cancelled; primaryFailure = new RemoteExplanationError("CANCELLED");
@@ -267,6 +288,7 @@ export class RemoteExplanationApplication {
         if (!identity || this.blockedOwners.has(context.ownerSessionId) || identity.ownerSessionId !== context.ownerSessionId || identity.contextHandle !== request.contextHandle || identity.contextEpoch !== context.epoch || (task && running && canonicalJson(task.identity) !== canonicalJson(running.identity))) throw new RemoteExplanationError("CONTEXT_CHANGED");
         controller = running?.controller;
         controller?.abort(); // A terminal log failure must not let a validated local cancellation dispatch later.
+        if (!task && running?.reservation) return this.ports.authority.remote.finishUndispatchedReservation(running.reservation, "CANCELLED");
         return task ? this.ports.authority.remote.finish(request.taskId, "CANCELLED") : this.ports.authority.remote.recordUndispatchedCancellation(identity, running!.createdAt);
       });
       controller?.abort(); return terminal;

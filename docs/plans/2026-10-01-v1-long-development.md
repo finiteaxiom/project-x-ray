@@ -109,7 +109,7 @@ Sol 先测量当前全量索引/查询/内存基线，设计按语言的保守�
 | 2D-Q1 新提交可信原题绑定 | 两缺陷修正后后台独立接受，精确main集成 | Sol/root | 两目录各259项/四包类型及两原始真实探针通过；Sol323仅8授权变化，main365仅8源变化，原迁移/缓存差异保留。三行原子/完整generator/历史截点门通过，新增经验1；见ownership-question-binding-independent-review及最新Git回执。Q2/任务/HTTP/GUI仍未验 |
 | 2D-Q2 内部当前性准备/同步屏障 | 懒载缺陷闭环，后台独立接受及main精确集成复验通过；Git见最新审查 | Sol/root | 原探针两目录成功；main493/五包类型、Sol469加旧index24独立复跑/五包类型通过，完整命令原超时失败保留。331仅四源/327不变，main371仅四源三文档/364不变；见ownership-semantic-currentness-independent-review。零task/网络，HTTP/发布/恢复/GUI仍未验 |
 | 2D-L4 实际语义Responses正文 | 纯模块独立接受；实际Git见最新审查 | Luna/root | root201回归/LLM noEmit、双布局真实索引答题材料→full body/exact prepared校验通过，原材料与源码不变/授权denied/零task。见ownership-semantic-responses-independent-review；真实compatibility/模型/transport/GUI未验 |
-| S3-B feature持久预占用 | 两目录确认提交失败占用缺陷，明确计划已派原Sol实施 | Sol/root | 原deferred SQL COMMIT失败后首受控Promise pending而第二完成/峰值2，零真实HTTP；global16/六graph-application源边界。见feature-durable-reservation-implementation及独立复现；修正/统一停止恢复/真实网络仍未验 |
+| S3-B feature持久预占用 | 后台独立接受、精确main集成复验 | Sol/root | 两目录各221回归/两包类型通过；原COMMIT故障首pending/lease1/second BUSY/peak1，晚到重开及旧recover零清理；真实旧14升级保留/坏库拒绝，global16。见feature-durable-reservation-independent-review；统一停止恢复/semantic任务/真实HTTP/GUI仍未验 |
 | 3F-O 缓存observer接缝设计 | 修订设计独立接受 | Luna/协调方 | root 四文档/当前源码复审，O/R 及 estimator/terminal 关系、真实缺采集与协议矛盾区分、后续API错误独立；非实现/收益通过 |
 | 3F-C1 导航有效性取样端口 | 独立接受、精确集成提交7071ae4 | Sol/协调方 | Sol/main各98 graph回归、两包noEmit与真实SQLite探针通过，main原application147通过；嵌套COMMIT/ROLLBACK保守停比较、新实例身份明确。新增经验1，缓存/性能/GUI未验 |
 | 3F-C2 应用导航缓存/observer | 后台独立接受、精确集成并复验通过 | Sol/协调方 | root Sol43定向/225应用/111图，main229应用/114图，两边类型及真实双布局/12竞态探针通过。保留fresh校验、私有身份/4MiB/O/T门；性能/GUI未验，Git见最新审查 |

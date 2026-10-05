@@ -4,7 +4,7 @@ import { createRequire } from "node:module";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve, sep } from "node:path";
-import { canonicalJson, canonicalSnapshotResult, RemoteExplanationError, remoteResultSchema, type ProjectSnapshot, type RemotePreview, type RemoteProviderSettings, type RemoteTaskRecord } from "@project-xray/contracts";
+import { canonicalJson, canonicalSnapshotResult, RemoteExplanationError, remoteResultSchema, type ProjectSnapshot, type RemotePreview, type RemoteProviderSettings, type RemoteTaskRecord, type RemoteCapturedIdentity } from "@project-xray/contracts";
 import { GraphStore } from "@project-xray/graph";
 import { type PreparedEvidencePackage } from "@project-xray/llm";
 import { RemoteExplanationApplication, type RemoteApplicationPorts } from "./remote-explanation.js";
@@ -89,6 +89,25 @@ function mutate(f: ReturnType<typeof fixture>, kind: Mutation): void {
 }
 
 describe("remote application task core", () => {
+  it.each([false, true])("real indexed application keeps durable reserve while provider remains pending, legacy=%s", async legacy => {
+    const root = mkdtempSync(join(tmpdir(), "xray-real-reserve-")); roots.push(root); const project = join(root, "code"); mkdirSync(project);
+    writeFileSync(join(project, "a.ts"), "export function login(){ return target() }\nfunction target(){ return 1 }\n");
+    const authorityPath = join(root, "global.sqlite"), app = new XRayApplication({ databasePath: authorityPath, cacheRoot: join(root, "cache"), ...(!legacy ? { projectDatabaseRoot: join(root, "projects") } : {}) }); handles.push(app);
+    const snap = await app.indexProject(project), ref = { repositoryId: snap.repositoryId, snapshotId: snap.snapshotId }; let calls = 0, active = 0, peak = 0, settle!: () => void;
+    const remote = app.createRemoteExplanations({ provider: { bodyDigest: prepared => hash(canonicalJson(prepared.evidencePackage)), dispatch: input => {
+      calls++; active++; peak = Math.max(peak, active); return new Promise(resolve => { settle = () => { active--; resolve(narrative(input.prepared)); }; });
+    } }, credentials: { read: async () => ({ credential: "fixture-only", revision: 1 }) } });
+    remote.saveProvider(0, { provider: "openai", model: "fixture-model", credentialStatus: "configured", credentialRevision: 1, outputTokens: 32 }); remote.saveAuthorization(ref.repositoryId, 0, true);
+    const context = remote.commitTrustedContext(randomUUID(), ref), prepare = () => remote.prepare({ ...ref, query: "login", purpose: "feature-explanation", contextHandle: context.contextHandle });
+    const start = (preview: RemotePreview) => remote.start({ taskId: randomUUID(), previewId: preview.previewId, packageId: preview.packageId, contextHandle: preview.contextHandle });
+    const db = new Database(authorityPath); handles.push(db);
+    db.exec("CREATE TABLE actual_parent(id INTEGER PRIMARY KEY); CREATE TABLE actual_guard(id INTEGER REFERENCES actual_parent(id) DEFERRABLE INITIALLY DEFERRED); CREATE TRIGGER fail_actual AFTER INSERT ON explanation_tasks BEGIN INSERT INTO actual_guard VALUES(1); END");
+    await expect(start(await prepare())).rejects.toThrow(expect.objectContaining({ code: "POLICY_INVALID" }));
+    expect(active).toBe(1); db.exec("DROP TRIGGER fail_actual"); await expect(start(await prepare())).rejects.toThrow(expect.objectContaining({ code: "BUSY" }));
+    expect(calls).toBe(1); expect(peak).toBe(1); expect(db.prepare("SELECT stage FROM remote_provider_lease").all()).toEqual([{ stage: "reserved" }]);
+    settle(); await Promise.resolve(); expect(() => remote.recoverInterruptedTasks()).toThrow(expect.objectContaining({ code: "POLICY_INVALID" }));
+    expect(await app.getSnapshotState(ref)).toMatchObject({ status: "current" }); expect(db.prepare("SELECT * FROM explanation_tasks").all()).toEqual([]);
+  });
   it.each([{ configured: false }, { allowed: false }, { noPorts: true }])("preview is zero network and start is closed by default %j", async options => {
     const f = fixture(options); const preview = await f.prepare(); expect(f.calls()).toBe(0);
     await expect(f.start(preview)).rejects.toThrow(); expect(f.calls()).toBe(0); expect(f.raw.prepare("SELECT count(*) count FROM remote_explanations").get()).toEqual({ count: 0 });
@@ -286,6 +305,71 @@ describe("remote application task core", () => {
     await expect(f.start(preview)).rejects.toThrow(expect.objectContaining({ code: "POLICY_INVALID", message: "远程解释未完成" }));
     expect(f.calls()).toBe(1); expect(signal!.aborted).toBe(true); expect(db.prepare("SELECT count(*) count FROM explanation_tasks").get()).toEqual({ count: 0 });
     expect(f.raw.prepare("SELECT count(*) count FROM remote_explanations").get()).toEqual({ count: 0 }); expect(f.events).toEqual([]);
+    expect(db.prepare("SELECT stage FROM remote_provider_lease").all()).toEqual([{ stage: "reserved" }]);
+  });
+  it.each([false, true])("durable reservation blocks second dispatch after promotion COMMIT failure, legacy=%s", async legacy => {
+    const f = fixture({ legacy }), db = new Database(f.authorityPath); handles.push(db);
+    db.exec("CREATE TABLE reserve_parent(id INTEGER PRIMARY KEY); CREATE TABLE reserve_guard(id INTEGER REFERENCES reserve_parent(id) DEFERRABLE INITIALLY DEFERRED); CREATE TRIGGER deny_promotion AFTER INSERT ON explanation_tasks BEGIN INSERT INTO reserve_guard VALUES(1); END");
+    let settle!: () => void, active = 0, peak = 0;
+    f.behavior.dispatch = prepared => { active++; peak = Math.max(peak, active); return new Promise(resolve => { settle = () => { active--; resolve(narrative(prepared)); }; }); };
+    const preview = await f.prepare(); await expect(f.start(preview)).rejects.toThrow(expect.objectContaining({ code: "POLICY_INVALID" }));
+    expect(active).toBe(1); expect(db.prepare("SELECT stage FROM remote_provider_lease").all()).toEqual([{ stage: "reserved" }]);
+    const before = canonicalJson([db.prepare("SELECT * FROM remote_task_registry").all(), db.prepare("SELECT * FROM remote_provider_lease").all(), db.prepare("SELECT * FROM explanation_contexts").all()]);
+    expect(() => f.app.recoverInterruptedTasks()).toThrow(expect.objectContaining({ code: "POLICY_INVALID" }));
+    expect(canonicalJson([db.prepare("SELECT * FROM remote_task_registry").all(), db.prepare("SELECT * FROM remote_provider_lease").all(), db.prepare("SELECT * FROM explanation_contexts").all()])).toBe(before);
+    db.exec("DROP TRIGGER deny_promotion"); const second = await f.prepare(); await expect(f.start(second)).rejects.toThrow(expect.objectContaining({ code: "BUSY" }));
+    expect(f.calls()).toBe(1); expect(peak).toBe(1); expect(f.events).toEqual([]);
+    settle(); await Promise.resolve(); expect(db.prepare("SELECT stage FROM remote_provider_lease").all()).toEqual([{ stage: "reserved" }]);
+    const reopened = new GraphStore(f.authorityPath, "global"); handles.push(reopened);
+    expect(() => reopened.remote.recoverInterrupted()).toThrow(expect.objectContaining({ code: "POLICY_INVALID" }));
+    expect(db.prepare("SELECT count(*) count FROM explanation_tasks").get()).toEqual({ count: 0 });
+  });
+  it("reserve COMMIT failure causes zero dispatch and no slot", async () => {
+    const f = fixture(), db = new Database(f.authorityPath); handles.push(db);
+    db.exec("CREATE TABLE reserve_parent(id INTEGER PRIMARY KEY); CREATE TABLE reserve_guard(id INTEGER REFERENCES reserve_parent(id) DEFERRABLE INITIALLY DEFERRED); CREATE TRIGGER deny_reserve AFTER INSERT ON remote_task_registry BEGIN INSERT INTO reserve_guard VALUES(1); END");
+    await expect(f.start(await f.prepare())).rejects.toThrow(expect.objectContaining({ code: "POLICY_INVALID" }));
+    expect(f.calls()).toBe(0); expect(db.prepare("SELECT * FROM remote_provider_lease").all()).toEqual([]); expect(db.prepare("SELECT * FROM remote_task_registry").all()).toEqual([]);
+  });
+  it.each(["throw", "non-promise"])("possibly initiated %s preserves durable reservation without retry", async kind => {
+    const f = fixture(); f.behavior.dispatch = () => { if (kind === "throw") throw Error("private source fragment"); return undefined as never; };
+    await expect(f.start(await f.prepare())).rejects.toThrow(expect.objectContaining({ message: "远程解释未完成" }));
+    expect(f.calls()).toBe(1); const db = new Database(f.authorityPath); handles.push(db);
+    expect(db.prepare("SELECT stage FROM remote_provider_lease").all()).toEqual([{ stage: "reserved" }]);
+    await expect(f.start(await f.prepare())).rejects.toThrow(expect.objectContaining({ code: "BUSY" })); expect(f.calls()).toBe(1); expect(f.events).toEqual([]);
+  });
+  it.each(["authorization", "provider", "context", "ignore", "body", "cancel"] as const)("second gate %s rejects without dispatch and cleans only its reservation", async kind => {
+    const f = fixture(); let calls = 0, firstTime: string | undefined;
+    const preview = await f.prepare();
+    const internal = f.app as unknown as { gate<T>(id: RemoteCapturedIdentity, work: (stores: { settings: GraphStore; source: GraphStore }) => T): T };
+    const gate = internal.gate.bind(internal), db = new Database(f.authorityPath); handles.push(db);
+    vi.spyOn(internal, "gate").mockImplementation((id, work) => {
+      calls++;
+      if (calls === 3) {
+        firstTime = (db.prepare("SELECT created_at FROM remote_task_registry").get() as { created_at: string }).created_at;
+        if (kind === "cancel") expect(f.app.cancel({ contextHandle: id.contextHandle, taskId: id.taskId }).createdAt).toBe(firstTime);
+        else if (kind === "body") f.behavior.digest = () => hash("changed actual body"); else mutate(f, kind);
+      }
+      return gate(id, work);
+    });
+    const result = await f.start(preview).catch(error => error); expect(f.calls()).toBe(0);
+    if (kind === "cancel") expect(result).toMatchObject({ phase: "cancelled", createdAt: firstTime }); else expect(result).toBeInstanceOf(RemoteExplanationError);
+    expect(db.prepare("SELECT * FROM remote_provider_lease").all()).toEqual([]);
+    expect((db.prepare("SELECT payload FROM explanation_tasks").get() as { payload: string }).payload).toContain(firstTime!);
+  });
+  it.each(["delete", "commit"])("zero-dispatch %s cleanup failure preserves original gate error and slot", async kind => {
+    const f = fixture(), preview = await f.prepare(), db = new Database(f.authorityPath); handles.push(db); let calls = 0;
+    const internal = f.app as unknown as { gate<T>(id: RemoteCapturedIdentity, work: (stores: { settings: GraphStore; source: GraphStore }) => T): T }, gate = internal.gate.bind(internal);
+    vi.spyOn(internal, "gate").mockImplementation((id, work) => {
+      if (++calls === 3) {
+        mutate(f, "authorization");
+        if (kind === "delete") db.exec("CREATE TRIGGER fail_cleanup BEFORE DELETE ON remote_provider_lease BEGIN SELECT RAISE(ABORT,'private'); END");
+        else db.exec("CREATE TABLE cleanup_parent(id INTEGER PRIMARY KEY); CREATE TABLE cleanup_guard(id INTEGER REFERENCES cleanup_parent(id) DEFERRABLE INITIALLY DEFERRED); CREATE TRIGGER fail_cleanup AFTER INSERT ON explanation_tasks BEGIN INSERT INTO cleanup_guard VALUES(1); END");
+      }
+      return gate(id, work);
+    });
+    await expect(f.start(preview)).rejects.toThrow(expect.objectContaining({ code: "CONSENT_REVOKED" }));
+    expect(f.calls()).toBe(0); expect(db.prepare("SELECT stage FROM remote_provider_lease").all()).toEqual([{ stage: "reserved" }]);
+    expect(db.prepare("SELECT * FROM explanation_tasks").all()).toEqual([]); expect(f.events).toEqual([]);
   });
   it("result insertion failure rolls back and saves only a fixed terminal diagnostic", async () => {
     const f = fixture(); const preview = await f.prepare(); f.raw.exec("CREATE TRIGGER deny_result BEFORE INSERT ON remote_explanations BEGIN SELECT RAISE(ABORT,'private-source-and-key'); END");
