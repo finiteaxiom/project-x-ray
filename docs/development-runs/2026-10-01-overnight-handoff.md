@@ -451,3 +451,20 @@ root 核 Sol 修订 patch EEA98B5218EA586454254EB7EE0E579B9C1B8D60E6D7B927A959E2
 root main 最终14文件493/493（235.14秒）及五包noEmit通过。Sol 同一完整命令492过1旧Git报告测试超原5000ms（5084ms）且清理EBUSY；原因未确认，两目录轻量回归当时并行。main结束后不改源码/断言/时限，在Sol独立复跑原index.test.ts，24/24、49.13秒、无EBUSY；其余469项在完整命令通过，Sol五包类型通过。准确失败/复跑、实际命令、hash和接受边界见2026-10-05-ownership-semantic-currentness-independent-review.md，不写成Sol一次493全过。
 
 已实现并独立代码/回归验证=Q2内部本地材料当前性准备及同步一次屏障；真实GUI已验证=0；semantic task/实际HTTP body/传输/发布/统一参与者恢复/模型质量仍未验，其他三批门保持。零task-slot-result写入/凭据读取/网络/用户授权操作/重型/导入代码执行。AGENTS0新增：原缺陷已闭环但已有规则覆盖。原Sol完成idle :20、Luna notLoaded :1，均源冻结、开发不得Git；本次已验范围由root核实际差异及远程再收尾。四批仍有本地范围可推进，不暂停或启动第五批。
+## 2026-10-05：Q2 实际 Git 回执与 2D-L4 正式派发
+
+root 最终已验 Q2 后台及准确记录/计划共14文件普通提交推送 502820ad4e040eb4b1effa9845c2c2fe46e1274b；cached diff --check 通过，独立 ls-remote 核实际 origin https://github.com/finiteaxiom/project-x-ray.git 的 main 同 SHA，提交后主目录清洁。未含 Sol 旧 WIP、GUI、transport、native 或二进制；不是四批完成。Q2 类型/回归与 Sol 原超时后独立复跑的准确证据见本轮独立审查。
+
+依据实际 provider-neutral adapter、Q2 仅 adapterRequestDigest 和共享任务设计的 full bodyDigest 门，root形成2026-10-05-ownership-semantic-responses-implementation.md，SHA256 998B0D4E5EC76DD83BBDFF9D6163D5A2573C1512F3B701F1687E006D6AAEC79E。官方 Responses/Structured Outputs 正文已核；通用 schema 的明确固定 wire 投影不解除原本地 validator，真实 compatibility 保持未验。
+
+已成功 send_message_to_thread 派原“开发” GPT-6 Luna / Max，仅main两新增 llm模块/测试、index单export及自有记录，先核502820ad基线；不改root计划/交接或其他源。任务是第二批2D-L4实际纯正文构造/完整UTF8摘要/预算及exact prepared绑定，无HTTP/凭据/外发/SQL/评分/GUI/重型，不制造替代准备或第五批。原Sol已成功发送接受回执及仅确认冻结指令，5170全部旧WIP保持、开发不得Git。活跃回合/游标按实际compact snapshot续查，不硬编码为永久状态。新记录随下一稳定已验切片收尾。
+
+四批尚有本地实现可推进，原automation继续；真实GUI0，模型质量/API账户、发布签名/干净Windows等外部门保留。四批本地收尾或全剩外部条件后暂停定时任务及派发并讨论规划，不自行第五批。
+派发后 timeoutMs=0 独立核原两聊天：Luna 回合 01a10a90-b6f9-7292-aca7-290617a6b123 active/inProgress，cursor 28e03d75-929e-48c9-a044-8bf7fd3e58c7:2，已确认按新计划实施并读取实际基线；Sol 接受回执回合 01a10a90-afb7-79d3-a014-30bddc99befd completed/idle，cursor 0f838fed-d42b-49b3-a29b-9a399c012637:21，明确保持全部冻结。以上是此刻实际游标，下一轮仍携最近真实值续查；root 当前只改公共三文档，不读测 Luna 活动源码或运行重型窗口。
+## 2026-10-05：L4纯正文独立接受，S3-B提交失败缺陷正式派发
+
+Luna冻结L4三LLM文件与自有记录后，root核hash及index单export，独立60+114+27=201回归/LLM noEmit通过；双布局真实TS索引→可信答题→SQL材料→实际full Responses body各8466字节及exact prepared校验通过，原材料/源码/确定性成绩保持，授权denied、task/registry/lease0。接受纯模块，真实服务/模型、Q2整链绑定、任务/transport/发布/统一恢复/GUI仍未验。详见2026-10-05-ownership-semantic-responses-independent-review；AGENTS新增最终canonical UTF8正文预算/摘要经验1条，有原内层合法外层超限及独立复验依据，无其他新增。
+
+root同时在5170及main实际源码/SQLite确认原feature提交失败窗口：deferred FK使同步dispatch后的COMMIT失败，首受控Promise仍pending且signal已abort，lease0；新prepare/start第二completed、峰值未settled dispatch2。零真实HTTP，不把abort当停止。形成并精确复制2026-10-05-feature-durable-reservation-implementation.md，SHA8F425EE22C3FD6EEE41825FD993D57AE4A67BF7D9A9A1BD15C2912DDEAFF73AC；先备份5170实际336旧文件/六允许源。成功派原Sol GPT-6.1 Sol/medium仅5170实施两次全门durable reserve/T1 promotion与不确定slot保留，global16仅此分配，六graph/application源测试与自有记录，不改LLM/旧WIP/desktop或其他源，不Git。
+
+真实Sol回合01a10aac-9730-75c0-855b-07f8b539613e active/inProgress、最近cursor0f838fed-d42b-49b3-a29b-9a399c012637:23；Luna冻结确认回合completed/idle、cursor28e03d75-929e-48c9-a044-8bf7fd3e58c7:8。下轮仍从最近实际游标compact检查，不当永久状态。旧feature恢复遇reserved/uncertain须零写失败关闭，实际全参与者停止后恢复另门未验，不能以迁移或布尔模拟解锁。四批有本地工作继续原workflow/automation，收尾或全剩外部门后暂停派发与定时任务讨论，不第五批。无新重型/GUI/真实凭据外发/导入代码执行；实际已验L4 Git范围另核，未含Sol未验修正。

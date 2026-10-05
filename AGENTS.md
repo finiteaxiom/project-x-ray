@@ -209,6 +209,8 @@ LLM 输出永远不是一级证据。LLM 可以对分析器返回的证据进行
 
 只按“执行反馈与规则沉淀”的门槛维护；详细过程保存在对应开发记录中。
 
+- 远程请求的预算与身份摘要须针对最终 canonical 正文的 UTF-8 字节计算，覆盖模型、schema、说明、输出预算及内层 JSON 的再次转义；不能用包大小或内部摘要替代。用真实构造器“内层合法、完整正文超限”的引号/反斜杠边界验证拒绝且原材料不变，保留原本地严格响应校验。[完整正文独立验收](docs/development-runs/2026-10-05-ownership-semantic-responses-independent-review.md)
+
 - 使用持久答题历史认证原题时，在保存与历史读取/重开均核对实际SQL截点严格早于对应提交的真实行号；生成器或排序引擎不支持不能跳过时间顺序检查。用本次/后来提交充当发行历史并重算全部摘要的真实回归确认拒绝，同时覆盖正常失败重答和发行后回退时间追加。自洽摘要不证明发行先于提交，行号不代表整体防篡改日志。[原题绑定独立复验](docs/development-runs/2026-10-05-ownership-question-binding-independent-review.md)
 
 - 使用 Windows 相对目录 HANDLE 约束路径时，不得由父 HANDLE 未申请 FILE_ADD 权限推断子项 FILE_CREATE 会被系统拒绝；需要拒绝创建的能力应限制实际导出的操作端口，并在目标 Node/Electron 运行时实测。只读父 HANDLE 下创建成功不能外推为 ACL 绕过，ACL 拒绝须另验。[权限实验独立复验](docs/development-runs/2026-10-04-upgrade-write-permissions-independent-review.md)
