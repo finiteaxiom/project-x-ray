@@ -1335,3 +1335,31 @@ send_message_to_thread成功；wait_threads timeoutMs0实际确认原Sol回合01
 root核Sol最终358文件hash全匹配，before353仅四授权旧文件/五新文件、349保持，反向patch检查exit0。独立原14文件582/582（149.69秒）与四包noEmit通过；实际索引原题答题/Q3正文/真实SQL16门probe通过。main原404仅四授权旧源测试变化、400保持，index保留main11不混Sol缓存12；精确集成后同14文件582/582（149.97秒）、四包noEmit与16门独立probe全部通过。收据、完整来源和集成上下文诊断见2026-10-06-ownership-semantic-reservation-independent-review.md。
 
 接受仅真实私有材料→global外层COMMIT reserved→opaque票据→封闭未发送取消；附属锁持至权威终态、实际取消RAISE(IGNORE)/deferred COMMIT回滚、close/reopen保留占用及原成绩/源码不变通过。零dispatch/结果/HTTP，不将synthetic许可或关闭称GUI/全停止证明。AGENTS0，已有配置锁及SQL规则覆盖。Git仅已验范围由root执行后登记真实SHA。原四批后续发送/发布/统一停止恢复仍有本地工作，GUI0及API/签名外部门保留；定时继续，不第五批。
+## 2026-10-06 00:41：B1实际Git回执及B2实施依据
+
+root普通提交B1 66965f4308dfe8a254fb718a5ec2ba2e0b7362b6，共15文件已验后台/测试/记录及原R1准确回执，cached diff --check通过。首次push远端拒绝ref锁，报告远端已同66965f4；独立ls-remote核实际main完整SHA相同，再次普通push exit0 Everything up-to-date。没有force、合并或开发Git；不能把首次拒绝写为成功。提交后main清洁；新计划与本回执属后续记录未纳入该SHA。
+
+按实际Q3 continuation缺失、B1无执行/结果端口和A2/R1均内部的源码依据，形成2D-B2当次执行与可信发布实施计划2026-10-06-ownership-semantic-publication-implementation.md，精确同步原5170，不覆盖WIP。仅内部执行替身验证，保持生产semantic/HTTP/desktop/UI关闭、统一参与者停止恢复未验；source提交与global完成非原子，迟到/失败占用/补偿门不得降低。不是第五批或填槽任务，原Luna仍冻结。Git回执与后续派发随下一已验切片收尾。
+实际派发确认：send_message_to_thread成功，仅原Sol/gpt-6.1-sol/medium/5170；wait_threads timeoutMs0已确认新回合01a10cf3-076a-7d70-a910-7169c2630398 active/inProgress、error null，最近实际cursor5e850447-53b4-4863-bd79-7f352fa9f11a:13。新计划双目录SHA256 36F88F16216B0EF52FC69D699D54FD38C99679319FF02460B57B01302D9332C1。Luna游标9682e900-0f3b-4fcf-b7ca-b62ec052becc:1仍冻结；没有同文件并发任务。automation实际ACTIVE/原15分钟与原target保持。B2实现/独立验收尚未完成，下一轮按真实游标核稳定交付。main只有root新计划/队列/准确Git派发记录未提交，保留后随下一已验切片收尾。
+## 2026-10-06 19:27：按用户请求重启定时并恢复B2
+
+用户明确要求核开发聊天、重新开启定时、继续原四批。root实际toml/view核project-x-ray为PAUSED；automation_update更新ACTIVE后文件回读确认ACTIVE、原15分钟与原target不变，保留完整四批/静默/停止门prompt，没有新定时或新聊天。OpenAI Docs技能核官方Scheduled tasks页，真实恢复依据为工具与文件回读。
+
+携最近真实游标核原Sol上一B2回合01a10cf3-076a-7d70-a910-7169c2630398因usage limit failed，未冻结交付；Luna上一L5 completed/notLoaded，不重派已验切片。当前普通额度允许，只读检查未购买/消费重置券。root逐项重算before359（79A30BF4E1C0CDFFF897BEEC900ECAD3761EEE686B3317221D06E426C982A8E5）：仅Q3 preparation和R1 result两授权源变，其余357保持、零缺失；新semantic application不存在，HEAD455d4ad保持，旧WIP不reset。实际改变不等于验收。
+
+root源码确认开发报告政策缺口：remote saveProvider/context仅同事务终止feature任务，S2 grant/revoke只写授权，不立即使匹配dispatched semantic终结。仅批准两store及对应测试同政策事务窄接semantic失效，保留lease/identity/T1；feature授权及feature-only recover保护不改，若必要允许独立私有invalidation helper/test，A2/shared核心与迁移冻结。四旧文件原字节另存自有Temp xray-b2-policy-before-5535bb6bdc7e458aaf585895b63cf40a。补充计划精确同步5170，SHA814A56880960461CD83D419380538652945FE096EB0A3E6B498D9312B4116A58；这里只源码确认范围，未称已跑实现回归。
+
+send_message_to_thread成功恢复原Sol gpt-6.1-sol/medium同B2。wait_threads timeoutMs0已确认新回合01a110f7-358d-74a3-9cae-fdc7fe6ade3d active/inProgress、error null；开发已收到补充且完成基线读取工具，最近实际cursor4ec5deb2-4b44-492c-86f0-dfe5a9c1aa25:3。Luna最新实际cursor6e45830c-d1c1-4a24-b5d2-00ea15bea007:1冻结；不派同文件冲突或填槽任务。
+
+main HEAD66965f4308dfe8a254fb718a5ec2ba2e0b7362b6，仅root计划/准确协调记录待后续已验切片收尾。没有新产品验收、build/native/GUI、提交/合并/推送；AGENTS0，政策事务既有规则足够，具体缺口及新增回归留开发闭环。原四批继续，源码/回归独立验收后才收尾；真实GUI、API/签名及统一停止恢复未验，结束或仅外部门后暂停定时及派发讨论，不第五批。
+## 2026-10-06 20:17：B2冻结独立复验及安全重试缺陷窄修
+
+root携真实游标确认原Sol B2 completed/idle，after364 hash全匹配/349旧文件保持、反向patch检查exit0，四包noEmit exit0；独立原16文件686/686（154.56秒）通过。额外root实际索引/原题答题/Q3/native Worker/SQL双布局×取消/无效响应4门证实：start已结算、worker threadId=-1、task正确failed/cancelled/inflight0、lease0/results0，旧源码/原答题保持，但同实例新prepare全BUSY。根因新application保留starting/reserved且仅completed允许替换，属于实际恢复缺陷，整体未验收，不能由原686通过掩盖。
+
+已结束root检查后仅原Sol/gpt-6.1-sol/medium/5170派窄修新应用source/test及自身记录；先新增失败回归、再修，并发旧catch/取消不得清新slot，所有停止/补偿/release未知或失败仍保留占用。实际wait确认turn01a11125-943b-75e0-8b0e-9540072f3ff8 active/inProgress/error null，cursor4ec5deb2-4b44-492c-86f0-dfe5a9c1aa25:7。Luna游标6e45830c-d1c1-4a24-b5d2-00ea15bea007:1冻结。细节/收据见2026-10-06-ownership-semantic-publication-independent-review.md；本轮AGENTS0、无集成/Git/build/GUI/HTTP。四批仍有必要本地修正，保持定时；外部门与禁止第五批停止门不变。
+
+## 2026-10-06 20:33：B2安全重试闭环、内部后台独立接受并精确main集成
+
+root核Sol修正冻结364文件全匹配，较上一冻结仅3授权文件变化、361保持；独立原16文件697/697（163.36秒）及四包noEmit通过。原4门实际取消/无效响应重试已从BUSY改为prepared；另root双布局×四题型×空/非空规则16完整发布路径+4显式重试各通过，真实Worker退出、原task/T1/成绩/mastery/源码保持。main精确hunks集成后同697/697（159.94秒）/四包类型/root20门全部通过，412原文件仅9授权旧源测试变化、403保持，不混Sol缓存/12迁移。新增测试仅EOF空行规范，行为断言不变，未冒称之后重跑整组。
+
+原开发patch缺new file mode造成正向check失败，root只修metadata及patch行结束，正向check/apply exit0，源码不因交付格式扩大范围。具体冻结SHA、实际命令、原失败→修正、收据及main差异见2026-10-06-ownership-semantic-publication-independent-review.md。只内部后台接受；GUI0/HTTP0、统一参与者停止恢复、main/desktop/UI接线和其它逐批外部门保持。AGENTS0，已有安全重试/实际停止/SQL规则覆盖。本已验20文件仅由root核cached/远程再Git收尾，实际SHA另记，不提前宣称推送。原四批继续，不第五批。

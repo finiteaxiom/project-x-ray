@@ -79,6 +79,15 @@ async function resign(value: OwnershipSemanticResultEnvelope) { return buildOwne
 function corrupt(db: Database.Database, work: () => void) { const sql = (db.prepare("SELECT sql FROM sqlite_master WHERE name='semantic_result_immutable'").get() as { sql: string }).sql; db.exec("DROP TRIGGER semantic_result_immutable"); work(); db.exec(sql); }
 
 describe("internal semantic candidate SQL", () => {
+  it("publication recapture is issuer-only, SQL-scoped and rejects missing exact stored candidate", async () => {
+    const f = await fixture(), receipt = await f.results.prepare(f.envelope); f.dispatch();
+    const candidate = f.lock(() => f.results.append(receipt, f.authority));
+    expect(() => f.results.assertCandidate(candidate)).toThrowError(expect.objectContaining({ code: "INVALID_RECEIPT" }));
+    f.lock(() => { expect(f.results.assertCandidate(candidate)).toEqual(f.envelope); expect(() => f.results.assertCandidate({ ...candidate } as never)).toThrow(); });
+    raw(f.source).prepare("DELETE FROM ownership_semantic_results WHERE task_id=?").run(f.identity.taskId);
+    f.lock(() => expect(() => f.results.assertCandidate(candidate)).toThrow());
+    expect(f.tasks.read(f.identity.taskId)?.phase).toBe("dispatched"); expect(raw(f.authority).prepare("SELECT * FROM remote_provider_lease").all()).toHaveLength(1);
+  });
   it.each((["entry", "call-direction", "call-path", "variable-flow"] as const).flatMap(kind => [{ legacy: false, rules: false }, { legacy: false, rules: true }, { legacy: true, rules: false }, { legacy: true, rules: true }].map(layout => ({ ...layout, kind }))))("saved ignore revision governs prepare/read/reopen, current revision is separate $kind/$legacy/$rules", async ({ legacy, rules, kind }) => {
     const f = await fixture(legacy, rules, kind), savedRevision = f.material.capsule.sourceIdentity.ignoreRevision;
     expect(savedRevision).toBe(rules ? 1 : 0); expect(f.identity.ignoreRevision).toBe(savedRevision);

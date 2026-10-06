@@ -6,6 +6,15 @@ import { tmpdir } from "node:os";
 import { GRAPH_QUERY_VERSION, MODULE_OVERVIEW_VERSION, type GraphQueryRequest, type OwnershipAttempt, type ProjectSnapshot } from "@project-xray/contracts";
 import { GraphStore } from "./index.js";
 
+it("new backend execution delegates require this instance's actual opaque ticket", async () => {
+  const store = new GraphStore(":memory:", "global");
+  const execute = vi.fn(() => { throw Error("must not run"); });
+  await expect(Promise.resolve().then(() => store.beginOwnershipSemanticExecution({} as never, execute))).rejects.toMatchObject({ code: "INVALID_RECEIPT" });
+  expect(execute).not.toHaveBeenCalled();
+  expect(() => store.releaseOwnershipSemanticExecution({} as never, true as never)).toThrow();
+  expect(store).not.toHaveProperty("recoverOwnershipSemantic"); expect(store).not.toHaveProperty("readOwnershipSemanticCandidate"); store.close();
+});
+
 it("reservation lifecycle adds no migration or public material/dispatch bridge", () => {
   const store = new GraphStore(":memory:", "global");
   const db = (store as unknown as { database: Database.Database }).database;

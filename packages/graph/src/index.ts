@@ -5,6 +5,7 @@ import { OwnershipSemanticPolicyStore } from "./ownership-semantic-policy-store.
 import { OwnershipSemanticResultStore } from "./ownership-semantic-result-store.js";
 import { OwnershipSemanticReservationStore, type SemanticReservation, type SemanticReservedMetadata } from "./ownership-semantic-reservation-store.js";
 export type { SemanticReservation, SemanticReservedMetadata } from "./ownership-semantic-reservation-store.js";
+export type { SemanticExecutionPreparation } from "./ownership-semantic-reservation-store.js";
 export type { PreparedSemanticReservation } from "./ownership-semantic-preparation-store.js";
 import { OwnershipQuestionBindingStore, type OwnershipQuestionIssuance } from "./ownership-question-binding-store.js";
 import type { OwnershipQuestionGeneratorPort } from "@project-xray/contracts";
@@ -612,7 +613,7 @@ export class GraphStore {
   reserveOwnershipSemantic(token: PreparedSemanticReservation): SemanticReservedMetadata {
     try {
       const { authority, settings } = this.semanticPreparations.reservationStores(token);
-      const metadata = authority.semanticReservations.reserve(this.semanticPreparations, token, this, settings.database, this.database);
+      const metadata = authority.semanticReservations.reserve(this.semanticPreparations, token, this, settings.database, this.database, this.semanticResults);
       this.reservationAuthorities.set(metadata.reservation, authority); return metadata;
     } finally { this.semanticPreparations.revokeReservation(token); }
   }
@@ -624,6 +625,16 @@ export class GraphStore {
   revokeOwnershipSemanticReservation(ticket: SemanticReservation): void {
     this.reservationAuthorities.get(ticket)?.semanticReservations.revoke(ticket); this.reservationAuthorities.delete(ticket);
   }
+  private executionLedger(ticket: SemanticReservation): OwnershipSemanticReservationStore {
+    const authority = this.reservationAuthorities.get(ticket);
+    if (!this.database.open || !authority) throw new OwnershipSemanticPreparationError("INVALID_RECEIPT"); return authority.semanticReservations;
+  }
+  beginOwnershipSemanticExecution(ticket: SemanticReservation, execute: (prepared: import("./ownership-semantic-reservation-store.js").SemanticExecutionPreparation) => import("node:worker_threads").Worker): Promise<void> { return this.executionLedger(ticket).begin(ticket, this, execute); }
+  publishOwnershipSemanticExecution(ticket: SemanticReservation, response: unknown): Promise<void> { return this.executionLedger(ticket).publish(ticket, this, response); }
+  failOwnershipSemanticExecution(ticket: SemanticReservation, code: import("@project-xray/contracts").RemoteFailureCode): void { this.executionLedger(ticket).failExecution(ticket, this, code); }
+  releaseOwnershipSemanticExecution(ticket: SemanticReservation, worker: import("node:worker_threads").Worker): void { this.executionLedger(ticket).releaseExecution(ticket, this, worker); }
+  ownershipSemanticExecutionState(ticket: SemanticReservation) { return this.executionLedger(ticket).executionState(ticket, this); }
+  readPublishedOwnershipSemanticExecution(ticket: SemanticReservation): Promise<import("@project-xray/contracts").OwnershipSemanticResultEnvelope> { return this.executionLedger(ticket).readPublished(ticket, this); }
   prepareOwnershipAttemptWithCapsule(input: OwnershipCapsuleWriteInput, settings: GraphStore = this): Promise<PreparedOwnershipWrite> {
     if (!(settings instanceof GraphStore)) return Promise.reject(new OwnershipCapsuleStoreError());
     return this.ownershipCapsules.prepare(input, settings);

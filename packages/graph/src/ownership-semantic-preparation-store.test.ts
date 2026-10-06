@@ -4,6 +4,11 @@ import { GraphStore } from "./index.js";
 import { captureSemanticPrepareRequest, semanticPreparationFailure } from "./ownership-semantic-preparation-store.js";
 const request = () => ({ repositoryId: "repo", snapshotId: "snap", attemptId: "attempt", contextHandle: randomUUID(), purpose: "ownership-semantic-assessment" });
 describe("semantic preparation internal boundary", () => {
+  it("reservation continuation has no barrel caller material or boolean currentness entry", () => {
+    const store = new GraphStore(":memory:", "global");
+    expect(store).not.toHaveProperty("takeReservation"); expect(store).not.toHaveProperty("semanticContinuation");
+    expect(() => store.publishOwnershipSemanticExecution({} as never, { identity: {}, body: "caller" })).toThrow(); store.close();
+  });
   it("inner and outer fixed byte-limit errors both retain REQUEST_TOO_LARGE without text", () => {
     for (const code of ["PROMPT_REQUEST_TOO_LARGE", "REQUEST_TOO_LARGE", "LIMIT_EXCEEDED"]) {
       const error = semanticPreparationFailure(Object.assign(Error("private body and answer"), { code }));

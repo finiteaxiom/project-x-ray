@@ -1,4 +1,5 @@
 import type Database from "better-sqlite3";
+import { invalidateOwnershipSemanticTasks } from "./ownership-semantic-invalidation-store.js";
 import { types } from "node:util";
 import {
   OWNERSHIP_SEMANTIC_POLICY_VERSION, OWNERSHIP_SEMANTIC_POLICY_PROVIDER, OWNERSHIP_SEMANTIC_POLICY_DISCLOSURE_VERSION,
@@ -105,7 +106,8 @@ export class OwnershipSemanticPolicyStore {
       return this.db.transaction(() => {
         const old = this.read(command.repositoryId), revision = this.nextRevision(old, command.expectedRevision);
         if (this.providerRevision() !== command.expectedProviderRevision) throw new RemoteExplanationError("REVISION_CONFLICT");
-        return this.write({ ...old, revision, status: "granted", categories: command.categories, grantedAt: this.time(old), revokedAt: null });
+        const next = this.write({ ...old, revision, status: "granted", categories: command.categories, grantedAt: this.time(old), revokedAt: null });
+        invalidateOwnershipSemanticTasks(this.db, { kind: "repository", repositoryId: command.repositoryId }, "CONSENT_REVOKED"); return next;
       }).immediate();
     } catch (error) { throw remoteStoreFailure(error); }
   }
@@ -114,7 +116,8 @@ export class OwnershipSemanticPolicyStore {
       this.open(); const command = ownershipSemanticRevokeCommandSchema.parse(capture(raw));
       return this.db.transaction(() => {
         const old = this.read(command.repositoryId), revision = this.nextRevision(old, command.expectedRevision);
-        return this.write({ ...old, revision, status: "denied", categories: [], revokedAt: old.grantedAt === null ? null : this.time(old) });
+        const next = this.write({ ...old, revision, status: "denied", categories: [], revokedAt: old.grantedAt === null ? null : this.time(old) });
+        invalidateOwnershipSemanticTasks(this.db, { kind: "repository", repositoryId: command.repositoryId }, "CONSENT_REVOKED"); return next;
       }).immediate();
     } catch (error) { throw remoteStoreFailure(error); }
   }

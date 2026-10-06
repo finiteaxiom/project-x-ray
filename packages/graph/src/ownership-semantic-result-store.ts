@@ -188,6 +188,16 @@ export class OwnershipSemanticResultStore {
       }).deferred(); return this.candidate(value);
     } catch (error) { throw safe(error); }
   }
+  /** Internal synchronous publication recapture after readCandidate's full async
+   * validator. It returns no new candidate and grants no publication authority. */
+  assertCandidate(candidate: StoredSemanticCandidate): OwnershipSemanticResultEnvelope {
+    try {
+      this.open(); if (!this.db.inTransaction) fail("INVALID_RECEIPT"); this.schema();
+      const expected = this.#candidates.get(candidate); if (!expected) fail("INVALID_RECEIPT");
+      const row = this.db.prepare("SELECT * FROM ownership_semantic_results WHERE task_id=?").get(expected.identity.taskId) as Row | undefined;
+      if (!row || canonicalJson(this.stored(row)) !== canonicalJson(expected)) fail(); return expected;
+    } catch (error) { throw safe(error); }
+  }
   compensate(candidate: StoredSemanticCandidate, trustedAuthority: GraphStore): void {
     try {
       this.open(); const value = candidate && typeof candidate === "object" ? this.#candidates.get(candidate) : undefined;

@@ -1,4 +1,5 @@
 import type Database from "better-sqlite3";
+import { invalidateOwnershipSemanticTasks } from "./ownership-semantic-invalidation-store.js";
 import { createHash, randomUUID } from "node:crypto";
 import { SharedRemoteTaskStore } from "./shared-remote-task-store.js";
 import {
@@ -79,7 +80,8 @@ export class RemoteExplanationStore {
       const next = remoteProviderSettingsSchema.parse({ ...remoteProviderSettingsSchema.omit({ revision: true }).parse(input), revision: revision(old.revision) });
       if (next.credentialRevision < old.credentialRevision) throw new RemoteExplanationError("REVISION_CONFLICT");
       this.db.prepare("INSERT INTO remote_provider_settings VALUES(1,?) ON CONFLICT(id) DO UPDATE SET payload=excluded.payload").run(JSON.stringify(next));
-      this.terminateMatching(() => true, "NOT_CONFIGURED"); return next;
+      this.terminateMatching(() => true, "NOT_CONFIGURED");
+      invalidateOwnershipSemanticTasks(this.db, { kind: "all" }, "NOT_CONFIGURED"); return next;
     });
   }
   authorization(repositoryId: string): RemoteAuthorization {
@@ -123,7 +125,8 @@ export class RemoteExplanationStore {
       if (old && old.ownerSessionId !== ownerSessionId) throw new RemoteExplanationError("POLICY_INVALID");
       const context = remoteContextSchema.parse({ ownerSessionId, contextHandle: randomUUID(), epoch: revision(old?.epoch ?? 0), active: reference !== null, reference });
       this.db.prepare("INSERT INTO explanation_contexts VALUES(?,?,?) ON CONFLICT(owner_session_id) DO UPDATE SET context_handle=excluded.context_handle,payload=excluded.payload").run(ownerSessionId, context.contextHandle, JSON.stringify(context));
-      this.terminateMatching(task => task.identity.ownerSessionId === ownerSessionId, "CONTEXT_CHANGED"); return context;
+      this.terminateMatching(task => task.identity.ownerSessionId === ownerSessionId, "CONTEXT_CHANGED");
+      invalidateOwnershipSemanticTasks(this.db, { kind: "owner", ownerSessionId }, "CONTEXT_CHANGED"); return context;
     });
   }
 

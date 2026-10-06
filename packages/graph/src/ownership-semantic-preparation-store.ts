@@ -88,6 +88,7 @@ interface Prepared {
   capture: Capture; adapter: SemanticPromptPreparation; adapterRequestDigest: string;
   responses: SemanticResponsesPreparation; responsesPreimage: string;
   assessmentPackageId: string; signal: AbortSignal; expiresAt: number;
+  semanticPackage: OwnershipSemanticPackage;
 }
 interface Revision { prepared: Prepared; token: PreparedSemanticBinding; consumed: boolean }
 function assertSynchronous(value: unknown): void {
@@ -173,7 +174,7 @@ export class OwnershipSemanticPreparationStore {
       await checkWorkspace();
       const prepared: Prepared = { request, authority, settings, main, identity, capture: captured, adapter,
         responses, responsesPreimage: canonicalJson(responses),
-        adapterRequestDigest: digest(adapter.serializedRequest), assessmentPackageId: semanticPackage.assessmentPackageId, signal, expiresAt: Date.now() + SEMANTIC_PREPARATION_TIMEOUT_MS };
+        adapterRequestDigest: digest(adapter.serializedRequest), assessmentPackageId: semanticPackage.assessmentPackageId, semanticPackage: structuredClone(semanticPackage), signal, expiresAt: Date.now() + SEMANTIC_PREPARATION_TIMEOUT_MS };
       this.db.transaction(() => this.current(prepared)).deferred();
       const token = Object.freeze(Object.create(null)) as PreparedSemanticBinding; this.#prepared.set(token, prepared); return token;
     } catch (error) { throw semanticPreparationFailure(error); }
@@ -251,6 +252,15 @@ export class OwnershipSemanticPreparationStore {
       contextHandle: context.contextHandle, contextEpoch: context.epoch, ownerSessionId: context.ownerSessionId, taskId: randomUUID(),
       assessmentPackageId: prepared.assessmentPackageId, bodyDigest: prepared.responses.bodyDigest, limitsVersion: "1.0.0",
     });
-    return { identity, recheck };
+    return { identity, recheck, continuation: {
+      responses: prepared.responses,
+      semanticPackage: prepared.semanticPackage,
+      submittedAnswer: prepared.capture.capsule.attempt.semanticText,
+      checkWorkspace: async () => {
+        const state = await awaitSemanticStep(this.ports!.main.checkWorkspace(prepared.request, prepared.signal), prepared.signal);
+        if (state.status !== "current") fail("NOT_CURRENT"); this.open();
+      },
+      begin: () => { prepared.expiresAt = Date.now() + 90_000; },
+    } };
   }
 }
