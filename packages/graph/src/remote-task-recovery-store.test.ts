@@ -315,3 +315,22 @@ describe("recovery binds all known history, not only the occupied snapshot", () 
     expect(integrityHistory(f)).toBe(before); expect(f.result()).toEqual(result);
   });
 });
+
+it.each(["true", "false", "promise"])("context veto %s refuses before terminal and does not authorize SQL recovery", async kind => {
+  const f = await fixture(); f.dispatch(); const i = issuer(f), before = state(raw(f.authority)), source = state(raw(f.source));
+  const veto = () => kind === "promise" ? Promise.resolve() : kind === "true";
+  await expect(i.port.recover(i.permit(), [i.binding], veto)).rejects.toMatchObject({ code: "POLICY_INVALID", progress: { terminalCommitted: false, sourceCommitted: false, released: false } });
+  expect(state(raw(f.authority))).toBe(before); expect(state(raw(f.source))).toBe(source);
+  await expect(i.port.recover(i.permit(), [i.binding])).resolves.toMatchObject({ released: true });
+});
+it("context veto is rechecked after actual candidate digest before compensation", async () => {
+  const f = await fixture(), prepared = await f.results.prepare(f.envelope); f.dispatch(); f.lock(() => f.results.append(prepared, f.authority)); const i = issuer(f);
+  let reject = false, entered!: () => void, release!: () => void;
+  const waiting = new Promise<void>(r => entered = r), held = new Promise<void>(r => release = r), real = crypto.subtle.digest.bind(crypto.subtle);
+  vi.spyOn(crypto.subtle, "digest").mockImplementationOnce(async (...args) => { const value = await real(...args); entered(); await held; return value; });
+  const pending = i.port.recover(i.permit(), [i.binding], () => { if (reject) throw Error("context changed"); }).catch(error => error); await waiting;
+  const before = state(raw(f.authority)), source = state(raw(f.source)); reject = true; release();
+  expect(await pending).toMatchObject({ code: "POLICY_INVALID", progress: { terminalCommitted: true, sourceCommitted: false, released: false } });
+  expect(state(raw(f.authority))).toBe(before); expect(state(raw(f.source))).toBe(source); expect(occupied(f)).toHaveLength(1);
+  reject = false; await expect(i.port.recover(i.permit(), [i.binding], () => { if (reject) throw Error("context changed"); })).resolves.toMatchObject({ released: true }); expect(sourceResult(f)).toBeUndefined();
+});

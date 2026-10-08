@@ -17,7 +17,7 @@ export interface RemoteRecoveryIssuer {
   close(): void;
   capture(): RemoteRecoveryCapture;
   authorize(capture: RemoteRecoveryCapture): RemoteRecoveryPermit;
-  recover(permit: RemoteRecoveryPermit, sources: readonly RemoteRecoverySource[]): Promise<{ terminalCommitted: boolean; sourceCommitted: boolean; released: boolean }>;
+  recover(permit: RemoteRecoveryPermit, sources: readonly RemoteRecoverySource[], contextVeto?: () => void): Promise<{ terminalCommitted: boolean; sourceCommitted: boolean; released: boolean }>;
 }
 export class RemoteRecoveryError extends RemoteExplanationError {
   constructor(code: import("@project-xray/contracts").RemoteFailureCode, readonly progress: Readonly<{ terminalCommitted: boolean; sourceCommitted: boolean; released: boolean }>) { super(code); }
@@ -64,7 +64,7 @@ export class RemoteTaskRecoveryStore {
         this.open(); const captured = this.#captures.get(cap); if (!captured || captured.session !== session || session.closed) invalid(); const state = captured.state; this.#captures.delete(cap); this.same(state);
         const permit = Object.freeze({}) as RemoteRecoveryPermit; this.#permits.set(permit, { state, session }); return permit;
       },
-      recover: (permit: RemoteRecoveryPermit, sources: readonly RemoteRecoverySource[]) => this.recover(permit, sources, session),
+      recover: (permit: RemoteRecoveryPermit, sources: readonly RemoteRecoverySource[], contextVeto?: () => void) => this.recover(permit, sources, session, contextVeto),
     });
   }
   private material(b: Binding): string {
@@ -134,11 +134,17 @@ export class RemoteTaskRecoveryStore {
       else new OwnershipSemanticTaskStore(this.db, "global").finish(ownershipSemanticCapturedIdentitySchema.parse(o.identity), "INTERRUPTED");
     }
   }
-  private async recover(permit: RemoteRecoveryPermit, sources: readonly RemoteRecoverySource[], session: RecoverySession) {
+  private async recover(permit: RemoteRecoveryPermit, sources: readonly RemoteRecoverySource[], session: RecoverySession, contextVeto?: () => void) {
     const progress = { terminalCommitted: false, sourceCommitted: false, released: false };
     const permission = this.#permits.get(permit); if (!permission || permission.session !== session || session.closed) invalid(); this.#permits.delete(permit);
     let state = permission.state;
-    const current = (expected: RemoteRecoveryState) => { if (session.closed) invalid(); this.same(expected); };
+    // Trusted synchronous context refusal is additional to every original SQL
+    // guard, including after readCandidate awaits. It cannot authorize recovery.
+    const current = (expected: RemoteRecoveryState) => {
+      if (session.closed) invalid();
+      if (contextVeto !== undefined && (typeof contextVeto !== "function" || contextVeto() !== undefined)) invalid();
+      this.same(expected);
+    };
     try {
       this.open(); current(state); const binding = this.binding(state, sources);
       if ([this.db, ...(binding ? [binding.settingsDb, binding.sourceDb] : [])].some(db => !db.open || db.inTransaction)) invalid();

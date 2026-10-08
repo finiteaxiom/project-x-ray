@@ -21,6 +21,7 @@ import { canonicalJson, ownershipQuestionRequestSchema, ownershipQuestionSchema,
 import { prepareOwnershipSemanticResponsesRequest } from "@project-xray/llm";
 import { OwnershipSemanticPreparationError, type OwnershipSemanticTrustedPorts } from "@project-xray/graph";
 import { OwnershipSemanticPreparationApplication } from "./ownership-semantic-preparation.js";
+import { registerHeldStoreRecovery } from "./remote-recovery-source-locator.js";
 import { RemoteExplanationApplication, type RemoteProviderPort, type RemoteCredentialPort } from "./remote-explanation.js";
 export { RemoteExplanationApplication, type RemoteApplicationPorts, type RemoteProviderPort, type RemoteCredentialPort } from "./remote-explanation.js";
 
@@ -232,6 +233,7 @@ export class XRayApplication {
   private readonly ownershipGenerator = createOwnershipQuestionGeneratorPort();
   private readonly questionIssuances = new WeakMap<OwnershipQuestion, { store: GraphStore; issuance: Readonly<object> }>();
   private readonly legacyStore: GraphStore;
+  private readonly closeHeldRecovery: () => void;
   private readonly stores = new Map<string, GraphStore>();
   private readonly snapshotStores = new Map<string, GraphStore>();
   private readonly analyzers: LanguageAnalyzer[] = [new TypeScriptAnalyzer(), new PythonAnalyzer()];
@@ -255,6 +257,7 @@ export class XRayApplication {
     this.currentActivation = this.legacyStore.getCurrentActivation();
     if (this.current) this.snapshotStores.set(this.current.snapshotId, this.legacyStore);
     if (this.projectDatabaseRoot) this.loadProjectStores(this.projectDatabaseRoot);
+    this.closeHeldRecovery = registerHeldStoreRecovery(this, this.legacyStore, this.stores, this.snapshotStores);
   }
 
   private loadProjectStores(root: string): void {
@@ -781,7 +784,7 @@ export class XRayApplication {
     } finally { if (request) observation?.settle(request); }
   }
 
-  close(): void { this.navigationSlot = null; this.navigationObservation?.dispose(); this.ownershipClosed = true; this.semanticGeneration++; this.semanticFlow?.close(); this.clearQuestions(); for (const store of new Set([this.legacyStore, ...this.stores.values()])) store.close(); }
+  close(): void { this.closeHeldRecovery(); this.navigationSlot = null; this.navigationObservation?.dispose(); this.ownershipClosed = true; this.semanticGeneration++; this.semanticFlow?.close(); this.clearQuestions(); for (const store of new Set([this.legacyStore, ...this.stores.values()])) store.close(); }
 
   private async analyzeComparisonSide(base: ProjectSnapshot, side: CapturedSide, policy: IgnorePolicy, ignoreRevision: number, signal?: AbortSignal, progress?: (completed: number, total: number, currentFile: string) => void): Promise<ProjectSnapshot> {
     const sources: IndexedSource[] = side.sources.map((item) => ({ absolutePath: resolve(base.rootPath, item.projectPath), projectPath: item.projectPath, content: item.content, contentHash: item.contentHash, language: item.language }));

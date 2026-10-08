@@ -257,3 +257,22 @@ describe("one trusted native lifecycle and exact recovery",()=>{
   });
 
 });
+
+it.each(["true", "false", "promise"])("context veto %s cannot authorize native recovery", async kind => {
+  const f = await fixture(), o = owned(f); await reserveOwned(f, o); const before = state(f);
+  const veto = () => kind === "promise" ? Promise.resolve() : kind === "true";
+  await expect(o.lifecycle.recover(veto)).rejects.toMatchObject({ code: "POLICY_INVALID" }); expect(state(f)).toEqual(before);
+  await expect(o.lifecycle.recover()).resolves.toMatchObject({ released: true }); expect(o.createWorker).not.toHaveBeenCalled();
+});
+
+it("binding added during native settlement cannot enlarge the captured recovery source set", async () => {
+  const f = await fixture(), life = new RemoteTaskLifecycle(f.authority); handles.add(life);
+  let actual!: Worker;
+  const participant = life.create(f.context.ownerSessionId, ["ownership-semantic-assessment"], () => actual = idleWorker()), token = await f.flow.prepare(f.request);
+  life.admit(participant, () => f.flow.reserve(token)); const before = state(f), g = gate();
+  const operation = life.operation(participant, "work", async () => { g.enter(); await g.held; }).catch(error => error); await g.entered;
+  const pending = life.recover().catch(error => error); await vi.waitFor(() => expect(actual.threadId).toBe(-1));
+  life.bind(f.ref, f.settings, f.source); g.release(); await operation;
+  expect(await pending).toMatchObject({ code: "POLICY_INVALID" }); expect(state(f)).toEqual(before);
+  await expect(life.recover()).resolves.toMatchObject({ released: true });
+});
