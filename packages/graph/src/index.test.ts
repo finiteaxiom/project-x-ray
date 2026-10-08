@@ -155,6 +155,8 @@ describe("graph", () => {
       }
       expect(db(global).prepare("SELECT version FROM schema_migrations WHERE version=17").get()).toEqual({ version: 17 });
       expect(db(project).prepare("SELECT version FROM schema_migrations WHERE version=17").get()).toBeUndefined();
+      expect(db(global).prepare("SELECT version FROM schema_migrations WHERE version=19").get()).toEqual({ version: 19 });
+      expect(db(project).prepare("SELECT version FROM schema_migrations WHERE version=19").get()).toBeUndefined();
       expect(db(global).prepare("SELECT name FROM sqlite_master WHERE name='ownership_semantic_tasks'").get()).toEqual({ name: "ownership_semantic_tasks" });
       expect(db(project).prepare("SELECT name FROM sqlite_master WHERE name='ownership_semantic_tasks'").get()).toBeUndefined();
       for (const target of [global, global.remote]) for (const name of ["reserveSemantic", "registerSemantic", "finishSemantic", "releaseSemantic"]) expect(name in target).toBe(false);

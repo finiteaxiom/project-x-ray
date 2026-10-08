@@ -1363,3 +1363,55 @@ root携真实游标确认原Sol B2 completed/idle，after364 hash全匹配/349�
 root核Sol修正冻结364文件全匹配，较上一冻结仅3授权文件变化、361保持；独立原16文件697/697（163.36秒）及四包noEmit通过。原4门实际取消/无效响应重试已从BUSY改为prepared；另root双布局×四题型×空/非空规则16完整发布路径+4显式重试各通过，真实Worker退出、原task/T1/成绩/mastery/源码保持。main精确hunks集成后同697/697（159.94秒）/四包类型/root20门全部通过，412原文件仅9授权旧源测试变化、403保持，不混Sol缓存/12迁移。新增测试仅EOF空行规范，行为断言不变，未冒称之后重跑整组。
 
 原开发patch缺new file mode造成正向check失败，root只修metadata及patch行结束，正向check/apply exit0，源码不因交付格式扩大范围。具体冻结SHA、实际命令、原失败→修正、收据及main差异见2026-10-06-ownership-semantic-publication-independent-review.md。只内部后台接受；GUI0/HTTP0、统一参与者停止恢复、main/desktop/UI接线和其它逐批外部门保持。AGENTS0，已有安全重试/实际停止/SQL规则覆盖。本已验20文件仅由root核cached/远程再Git收尾，实际SHA另记，不提前宣称推送。原四批继续，不第五批。
+
+## 2026-10-06 20:36：B2实际Git回执、共享恢复下一实施边界派发
+
+root普通提交B2 9d9f19aafbdeed5a185ac04bee9af62bf4f1f2e4，20文件精确已验，cached diff --check通过。origin已核为finiteaxiom/project-x-ray；推送前remote66965f4，首次push返回ref锁拒绝且称remote已9d9f19a；独立ls-remote核完整SHA同local后第二普通push exit0 Everything up-to-date。没有force/合并/开发Git，提交后main清洁。本回执及下一队列记录属后续协调记录，不在该SHA；GUI/真实HTTP仍0，未称四批完成。
+
+实际Sol broker stopConfirmed:53–79仅feature worker/issued且最终调用remote.recoverInterrupted；remote:268 assertFeatureRecovery仍必须拒semantic占用。B2 close仅撤销内存能力并请求单worker，ledger.close丢opaque材料，R1 readCandidate/compensate仍需原source/权威证据。统一inventory与重开精确补偿为原第一/第二批进入main可信接线前必要本地工作，不因缺API空等。依据已接受shared-task设计，仅派Sol给最小实施边界/实际文件与待验矩阵，允许新增docs/plans/2026-10-06-shared-remote-recovery-implementation.md与docs/development-runs/2026-10-06-shared-remote-recovery-design.md两文档，不重写原则/先改源、不做新工具或第五批。旧WIP及所有B2源码冻结。
+
+send_message_to_thread成功原Sol/gpt-6.1-sol/medium/5170；timeout0核turn01a11136-d37c-7190-850b-2dc54273f1d0 active/inProgress/error null，cursor4ec5deb2-4b44-492c-86f0-dfe5a9c1aa25:9。Luna游标6e45830c-d1c1-4a24-b5d2-00ea15bea007:1冻结，不派同文件并发。automation文件回读ACTIVE/原15分钟/原target保持；四批尚有本地必要工作，结束或仅外部门后暂停定时及派发讨论。AGENTS0，当前设计不是运行验收或新工程经验。
+
+## 2026-10-06 20:46：共享恢复方案反例核验及内部core实际派发
+
+root核Sol方案after366全部hash匹配、旧364字节保持。源码审查发现graph原生Worker归属与已接受分层冲突；实际SQLite探针reserve独立提交后promoteFeature(interrupted,1)抛XRAY_SHARED_INVALID且零写/lease仍reserved，17提升守卫要求dispatched，不能按原方案直接恢复。纠错后直接派内部core实现，必要global19正式分配，旧14/16/17/18逐字保持，不造假dispatched或提前release。证据/命令/精确范围见2026-10-06-shared-remote-recovery-independent-review；两开发设计未直接集成，设计不等于运行接受。
+
+原Sol/gpt-6.1-sol/medium/5170成功派发，timeout0实际回合01a1113f-1728-7ac3-a93b-6b998bbb6398 active/inProgress/error null，cursor4ec5deb2-4b44-492c-86f0-dfe5a9c1aa25:12。Luna冻结、cursor6e45830c-d1c1-4a24-b5d2-00ea15bea007:1，不冲突派发。core仅自身可信native资源域/实际SQL补偿，生产broker与B2统一/启动退出证明/精确locator/GUI/HTTP仍未验收。AGENTS0、没有新实现验收/集成/提交推送；main9d9f19a保持，保留协调记录。原四批仍有必要本地实现，定时继续，收尾或仅外部门后暂停，不第五批。
+
+## 2026-10-07：共享恢复冻结独立验收失败、窄修派发被当前权限拒绝
+
+root核Sol core373全hash，原Sol及Luna均idle。原19文件788项386过/402失败，TEMP/TMP自有目录解除缓存rename EPERM后fresh reader在main/Sol共同失败于根HANDLE路径解析；native域15/15，四包原noEmit均失败，缺Vitest声明依赖的解析证据及未完整归因保持。没有把历史788报告当本轮通过。
+
+root当前实际SQLite探针使用旧自建真实索引材料副本，正常split completed保留result/source；两反例确认completed feature在真实source COMMIT窗口被第二连接删result仍释放lease、legacy关闭context触发修改source仍成功。独立记录2026-10-06-shared-remote-recovery-independent-review及具体窄修2026-10-07-shared-recovery-integrity-fix已保存；core未验收/未main集成，GUI/HTTP0。AGENTS0，既有SQL完整预期及回滚规则覆盖，未制造新规则。
+
+原Sol send_message实际被“MCP tool call requires approval, but approval policy is never”拒绝，timeout0确认仍idle/无新回合，任务未送达。暂停project-x-ray工具也同错拒绝，文件回读仍ACTIVE/原15分钟/target保持，不能称已暂停。当前root仅main可写、Sol及Git元数据只读，未绕过权限、未提交推送；HEAD9d9f19a保持。待实际权限/环境变化继续同窄修与独立复验，不重复失败派发或新规划任务。原四批未完成；其余各批外部未验门保持，不启动第五批。
+
+## 2026-10-07：继续指令后的共享恢复候选补丁及41事务门
+
+用户明确继续开发，root复核两原聊天仍idle，原Sol派发再次被approval policy never拒绝/未送达。root在main自有ignored目录制作冻结graph单文件候选，未写Sol或main生产源。两布局/两purpose41真实SQLite事务门通过，15可回滚故障人工重试通过；completed COMMIT窗口完整目标及最终context/release后的源码/答题/兼容成绩/结果前像保护有效。非空兼容成绩由真实saveMastery在副本显式保存，旧fresh索引阻碍/原788及四包类型失败保持；单文件strict类型和原Sol apply --check通过不替代整链。
+
+详细闭环、准确hash/收据/可审查patch见2026-10-07-shared-recovery-integrity-candidate.md；具体修复范围已链接候选。未正式集成/提交/推送/GUI/HTTP，无AGENTS新增。原Sol冻结hash保持，定时未重新修改、不称已暂停。待工具权限变化直接原Sol审查/接入候选与回归，再root准确交付独立验收；不换聊天或启动第五批。
+
+## 2026-10-07：完整访问恢复、原 Sol 窄修实际派发
+
+用户明确已给最高权限后，send_message_to_thread成功送达原开发-Sol/gpt-6.1-sol/medium/5170，仅共享恢复source/test及自有core记录。初次回合01a1162f-85ae-7152-af94-b1cc8c817be7已实际运行；后续当前回合01a11632-a2d4-7752-bc7f-0911f18940ba为active/inProgress、error null，最近实际cursor3e8b4e0b-700b-4971-8c8b-5a686d4d43df:4。Sol已重算原373/373冻结字节一致，保留455d4ad基线与原WIP；正在将COMMIT窗口和context/release反例接入fresh索引、真实答题和明确保存的非空兼容成绩回归。Luna原切片仍冻结，不制造并发冲突任务。
+
+root当前在main运行原tsx的c-core-native-check，两目录createSecureReadScope/readSecureProjectFile均read-ok；原tsc --noEmit -p packages/{contracts,graph,application,llm}/tsconfig.json四命令分别exit0。历史restricted环境HANDLE/声明解析失败保持为真实旧结果，当前窄环境门已恢复。main baseline类型通过不等于Sol修复已通过正式19文件回归，亦非新的GUI、HTTP或全链验收；root不并发运行Sol正在修改的graph文件，未开重型build/native窗口。
+
+原候选41事务门及15故障人工重试是审查依据，仍须正式fresh回归和root稳定交付独立复验。没有main生产集成/提交/推送、没有电脑操作或真实远程；定时保持ACTIVE，四批仍有可推进本地缺陷，不暂停或启动第五批。本轮AGENTS无新增，已有SQL写后完整预期和触发器回滚规则覆盖。
+## 2026-10-07：共享恢复窄修独立41门通过、完整回归三超时与原Sol继续闭环
+
+root核Sol完整性修复373/373、实际仅三文件变化/370保持、准确patch反向check过；原四包noEmit通过。本轮fresh材料+当前实际Sol recovery source的41事务门/15可回滚故障人工重试通过。root原19文件18文件过/1失败、831/834（452.29秒）仍三个B2默认5000ms timeout失败；main原定向也三失败。完整core仍未接受，不以局部过覆盖失败。
+
+自有ignored测试副本观察实际deadline安装及2400轮询推进开销；只模拟目标timeout、保留真实interval并等待安装的候选3/3通过，未改原文件/原5000ms/产品60000ms或完整断言。更重要的main原应用真实60078ms后TIMEOUT、actual worker退出/lease0/T1保持，同实例人工重试completed且第二worker退出、原task/答题/源码保持；仅split、自编Worker、HTTP0/GUI0。准确冻结/收据/hash、失败及命令见2026-10-07-shared-recovery-integrity-independent-review，scope见2026-10-07-semantic-timeout-regression-fix。没有性能收益或整体完成结论。
+
+root当前所有组合、类型和真实计时检查均已结束后，send_message_to_thread成功原Sol/gpt-6.1-sol/medium/5170，仅B2 test与新自有记录。timeout0确认turn01a1164d-0165-74f3-9615-cee2cce3f035 active/inProgress/error null，最近实际cursor3e8b4e0b-700b-4971-8c8b-5a686d4d43df:15；Luna冻结cursor a39853cf-b92f-4006-b69c-77245be3dc0a:1。原core三文件及所有产品源冻结，下一先核正式三timeout/81/full19/四包结果与准确交付，再root独立复验及精确main集成。不并发写B2test或做重型build/native/dist/Electron。
+
+main HEAD9d9f19a保持，仅root协调记录与自有ignored诊断；无生产集成/Git收尾/GUI/HTTP/凭据操作，保留用户与原Sol WIP。定时原ACTIVE/15分钟/target继续，四批还有可推进本地回归闭环；结束或仅外部条件后暂停，不第五批。AGENTS新增/修订0，现有SQL/终态/实际停止规则覆盖，单一测试时钟问题不写公共规则。
+
+
+## 2026-10-08：共享恢复内部核心主目录集成独立接受
+
+root已核完整Sol交付与精确main16文件前像/候选。Sol原19串行复验834/834（425.53秒）；main原19串行834/834（422.46秒）及四包原noEmit、fresh实际main source41事务门/15人工重试通过。此前三timeout、Git报告超时/EBUSY和自有备份误入测试发现的失败保留，未提高5000ms、缩短60000ms或移除正确断言。准确manifest/补丁、收据、回归及工具修正见2026-10-07-shared-recovery-integrity-independent-review。
+
+仅内部恢复能力/全局19迁移及测试时钟窄修独立接受。真实GUI0/HTTP0；生产B2与feature统一资源域、仅已持有store定位及Windows启动退出证明仍需继续。保留main旧B2独立记录WIP及Sol缓存/native/broker/UI改动，不整体覆盖worktree。当前准备仅已验24文件Git收尾，实际SHA及推送另记；AGENTS新增/修订0，已有规则覆盖。两原开发idle冻结、原定时ACTIVE/15分钟；四批仍有本地可推进工作，不开第五批。

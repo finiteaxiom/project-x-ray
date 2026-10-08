@@ -277,7 +277,7 @@ describe("source migration18 strict preservation", () => {
     const upgraded = new GraphStore(path, role); handles.push(upgraded);
     for (const table of rows) expect(raw(upgraded).prepare(`SELECT * FROM "${table.name}"`).all().filter(row => table.name !== "schema_migrations" || (row as { version: number }).version !== 18)).toEqual(table.rows);
     expect(raw(upgraded).prepare("SELECT count(*) n FROM ownership_semantic_results").get()).toEqual({ n: 0 });
-    expect(raw(upgraded).prepare("SELECT version FROM schema_migrations WHERE version IN(11,13,17) ORDER BY version").all()).toEqual(role === "global" ? [{ version: 11 }, { version: 13 }, { version: 17 }] : [{ version: 11 }]);
+    expect(raw(upgraded).prepare("SELECT version FROM schema_migrations WHERE version IN(11,13,17,19) ORDER BY version").all()).toEqual(role === "global" ? [{ version: 11 }, { version: 13 }, { version: 17 }, { version: 19 }] : [{ version: 11 }]);
     expect(state(raw(upgraded))).not.toBe(before); const after = state(raw(upgraded)); upgraded.close(); const reopened = new GraphStore(path, role); handles.push(reopened); expect(state(raw(reopened))).toBe(after);
   });
   it.each(["missing-table", "missing-trigger", "extra-column", "extra-object", "missing-marker", "partial", "marker-fault", "commit-fault"])("%s rejects without schema/marker healing", async damage => {

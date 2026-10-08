@@ -1,3 +1,4 @@
+import { setTimeout as nativeDelay } from "node:timers/promises";
 import { createRequire } from "node:module";
 import { createHash, randomUUID } from "node:crypto";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
@@ -85,6 +86,20 @@ async function fixture(kind: OwnershipQuestion["kind"] = "variable-flow", legacy
 }
 function grant(authority: GraphStore, repositoryId: string) { const old = authority.loadOwnershipSemanticAuthorization(repositoryId); return authority.grantOwnershipSemanticAuthorization({ repositoryId, expectedRevision: old.revision, expectedProviderRevision: authority.remote.provider().revision, purpose: "ownership-semantic-assessment", disclosureVersion: "ownership-semantics/1.0.0", categories: [...OWNERSHIP_SEMANTIC_POLICY_CATEGORIES] }); }
 function gate() { let enter!: () => void, release!: () => void; return { entered: new Promise<void>(r => enter = r), held: new Promise<void>(r => release = r), enter: () => enter(), release: () => release() }; }
+// The factory notification precedes the execution COMMIT and watch installation.
+// Observe the real method without replacing its policy polling or deadline.
+async function executionDeadlineReady(flow: OwnershipSemanticApplication, source: GraphStore): Promise<void> {
+  const poll = vi.spyOn(source, "ownershipSemanticExecutionState");
+  const watch = vi.spyOn(flow as unknown as { watch: (...args: unknown[]) => void }, "watch");
+  for (let attempt = 0; attempt < 100 && watch.mock.calls.length === 0; attempt++) await nativeDelay(10);
+  expect(watch).toHaveBeenCalledTimes(1);
+  const slot = watch.mock.calls[0]![0] as { committed: boolean; deadline?: ReturnType<typeof setTimeout>; poll?: ReturnType<typeof setInterval> };
+  expect(slot.committed).toBe(true); expect(slot.deadline).toBeDefined(); expect(slot.poll).toBeDefined();
+  expect(vi.getTimerCount()).toBeGreaterThan(0);
+  // The 25ms policy interval remains real and executes the actual SQL gate.
+  for (let attempt = 0; attempt < 100 && poll.mock.calls.length === 0; attempt++) await nativeDelay(10);
+  expect(poll).toHaveBeenCalled();
+}
 function holdMaterial() { const g = gate(), digest = crypto.subtle.digest.bind(crypto.subtle); vi.spyOn(crypto.subtle, "digest").mockImplementationOnce(async (...args) => { const result = await digest(...args); g.enter(); await g.held; return result; }); return g; }
 async function change(f: Awaited<ReturnType<typeof fixture>>, kind: string) {
   if (kind === "configuration") {
@@ -302,8 +317,9 @@ describe("trusted once-only semantic execution/publication", () => {
   });
   it("timeout requests native stop, keeps T1, and releases only after real worker exit", async () => {
     const f = await fixture(), c = controlled(f), task = c.flow.reserve(await c.flow.prepare(f.request));
-    vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout", "setInterval", "clearInterval"] });
-    const outcome = c.flow.start(task.reservation).catch(error => error); await c.created; await vi.advanceTimersByTimeAsync(60_001);
+    vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"] });
+    const deadlineReady = executionDeadlineReady(c.flow, f.source);
+    const outcome = c.flow.start(task.reservation).catch(error => error); await c.created; await deadlineReady; await vi.advanceTimersByTimeAsync(60_001);
     expect(await outcome).toMatchObject({ code: "TIMEOUT" }); expect(c.worker().threadId).toBe(-1); expect(table(f)).toMatchObject({ phase: "failed", created_at: task.createdAt }); expect(results(f)).toEqual([]); expect(raw(f.authority).prepare("SELECT * FROM remote_provider_lease").all()).toEqual([]);
   });
   it("clock advance at promotion never replaces first persistent T1", async () => {
@@ -324,13 +340,14 @@ describe("trusted once-only semantic execution/publication", () => {
   it.each([false, true].flatMap(legacy => ["cancel", "invalid", "timeout", "policy"].map(reason => ({ legacy, reason }))))("same instance explicitly retries only after safe failure cleanup $reason legacy=$legacy", async ({ legacy, reason }) => {
     const f = await fixture("call-direction", legacy), c = controlled(f, reason === "invalid" ? "invalid" : "reply");
     const attempts = f.source.listOwnershipAttempts(f.ref.repositoryId), source = f.source.readSnapshotSource(f.ref.snapshotId, "flow.ts"), mastery = raw(f.source).prepare("SELECT * FROM mastery_records").all();
-    if (reason === "timeout") vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval"] });
-    const run = await ready(f, c), oldWorker = c.worker();
+    if (reason === "timeout") vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    const deadlineReady = reason === "timeout" ? executionDeadlineReady(c.flow, f.source) : undefined;
+    const run = await ready(f, c), oldWorker = c.worker(); if (deadlineReady) await deadlineReady;
     if (reason === "cancel") await c.flow.cancel(run.task.reservation);
     else if (reason === "invalid") c.reply();
     else if (reason === "policy") await change(f, "policy");
     else await vi.advanceTimersByTimeAsync(60_001);
-    expect(await run.outcome).toHaveProperty("error"); vi.useRealTimers();
+    expect(await run.outcome).toHaveProperty("error"); if (reason === "timeout") expect(await run.outcome).toMatchObject({ error: { code: "TIMEOUT" } }); vi.useRealTimers();
     expect(oldWorker.threadId).toBe(-1); expect(results(f)).toEqual([]);
     expect(raw(f.authority).prepare("SELECT * FROM remote_provider_lease").all()).toEqual([]);
     const oldTask = raw(f.authority).prepare("SELECT * FROM ownership_semantic_tasks WHERE task_id=?").get(run.task.taskId);

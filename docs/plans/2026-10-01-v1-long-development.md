@@ -116,6 +116,7 @@ Sol 先测量当前全量索引/查询/内存基线，设计按语言的保守�
 | 2D-R1 内部语义结果SQL核心 | 来源修订缺陷闭环后后台独立接受、精确main集成；Git见最新审查 | Sol/root | 两目录各478回归/三包类型及各16组真实pre18库探针通过；错保存修订prepare/read/重开拒绝、正确历史与当前设置差异保持。main11/Sol12不混入，见result-store-independent-review；内部candidate不等于公开发布，当次许可/编排/统一停止恢复/GUI/真实HTTP仍未验 |
 | 2D-B1 可信语义持久预占用 | 后台独立接受、精确main集成复验通过；Git见最新审查 | Sol/root | 两目录各582回归/四包类型及各16门真实索引SQL探针通过，外层COMMIT后出票、取消故障回滚、close保留占用；原404仅四授权旧文件改变。见2026-10-06-reservation-independent-review；零dispatch/结果/HTTP，公开发布/统一恢复/GUI仍未验 |
 | 2D-B2 当次执行与可信发布后台 | 重试缺陷闭环，内部后台独立接受并精确main集成；Git见最新审查 | Sol/root | 两目录各697回归/四包noEmit及root各20条真实索引答题/Worker/SQL发布重试门通过；原4门BUSY已修，364全核/361窄修保持，main412仅9授权旧源变/403保持。publication-independent-review；生产HTTP/GUI0，统一停止恢复未验 |
+| S3-C/R 共享停止与恢复内部核心 | 内部核心及main精确集成独立接受；Git见最新审查 | Sol/root | root Sol原19串行834/834（425.53秒）、main原19串行834/834（422.46秒），各四包类型与fresh实际source41门/15人工重试通过。旧三timeout、Git报告超时/EBUSY及验收副本发现错误均保留真实闭环；不改5000ms/60000ms/正确断言。精确main16文件集成，保留main11及Sol缓存/native/broker WIP；见shared-recovery-integrity-independent-review。生产B2/feature统一、source定位与启动证明/GUI/HTTP仍未验，不等于整批接受，不扩第五批 |
 | 3F-O 缓存observer接缝设计 | 修订设计独立接受 | Luna/协调方 | root 四文档/当前源码复审，O/R 及 estimator/terminal 关系、真实缺采集与协议矛盾区分、后续API错误独立；非实现/收益通过 |
 | 3F-C1 导航有效性取样端口 | 独立接受、精确集成提交7071ae4 | Sol/协调方 | Sol/main各98 graph回归、两包noEmit与真实SQLite探针通过，main原application147通过；嵌套COMMIT/ROLLBACK保守停比较、新实例身份明确。新增经验1，缓存/性能/GUI未验 |
 | 3F-C2 应用导航缓存/observer | 后台独立接受、精确集成并复验通过 | Sol/协调方 | root Sol43定向/225应用/111图，main229应用/114图，两边类型及真实双布局/12竞态探针通过。保留fresh校验、私有身份/4MiB/O/T门；性能/GUI未验，Git见最新审查 |

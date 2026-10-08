@@ -115,6 +115,16 @@ const semanticSharedObjects = reservationObjects.map(object => {
   return { ...object, sql };
 });
 
+// Migration19 preserves earlier definitions; only the installed feature transition changes.
+const recoverySharedObjects = semanticSharedObjects.map(object => ({ ...object, sql: object.name === "remote_lease_no_update"
+  ? object.sql.replace("FROM explanation_tasks WHERE task_id=NEW.task_id AND inflight=1 AND phase='dispatched'))", "FROM explanation_tasks WHERE task_id=NEW.task_id AND inflight=1 AND (phase='dispatched' OR (phase IN ('failed','cancelled','interrupted') AND json_extract(payload,'$.code') IS NOT NULL AND json_extract(payload,'$.completedAt')>=json_extract(payload,'$.createdAt')))))")
+  : object.sql }));
+export interface RemoteRecoveryState {
+  preimage: string;
+  owners: readonly string[];
+  occupied: { purpose: "feature-explanation" | "ownership-semantic-assessment"; identity: Record<string, unknown>; createdAt: string; stage: "reserved" | "registered" } | null;
+}
+
 /** Internal SQL compatibility core. There is deliberately no semantic task/permission API. */
 export class SharedRemoteTaskStore {
   constructor(private readonly db: Database.Database, private readonly role: GraphStoreRole) {}
@@ -150,8 +160,9 @@ export class SharedRemoteTaskStore {
     return task;
   }
   private schema(legacy = false): void {
+    const recovered = !legacy && !!this.db.prepare("SELECT 1 FROM schema_migrations WHERE version=19").get();
     const installed = !legacy && !!this.db.prepare("SELECT 1 FROM schema_migrations WHERE version=17").get();
-    for (const object of legacy ? objects : installed ? [...semanticSharedObjects, ...semanticTaskObjects] : reservationObjects) {
+    for (const object of legacy ? objects : installed ? [...(recovered ? recoverySharedObjects : semanticSharedObjects), ...semanticTaskObjects] : reservationObjects) {
       const found = this.db.prepare("SELECT sql FROM sqlite_master WHERE type=? AND name=?").get(object.type, object.name) as { sql: string } | undefined;
       if (!found || found.sql.trim() !== object.sql.trim()) invalid();
     }
@@ -165,6 +176,7 @@ export class SharedRemoteTaskStore {
     const old = this.db.prepare("SELECT 1 FROM schema_migrations WHERE version=14").get(), upgraded = this.db.prepare("SELECT 1 FROM schema_migrations WHERE version=16").get();
     if (upgraded && !old) invalid();
     if (this.db.prepare("SELECT 1 FROM schema_migrations WHERE version=17").get() && (!old || !upgraded)) invalid();
+    if (this.db.prepare("SELECT 1 FROM schema_migrations WHERE version=19").get() && !this.db.prepare("SELECT 1 FROM schema_migrations WHERE version=17").get()) invalid();
     if (old) this.assertState(!upgraded);
   }
   migrate(): void {
@@ -203,6 +215,15 @@ export class SharedRemoteTaskStore {
         this.db.prepare("INSERT INTO schema_migrations(version,applied_at) VALUES(17,?)").run(this.time(new Date().toISOString()));
       }
       this.assertState();
+      if (!this.db.prepare("SELECT 1 FROM schema_migrations WHERE version=19").get()) {
+        // Validate installed17 BEFORE replacing its one trigger. This transaction
+        // also rolls back DDL and marker on deferred COMMIT faults.
+        for (const object of recoverySharedObjects.filter((object, index) => object.sql !== semanticSharedObjects[index]!.sql)) {
+          this.db.exec(`DROP TRIGGER ${object.name}`); this.db.exec(object.sql);
+        }
+        this.db.prepare("INSERT INTO schema_migrations(version,applied_at) VALUES(19,?)").run(this.time(new Date().toISOString()));
+      }
+      this.assertState();
     }).immediate();
   }
   private insertRegistry(task: RemoteTaskRecord): void {
@@ -234,6 +255,18 @@ export class SharedRemoteTaskStore {
     }
     for (const [id, entry] of registry) if (entry.parsed.purpose === FEATURE && !tasks.has(id) && (legacy || !leases.some(lease => lease.task_id === id && lease.stage === "reserved" && lease.purpose === FEATURE))) invalid();
     if (!legacy) validateSemanticTaskState(this.db, registries, leases, !!this.db.prepare("SELECT 1 FROM schema_migrations WHERE version=17").get());
+  }
+  /** Strict metadata capture, never a stop or source/publication permission. */
+  captureRecoveryState(): RemoteRecoveryState {
+    this.locked(); this.assertState();
+    const tables = ["remote_task_registry", "remote_provider_lease", "explanation_tasks", "ownership_semantic_tasks", "explanation_contexts", "remote_provider_settings"];
+    const rows = tables.map(table => [table, this.db.prepare(`SELECT * FROM ${table} ORDER BY rowid`).all()]);
+    const contexts = this.db.prepare("SELECT owner_session_id FROM explanation_contexts ORDER BY owner_session_id").all() as { owner_session_id: string }[];
+    const lease = this.db.prepare("SELECT * FROM remote_provider_lease").get() as Row | undefined;
+    const registered = lease ? this.db.prepare("SELECT * FROM remote_task_registry WHERE task_id=?").get(lease.task_id) as Row : null;
+    const entry = registered ? this.registry(registered) : null;
+    return { preimage: canonicalJson(rows), owners: [...new Set([...contexts.map(row => row.owner_session_id), ...(entry ? [entry.identity.ownerSessionId as string] : [])])],
+      occupied: entry && lease ? { purpose: entry.purpose as "feature-explanation" | "ownership-semantic-assessment", identity: entry.identity, createdAt: entry.createdAt, stage: lease.stage as "reserved" | "registered" } : null };
   }
   featureTask(taskId: string): RemoteTaskRecord | null {
     this.open(); if (!remoteUuidSchema.safeParse(taskId).success) invalid();

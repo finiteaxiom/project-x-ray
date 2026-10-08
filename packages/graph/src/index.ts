@@ -1,3 +1,5 @@
+import { RemoteTaskRecoveryStore } from "./remote-task-recovery-store.js";
+export type { RemoteRecoveryIssuer, RemoteRecoveryCapture, RemoteRecoveryPermit, RemoteRecoverySource } from "./remote-task-recovery-store.js";
 import Database from "better-sqlite3";
 import { createHash } from "node:crypto";
 import { RemoteExplanationStore, type GraphStoreRole } from "./remote-explanation-store.js";
@@ -61,6 +63,7 @@ export class GraphStore {
   private readonly questionBindings: OwnershipQuestionBindingStore;
   private readonly semanticPreparations: OwnershipSemanticPreparationStore;
   private readonly semanticResults: OwnershipSemanticResultStore;
+  private readonly remoteRecovery: RemoteTaskRecoveryStore;
   private readonly semanticReservations: OwnershipSemanticReservationStore;
   private readonly reservationAuthorities = new WeakMap<object, GraphStore>();
   private navigationGeneration: number | null = null;
@@ -80,6 +83,7 @@ export class GraphStore {
     this.ownershipSemanticPolicy = new OwnershipSemanticPolicyStore(this.database, role);
     this.semanticResults = new OwnershipSemanticResultStore(this.database, this);
     this.semanticReservations = new OwnershipSemanticReservationStore(this.database, this);
+    this.remoteRecovery = new RemoteTaskRecoveryStore(this.database, this);
     try {
       this.database.pragma("busy_timeout = 250");
       this.database.pragma("journal_mode = WAL");
@@ -129,6 +133,12 @@ export class GraphStore {
     return rows.map(row => JSON.parse(row.payload) as Evidence);
   }
 
+  /** Privileged internal constructor only; no renderer/public application factory. */
+  openRemoteRecoveryIssuer(): import("./remote-task-recovery-store.js").RemoteRecoveryIssuer { return this.remoteRecovery.issuer(); }
+  bindRemoteRecoverySource(ref: import("@project-xray/contracts").SnapshotRef, settings: GraphStore, source: GraphStore): import("./remote-task-recovery-store.js").RemoteRecoverySource {
+    if (!(settings instanceof GraphStore) || !(source instanceof GraphStore)) throw new RemoteExplanationError("POLICY_INVALID");
+    return this.remoteRecovery.bind(ref, settings, settings.database, source, source.database, source.semanticResults);
+  }
   withExplanationRevisions<T>(identity: import("@project-xray/contracts").RemoteCapturedIdentity, settings: GraphStore, source: GraphStore, work: () => T): T {
     if (this.remote.role !== "global") throw new RemoteExplanationError("POLICY_INVALID");
     // Fixed order: authority -> project settings -> legacy/source/result. No async work here.
@@ -661,6 +671,7 @@ export class GraphStore {
   }
 
   close(): void {
+    this.remoteRecovery.close();
     this.semanticReservations.close();
     this.semanticResults.close();
     this.semanticPreparations.close();

@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { canonicalJson, remoteCapturedIdentitySchema, ownershipSemanticCapturedIdentitySchema,
   type RemoteCapturedIdentity, type RemoteTaskRecord } from "@project-xray/contracts";
+import { SharedRemoteTaskStore } from "./shared-remote-task-store.js";
 import { GraphStore } from "./index.js";
 import { RemoteExplanationStore } from "./remote-explanation-store.js";
 import { OwnershipSemanticTaskStore, semanticTaskObjects } from "./ownership-semantic-task-store.js";
@@ -75,6 +76,11 @@ function installed14(db: Database.Database): void {
   }
   db.exec("DELETE FROM schema_migrations WHERE version=16");
 }
+function installed17(db: Database.Database): void {
+  const current=(db.prepare("SELECT sql FROM sqlite_master WHERE name='remote_lease_no_update'").get() as {sql:string}).sql;
+  const old=current.replace("FROM explanation_tasks WHERE task_id=NEW.task_id AND inflight=1 AND (phase='dispatched' OR (phase IN ('failed','cancelled','interrupted') AND json_extract(payload,'$.code') IS NOT NULL AND json_extract(payload,'$.completedAt')>=json_extract(payload,'$.createdAt')))))", "FROM explanation_tasks WHERE task_id=NEW.task_id AND inflight=1 AND phase='dispatched'))");
+  if(current===old)throw Error("Missing19 fixture");db.exec("DROP TRIGGER remote_lease_no_update");db.exec(old);db.exec("DELETE FROM schema_migrations WHERE version=19");
+}
 function installed16(db: Database.Database): void {
   if (!db.prepare("SELECT 1 FROM schema_migrations WHERE version=17").get()) return;
   const insert = (db.prepare("SELECT sql FROM sqlite_master WHERE name='remote_lease_insert'").get() as { sql: string }).sql.split("\n    SELECT CASE WHEN NEW.purpose='ownership-semantic-assessment'")[0]! + "END";
@@ -90,7 +96,7 @@ function installed16(db: Database.Database): void {
       THEN RAISE(ABORT,'XRAY_SHARED_INVALID') END; END`;
   for (const [name, sql] of [["remote_lease_insert", insert], ["remote_lease_no_update", update], ["remote_lease_delete", remove]]) { db.exec(`DROP TRIGGER ${name}`); db.exec(sql!); }
   for (const object of [...semanticTaskObjects].reverse()) db.exec(`DROP ${object.type.toUpperCase()} ${object.name}`);
-  db.exec("DELETE FROM schema_migrations WHERE version=17");
+  db.exec("DELETE FROM schema_migrations WHERE version IN(17,19)");
 }
 afterEach(() => { vi.useRealTimers(); for (const store of stores.splice(0)) if (raw(store).open) store.close(); for (const db of connections.splice(0)) if (db.open) db.close(); });
 
@@ -320,4 +326,43 @@ describe("global shared SQL task compatibility", () => {
       questionVersion: "\ud800".repeat(64), deterministicScoringVersion: "\ud800".repeat(64), model: "m".repeat(128), activation: "2026-10-01T00:00:00.123456789Z" });
     for (const captured of [feature, sem]) expect(Buffer.byteLength(canonicalJson(captured))).toBeLessThan(16384);
   });
+  it("reserved feature non-success promotion holds the original lease until explicit release", () => {
+    const store = open(), db = raw(store), id = configured(store);
+    store.remote.immediate(() => store.remote.reserveDispatch(id));
+    const original = db.prepare("SELECT * FROM remote_provider_lease").get();
+    const shared = new SharedRemoteTaskStore(db, "global");
+    db.transaction(() => shared.promoteFeature({ identity: id, phase: "interrupted", code: "INTERRUPTED", createdAt: (original as { created_at: string }).created_at, completedAt: new Date().toISOString() }, 1)).immediate();
+    expect(db.prepare("SELECT * FROM remote_provider_lease").get()).toEqual({ ...original!, stage: "registered" });
+    expect(store.remote.task(id.taskId)?.phase).toBe("interrupted");
+  });
+
+  it.each(["old-guard", "missing17", "marker", "commit"])("migration19 %s fails with exact schema/row rollback",failure=>{
+    const store=open(),db=raw(store);installed17(db);
+    if(failure==="old-guard")db.exec("DROP TRIGGER remote_feature_update");
+    if(failure==="missing17")db.exec("DELETE FROM schema_migrations WHERE version=17");
+    if(failure==="marker")db.exec("CREATE TRIGGER inject BEFORE INSERT ON schema_migrations WHEN NEW.version=19 BEGIN SELECT RAISE(ABORT,'private');END");
+    if(failure==="commit")db.exec("CREATE TABLE parent19(id INTEGER PRIMARY KEY);CREATE TABLE child19(id INTEGER REFERENCES parent19(id) DEFERRABLE INITIALLY DEFERRED);CREATE TRIGGER inject AFTER INSERT ON schema_migrations WHEN NEW.version=19 BEGIN INSERT INTO child19 VALUES(1);END");
+    const before=snapshot(db);expect(()=>store.remote.migrate()).toThrow();expect(snapshot(db)).toBe(before);expect(db.prepare("SELECT 1 FROM schema_migrations WHERE version=19").get()).toBeUndefined();
+  });
+  it("real17 reserved counterexample and two connections19 transition preserve T1 and slot",()=>{
+    const path=join(mkdtempSync(join(tmpdir(),"xray-recovery19-")),"global.sqlite"),store=open(path),id=configured(store),db=raw(store);installed17(db);
+    store.remote.immediate(()=>store.remote.reserveDispatch(id));const lease=db.prepare("SELECT * FROM remote_provider_lease").get() as {created_at:string};
+    const task={identity:id,phase:"interrupted" as const,code:"INTERRUPTED" as const,createdAt:lease.created_at,completedAt:new Date().toISOString()},shared=new SharedRemoteTaskStore(db,"global");
+    const old=snapshot(db);expect(()=>db.transaction(()=>shared.promoteFeature(task,1)).immediate()).toThrow();expect(snapshot(db)).toBe(old);store.remote.migrate();
+    const peer=connect(path);peer.exec("BEGIN IMMEDIATE");expect(()=>db.transaction(()=>shared.promoteFeature(task,1)).immediate()).toThrow();expect(store.remote.task(id.taskId)).toBeNull();peer.exec("ROLLBACK");
+    peer.transaction(()=>new SharedRemoteTaskStore(peer,"global").promoteFeature(task,1)).immediate();
+    expect(db.prepare("SELECT * FROM remote_provider_lease").get()).toEqual({...lease,stage:"registered"});expect(store.remote.task(id.taskId)).toEqual(task);
+    expect(()=>peer.prepare("UPDATE remote_provider_lease SET created_at=?").run(new Date().toISOString())).toThrow();
+    expect(()=>peer.prepare("UPDATE explanation_tasks SET phase='dispatched',payload=?").run(JSON.stringify({...task,phase:"dispatched",completedAt:null,code:null}))).toThrow();
+    store.remote.releaseDispatch(id.taskId);expect(db.prepare("SELECT * FROM remote_provider_lease").all()).toEqual([]);
+  });
+  it.each(["completed","identity","T1","zero-inflight"])("migration19 does not permit invalid reserved transition %s",fault=>{
+    const store=open(),id=configured(store),db=raw(store);store.remote.immediate(()=>store.remote.reserveDispatch(id));
+    const row=db.prepare("SELECT created_at FROM remote_provider_lease").get() as {created_at:string};
+    const task={identity:fault==="identity"?{...id,contextEpoch:id.contextEpoch+1}:id,phase:fault==="completed"?"completed":"interrupted",code:fault==="completed"?null:"INTERRUPTED",createdAt:fault==="T1"?time:row.created_at,completedAt:new Date().toISOString()};const before=snapshot(db);
+    if(fault==="zero-inflight")expect(()=>db.prepare("DELETE FROM remote_provider_lease").run()).toThrow();
+    else expect(()=>db.prepare("INSERT INTO explanation_tasks VALUES(?,?,?,?,1)").run(id.taskId,id.ownerSessionId,task.phase,JSON.stringify(task))).toThrow();
+    expect(snapshot(db)).toBe(before);
+  });
+
 });
