@@ -682,3 +682,14 @@ main HEAD9d9f19a保持，仅root协调记录与自有ignored诊断；无生产�
 root已核完整Sol交付与精确main16文件前像/候选。Sol原19串行复验834/834（425.53秒）；main原19串行834/834（422.46秒）及四包原noEmit、fresh实际main source41事务门/15人工重试通过。此前三timeout、Git报告超时/EBUSY和自有备份误入测试发现的失败保留，未提高5000ms、缩短60000ms或移除正确断言。准确manifest/补丁、收据、回归及工具修正见2026-10-07-shared-recovery-integrity-independent-review。
 
 仅内部恢复能力/全局19迁移及测试时钟窄修独立接受。真实GUI0/HTTP0；生产B2与feature统一资源域、仅已持有store定位及Windows启动退出证明仍需继续。保留main旧B2独立记录WIP及Sol缓存/native/broker/UI改动，不整体覆盖worktree。当前准备仅已验24文件Git收尾，实际SHA及推送另记；AGENTS新增/修订0，已有规则覆盖。两原开发idle冻结、原定时ACTIVE/15分钟；四批仍有本地可推进工作，不开第五批。
+
+
+## 2026-10-08 实际Git回执与后续S3-C/H
+
+root已普通提交 `8b256d60807fca1992f37e8f14235488251fc754`，父提交9d9f19a，仅24个已验core/对应记录文件；暂存范围逐项匹配并通过cached diff --check。未整分支合并、未包含GUI、缓存/native/broker旧WIP，main旧B2独立记录6行改动仍保留未暂存。
+
+origin push目标实际 `https://github.com/finiteaxiom/project-x-ray.git`。普通push输出9d9f19a→8b256d6成功；同命令后续ls-remote发生schannel握手失败，未掩盖。随后独立ls-remote exit0确认remote main完整SHA等于8b256d60807fca1992f37e8f14235488251fc754。无force；代码无需因文档记录再次运行已过回归。
+
+下一原四批内S3-C/H依据实际应用私有store映射与既有自动打开/枚举路径，限定已持有store的内部恢复桥接及真实本地端到端回归，详见2026-10-08-held-store-recovery-bridge。当前未派发时只记计划；送达与实际回合单独补回执。不改变GUI/HTTP/Windows未知DB物理打开等未验边界。AGENTS0，定时回读ACTIVE/15分钟/原target，仍有必要本地工作。
+
+S3-C/H实际send_message成功原开发-Sol/gpt-6.1-sol/medium/5170；wait_threads timeout0确认turn `01a11a13-edf1-7642-95fa-c375c93aa000` active/inProgress、error null，cursor `2d49dbb3-5764-4dcb-a41d-a3c1933952f7:2`。仅五文件明确实施范围、先核原374冻结与WIP、禁止开发Git及重型窗口；Luna原切片保持冻结，cursor `7a0d3f08-684c-4125-82b8-aada105bf283:1`，不为填槽制造任务。新桥接尚未交付或验收；定时原ACTIVE继续，四批收尾/只外部门时暂停。
