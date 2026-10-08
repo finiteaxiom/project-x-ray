@@ -693,3 +693,23 @@ origin push目标实际 `https://github.com/finiteaxiom/project-x-ray.git`。普
 下一原四批内S3-C/H依据实际应用私有store映射与既有自动打开/枚举路径，限定已持有store的内部恢复桥接及真实本地端到端回归，详见2026-10-08-held-store-recovery-bridge。当前未派发时只记计划；送达与实际回合单独补回执。不改变GUI/HTTP/Windows未知DB物理打开等未验边界。AGENTS0，定时回读ACTIVE/15分钟/原target，仍有必要本地工作。
 
 S3-C/H实际send_message成功原开发-Sol/gpt-6.1-sol/medium/5170；wait_threads timeout0确认turn `01a11a13-edf1-7642-95fa-c375c93aa000` active/inProgress、error null，cursor `2d49dbb3-5764-4dcb-a41d-a3c1933952f7:2`。仅五文件明确实施范围、先核原374冻结与WIP、禁止开发Git及重型窗口；Luna原切片保持冻结，cursor `7a0d3f08-684c-4125-82b8-aada105bf283:1`，不为填槽制造任务。新桥接尚未交付或验收；定时原ACTIVE继续，四批收尾/只外部门时暂停。
+
+## 2026-10-08 14:20 S3-C/H零写定位风险源码核对
+
+原Sol仍inProgress，turn01a11a1b-ee61-7d73-b64c-a165b8da6d38/cursor2d49dbb3-5764-4dcb-a41d-a3c1933952f7:5。root源码核实getOverview/getLatestOverview缺overview时INSERT OR REPLACE，不能作恢复纯读取；当前locator已改loadSnapshot/getLatestSnapshot/metadata且新增缺overview回归。相关6项通过仅开发报告，桥接未稳定交付/独立接受。详细证据见2026-10-08-held-store-recovery-independent-review。main只协调记录，无新源集成/Git/GUI/HTTP/重型窗口；AGENTS0，四批工作继续，不第五批。
+
+## 2026-10-08 S3-C/H稳定交付独立退回与窄修实际送达
+
+root核原377全hash、旧2/新3/372保持及准确patch反向check；开发887/887与四包类型保持开发结果。独立两真实await×三布局六反例：Worker已退出而operation仍pending，或实际R1摘要等待时，同ref另一个真实store替换映射形成歧义，当前桥接仍删候选/释放lease；6失败/52跳过、最新3.16秒，旧历史保持。前置定位不证明等待后仍唯一，不能归为环境问题或接受本桥接。完整hash、命令、诊断修正及期望progress见2026-10-08-held-store-recovery-independent-review。
+
+具体最多十文件内部窄修见2026-10-08-held-store-async-guard-fix：新增可信同步context拒绝门须保持原native/SQL/source权限，不允许Boolean/Promise停止证明；native切点SQL零写，R1已提交terminal真实保留但source/lease不得补偿释放。root所有诊断已结束后send_message成功原Sol/gpt-6.1-sol/medium/5170，timeout0确认turn01a11a7e-33ab-7ca0-bef0-d3c6d45e8688 active/inProgress/error null，cursorfdaa001e-df42-4314-a2c4-a9faf9316d1b:1。Luna仍冻结，不派冲突或填槽任务。
+
+没有main source集成/提交推送、重型窗口、GUI/HTTP/凭据操作；main f5cea5a保持，原已接受core结论不回退为未验。保留所有WIP与已失败记录，AGENTS0。定时四批继续；收尾/只外部变化时暂停，不第五批。
+
+## 2026-10-08 S3-C/H 窄修独立接受及main集成
+
+root Sol原20完整922/922（258.08秒）及四包严格noEmit通过；加强自有原六反例（固定code、实际候选/lease/history）6通过/52跳过2.87秒。main按9文件精确集成：旧6/新3/原429保持，receipt SHA256 3D187D4D42A1AE5D07259984A5CFC2F0FB0EEB39113B926FF56AA20A68D77DB0；main Python旧版本断言完整保留，仅追加桥接测试，main graph11/其他旧WIP不混入。
+
+main原20完整922/922（254.72秒）、四包原noEmit通过；独立自有六反例改为直接导入main实际模块6通过/52跳过2.89秒。native等待后歧义拒绝且SQL零写；R1实际await后拒绝、此前terminal进度真实保留，候选及lease保持；关闭、settings替换、两用途/三布局、人工安全重试和同步Boolean/Promise拒绝在正式组合通过。入口不导出至public index/IPC，仍仅已持有实际source/settings，不物理打开未知DB。源码审查新增门只加拒绝且sources在native等待前捕获，原native实际exit和权限/前像门不放宽。
+
+内部桥接独立接受，精确9文件提交 a8194ef4bdc2634e65fbbdd4a8f641875a1e5e2b（父f5cea5a）。未分支合并，Sol仍455d4ad/所有旧WIP保持。核origin为finiteaxiom/project-x-ray；首次ls-remote发生schannel TLS握手失败，尚未据此称推送成功；普通网络重试另核。旧B2 publication记录6行WIP未入提交。AGENTS新增/修订0，现有异步身份/SQL完整预期规则覆盖；不以此代真实GUI、API质量、生产broker/B2统一、未知DB物理安全重开或四批整体完成。定时四批继续，不第五批；本轮各验证进程均结束。
