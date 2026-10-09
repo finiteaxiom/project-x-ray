@@ -37,3 +37,11 @@ root Sol原20完整922/922（258.08秒）及四包严格noEmit通过；加强自
 main原20完整922/922（254.72秒）、四包原noEmit通过；独立自有六反例改为直接导入main实际模块6通过/52跳过2.89秒。native等待后歧义拒绝且SQL零写；R1实际await后拒绝、此前terminal进度真实保留，候选及lease保持；关闭、settings替换、两用途/三布局、人工安全重试和同步Boolean/Promise拒绝在正式组合通过。入口不导出至public index/IPC，仍仅已持有实际source/settings，不物理打开未知DB。源码审查新增门只加拒绝且sources在native等待前捕获，原native实际exit和权限/前像门不放宽。
 
 内部桥接独立接受，精确9文件提交 a8194ef4bdc2634e65fbbdd4a8f641875a1e5e2b（父f5cea5a）。未分支合并，Sol仍455d4ad/所有旧WIP保持。核origin为finiteaxiom/project-x-ray；首次ls-remote发生schannel TLS握手失败，尚未据此称推送成功；普通网络重试另核。旧B2 publication记录6行WIP未入提交。AGENTS新增/修订0，现有异步身份/SQL完整预期规则覆盖；不以此代真实GUI、API质量、生产broker/B2统一、未知DB物理安全重开或四批整体完成。定时四批继续，不第五批；本轮各验证进程均结束。
+
+## 推送回执与下一必要统一接缝已送达
+
+普通push实际成功 f5cea5a→0dfa0317111971a72a359ba4b43ffea19b4d2771，ls-remote确认origin/main同SHA；内部产品提交a8194ef包含其中。TLS瞬态仅普通重试，没有关闭TLS验证或修改安全配置。保留旧B2六行WIP，没有声称整个checkout干净。
+
+root按当前实际源码发现尚未统一的具体接缝：Sol explanation-broker.stopConfirmed仍用结构worker port/terminate Promise/exited标志后remote.recoverInterrupted；OwnershipSemanticApplication reserve先于start实际Worker，且独立activeOperations/stop/release。这两路径不能把既有完成Promise直接升级为新native停止证明，跨main/worker连接也不能按同对象猜测。仅原S3-C必要接线方案两新文档已送原Sol（gpt-6.1-sol/medium/5170），turn01a11aa0-6a5c-71b2-ad5a-6ce73030817e已active/inProgress/error null，cursorfdaa001e-df42-4314-a2c4-a9faf9316d1b:5。先依据实际构造顺序、权威连接、reserve/worker登记与操作门形成一次最小具体方案，再由root审查后实施；不重做已验core或另造准备轮。产品377文件/规则/旧WIP冻结，范围仅shared-recovery-producer-integration计划/开发记录；无重型窗口/GUI/API/凭据或main写入。Luna维持冻结无冲突任务。
+
+S3-C/H内部接受不升级未知DB重开/旧owner停止证明或生产统一；四批其余GUI、真实远程和Windows发布边界不变，定时仍ACTIVE，只四批内工作，不第五批。AGENTS0。

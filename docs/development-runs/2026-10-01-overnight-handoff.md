@@ -713,3 +713,40 @@ root Sol原20完整922/922（258.08秒）及四包严格noEmit通过；加强自
 main原20完整922/922（254.72秒）、四包原noEmit通过；独立自有六反例改为直接导入main实际模块6通过/52跳过2.89秒。native等待后歧义拒绝且SQL零写；R1实际await后拒绝、此前terminal进度真实保留，候选及lease保持；关闭、settings替换、两用途/三布局、人工安全重试和同步Boolean/Promise拒绝在正式组合通过。入口不导出至public index/IPC，仍仅已持有实际source/settings，不物理打开未知DB。源码审查新增门只加拒绝且sources在native等待前捕获，原native实际exit和权限/前像门不放宽。
 
 内部桥接独立接受，精确9文件提交 a8194ef4bdc2634e65fbbdd4a8f641875a1e5e2b（父f5cea5a）。未分支合并，Sol仍455d4ad/所有旧WIP保持。核origin为finiteaxiom/project-x-ray；首次ls-remote发生schannel TLS握手失败，尚未据此称推送成功；普通网络重试另核。旧B2 publication记录6行WIP未入提交。AGENTS新增/修订0，现有异步身份/SQL完整预期规则覆盖；不以此代真实GUI、API质量、生产broker/B2统一、未知DB物理安全重开或四批整体完成。定时四批继续，不第五批；本轮各验证进程均结束。
+
+## 推送回执与下一必要统一接缝已送达
+
+普通push实际成功 f5cea5a→0dfa0317111971a72a359ba4b43ffea19b4d2771，ls-remote确认origin/main同SHA；内部产品提交a8194ef包含其中。TLS瞬态仅普通重试，没有关闭TLS验证或修改安全配置。保留旧B2六行WIP，没有声称整个checkout干净。
+
+root按当前实际源码发现尚未统一的具体接缝：Sol explanation-broker.stopConfirmed仍用结构worker port/terminate Promise/exited标志后remote.recoverInterrupted；OwnershipSemanticApplication reserve先于start实际Worker，且独立activeOperations/stop/release。这两路径不能把既有完成Promise直接升级为新native停止证明，跨main/worker连接也不能按同对象猜测。仅原S3-C必要接线方案两新文档已送原Sol（gpt-6.1-sol/medium/5170），turn01a11aa0-6a5c-71b2-ad5a-6ce73030817e已active/inProgress/error null，cursorfdaa001e-df42-4314-a2c4-a9faf9316d1b:5。先依据实际构造顺序、权威连接、reserve/worker登记与操作门形成一次最小具体方案，再由root审查后实施；不重做已验core或另造准备轮。产品377文件/规则/旧WIP冻结，范围仅shared-recovery-producer-integration计划/开发记录；无重型窗口/GUI/API/凭据或main写入。Luna维持冻结无冲突任务。
+
+S3-C/H内部接受不升级未知DB重开/旧owner停止证明或生产统一；四批其余GUI、真实远程和Windows发布边界不变，定时仍ACTIVE，只四批内工作，不第五批。AGENTS0。
+
+## 2026-10-08 S3-C/P方案独立审查及具体实现已送达
+
+root核方案冻结379全hash，before377旧0/新2/377保持，manifest515D7E1730A26C2A51C8AA275DF418BC7A68B0728D7AEB30CDB21CCDAAFBBBBE、patch847FFE29F149BF11AA7267A11D3A9F37B1B6DBB9C04ACB38913BC221A1D8C2E1及反向check通过。逐源码核main/worker policy与application不同连接、broker结构port/普通terminate→旧recoverInterrupted、B2 reserve先于Worker、feature gate之外清理、ledger publish等待后append等引用实际成立。接受一次具体内部接缝方案，未执行产品测试，不把设计当实现或生产统一。
+
+两方案文档精确复制main；实施明确门见shared-recovery-producer-implementation：7个source/同名test加唯一记录最多15文件，真实执行Worker prepare前登记、同authority同步reserve/T1/all async scope、每个await后的写门，窄单participant native停止保留原全域证明。同步veto(undefined)与admission工作返回receipt/task分开；禁止替身Worker监督未登记父线程provider请求、第二执行者、task adoption与自等recover。desktop/public contracts/GUI/HTTP/凭据/cache/native/migration/规则全冻结。
+
+实际send_message成功原Sol/gpt-6.1-sol/medium/5170，timeout0确认新turn01a11ac0-ffe3-7233-af64-af3d63e3d5d1 active/inProgress/error null，cursorfdaa001e-df42-4314-a2c4-a9faf9316d1b:9；before当前379，不reset或Git。未新建聊天、不再追加设计准备轮，Luna继续冻结。AGENTS0；真实生产/GUI/API/Windows门仍未验，四批内工作，不第五批。root只协调文档，旧WIP保留；本轮未新提交/推送。
+
+## 2026-10-09 S3-C/P中断后实际状态核对
+
+timeout0取得新实际cursor：Sol e72a78e4-e5a5-4cc4-a1f2-bc049f9e1ee5:1、Luna cc7a604c-7723-40c7-aab7-eab12108d9bd:1。Sol当前turn01a12038-6135-7880-ab1f-fa1af421b3d8 active/inProgress/error null，沿同实施恢复；Luna原L5 idle不重复派发。开发报告83新增定向和四包类型已得成功退出码，但旧完整组合会话失效没有终态，正在重取原20结果，不能称完整通过。compact read核当前开发基线报告before379/after380，仅10个授权旧文件改变、新1自有实施记录；未冻结，root不在同批改动/验证时并发回归。
+
+main AGENTS SHA05EA488D保持，产品仍0dfa031已验版本，本轮只有协调文档WIP。S3-C/P尚未交付独立验收；不reset、重做已验S3-C/H或代替旧正确断言。无新产品结果/确定缺陷/用户阻碍，定时继续四批，不第五批。
+
+## 2026-10-09 S3-C/P稳定交付独立审查发现实际pending结算缺陷
+
+root核380/379全hash与窄patch，原20组合1005/1005（296.95秒）及四包noEmit通过；独立两用途×三布局取消反例6/6失败：原workspace Promise仍pending，外层已结束、nativeWorker已退出、零正文，root.recover提前released:true。见2026-10-09-producer-pending-scope-independent-review。产品缺陷，不是GUI/环境豁免；S3-C/P未接受/未main集成或Git，已验S3-C/H保持。原反例冻结.review、验证全部结束，准备按真实源码窄修实际底层工作计数，四批范围不扩。AGENTS0。
+
+具体窄修已实际送达原Sol/gpt-6.1-sol/medium/5170，timeout0确认turn01a1204f-6947-72a1-a00a-1a2865ff4a6f active/inProgress/error null，cursor e72a78e4-e5a5-4cc4-a1f2-bc049f9e1ee5:4；Luna cursor cc7a604c-7723-40c7-aab7-eab12108d9bd:1 idle维持冻结。以交付380为原字节基线，原7组source/test+自身记录，源码确需semantic原始await计数时仅额外允许graph/ownership-semantic-preparation-store及同名test；最多19，少改不填数，application/index/graph recovery/desktop/public/native/cache/migration/AGENTS/依赖冻结。要求原六反例及真正I/O前等待、及时取消/超时与实际finally计数、真实结算后人工恢复闭环，原正确断言/门槛不变。无新main product/Git或重型窗口，定时实际ACTIVE原15分钟无需重建。
+## 2026-10-09 S3-C/P pending窄修闭环、精确main接受与S3-C/D开工
+
+root Sol原20为1047/1047、349.22秒，main原20排除ignored staging为1047/1047、346.41秒，两目录四包noEmit通过；原六取消反例无改断言Sol通过，main最终串行6/6、148跳过、4.16秒。实际raw Promise登记和finally结算使及时取消与全域真实结算分开，原预算/门/历史/身份保持。main442→443仅旧11/新1/431保持，receipt SHA256A610C533F0E03E4C2419621A51D0570B33075086377AE3ACB0EA6BF5D2F10293，graph/index仅四行传播，无cache/migration/Python旧断言引入。原正确反例及失败历史保留，测试发现staging副本错误单列为工具问题。
+
+精确12内部文件提交9f7bef8e33f28db6a78ace89c4964aa6c62f9358，未分支合并、未纳入GUI/旧B2六行WIP。详见2026-10-09-producer-pending-scope-independent-review；AGENTS新增/修订0，真实GUI0、真实API/生产desktop/Windows退出与物理重开/发布未验。
+
+root按已审查生产者方案及实际desktop源码划下一必要S3-C/D完整后台接线，非新产品/第五批，计划2026-10-09-shared-recovery-desktop-integration.md SHA256CE503C46C42091A91241C24F90EA0AC1BC360CEEFC5C7752E73D8BFFAF2614DC。原Sol380全hash不变后仅同步新计划为381前像，baseline SHA2568DA9234F96E4771968C11E179C8B2BA9FECEEB28885BC9B20784BCC23036B820。限定11source及同名test、两有限配置、自有记录最多25，不需要不填数；全部graph/core/native/LLM/公开IPC/preload/UI/cache/migration/AGENTS/依赖冻结。
+
+已实际送达原Sol/gpt-6.1-sol/medium/5170；timeout0确认turn01a12073-0e26-76e1-aace-9a392df9a632 active/inProgress/error null、最新cursor e72a78e4-e5a5-4cc4-a1f2-bc049f9e1ee5:7；Luna idle冻结cursor cc7a604c-7723-40c7-aab7-eab12108d9bd:1。仅一个实际application/authority宿主，真正执行子Worker提前登记/main不凭RPC或宿主exit清lease，semantic仅严格私有无默认HTTP入口。未稳定交付不测试活动源，无重型窗口/GUI/网络/实际钥匙/隐私操作。定时实核ACTIVE/原15分钟/原target，有四批内工作继续；四批收尾或仅外部剩余时暂停，不启动第五批。
