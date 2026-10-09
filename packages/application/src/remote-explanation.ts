@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { admitRemoteProducer, assertRemoteProducerContext, stopRemoteProducer, trackRemoteProducer, type RemoteProducerPort } from "./remote-recovery-capability.js";
 import {
   canonicalJson, EXPLANATION_TASK_PROTOCOL_VERSION, GRAPH_QUERY_VERSION, REMOTE_DATA_CATEGORIES, REMOTE_LIMITS,
   RemoteExplanationError, remoteCancelRequestSchema, remoteCapturedIdentitySchema, remoteHashSchema, remoteKeySchema,
@@ -52,10 +53,12 @@ export class RemoteExplanationApplication {
   private readonly preparations = new Map<string, AbortController>();
   private readonly blockedOwners = new Set<string>();
   private readonly now: () => number;
-  constructor(private readonly ports: RemoteApplicationPorts) {
+  constructor(private readonly ports: RemoteApplicationPorts, private readonly producer?: RemoteProducerPort) {
     if (ports.authority.remote.role !== "global") throw new RemoteExplanationError("POLICY_INVALID");
     this.now = ports.now ?? (() => performance.now());
   }
+  private write<T>(work: () => T): T { return this.producer ? admitRemoteProducer(this.producer, work) : work(); }
+  closeProducer(): void { if (!this.producer) return; this.previews.clear(); for (const controller of this.preparations.values()) controller.abort(); this.abort(() => true); }
   private active(reference: RemoteActivation): void {
     const current = this.ports.currentReference();
     if (!current || current.repositoryId !== reference.repositoryId || current.snapshotId !== reference.snapshotId || current.activation !== reference.activation) throw new RemoteExplanationError("SNAPSHOT_NOT_CURRENT");
@@ -83,9 +86,9 @@ export class RemoteExplanationApplication {
   private gate<T>(identity: RemoteCapturedIdentity, work: (stores: { settings: GraphStore; source: GraphStore }) => T): T {
     if (this.blockedOwners.has(identity.ownerSessionId)) throw new RemoteExplanationError("CONTEXT_CHANGED");
     const { settings, source } = this.ports.stores(identity);
-    return this.ports.authority.withExplanationRevisions(identity, settings, source, () => {
+    return this.write(() => this.ports.authority.withExplanationRevisions(identity, settings, source, () => {
       this.active(source.remote.activation(identity.repositoryId, identity.snapshotId)); return work({ settings, source });
-    });
+    }));
   }
   private build(request: RemotePrepareRequest, limitations: string[], lockedSource?: GraphStore): PreparedEvidencePackage {
     const source = lockedSource ?? this.ports.stores(request).source;
@@ -120,9 +123,10 @@ export class RemoteExplanationApplication {
         failures: metadata.health.failedFiles.map(item => ({ filePath: item.filePath, code: "analysis-failed" as const })) },
     }, { readSource: filePath => { const item = source.readSnapshotSource(request.snapshotId, filePath); return item ? { ...item, repositoryId: request.repositoryId, snapshotId: request.snapshotId, filePath } : undefined; } });
   }
+  private asyncWork<T>(work: () => Promise<T>): Promise<T> { return this.producer ? trackRemoteProducer(this.producer, work) : work(); }
   private async workspace(ref: SnapshotRef, controller: AbortController, deadline: number): Promise<{ checkedAt: string; validationLimitations: string[] }> {
     this.checkpoint(controller, deadline);
-    const result = await this.bounded(this.ports.checkWorkspace(ref, controller.signal), controller, deadline);
+    const result = await this.bounded(this.asyncWork(() => this.ports.checkWorkspace(ref, controller.signal)), controller, deadline);
     this.checkpoint(controller, deadline);
     if (result.status !== "current") throw new RemoteExplanationError("SNAPSHOT_NOT_CURRENT");
     return result;
@@ -189,7 +193,7 @@ export class RemoteExplanationApplication {
       if (!this.ports.provider || !this.ports.credentials || !cached.public.bodyDigest) throw new RemoteExplanationError("NOT_CONFIGURED");
       const provider = this.ports.provider; const settings = this.ports.authority.remote.provider();
       let credential: { credential: string; revision: number };
-      try { credential = await this.bounded(this.ports.credentials.read(), controller, deadline); }
+      try { credential = await this.bounded(this.asyncWork(() => this.ports.credentials!.read()), controller, deadline); }
       catch (error) { if (error instanceof RemoteExplanationError && (error.code === "TIMEOUT" || error.code === "CANCELLED")) throw error; throw new RemoteExplanationError("CREDENTIAL_UNAVAILABLE"); }
       if (!credential || !remoteKeySchema.safeParse(credential.credential).success || !remoteRevisionSchema.safeParse(credential.revision).success) throw new RemoteExplanationError("CREDENTIAL_UNAVAILABLE");
       if (credential.revision !== identity.credentialRevision) throw new RemoteExplanationError("REVISION_CONFLICT");
@@ -215,7 +219,7 @@ export class RemoteExplanationApplication {
         this.ports.authority.remote.assertPermission(ownedIdentity); this.checkpoint(controller, deadline);
         const task = this.ports.authority.remote.registerReservedDispatch(reserved.receipt);
         this.ports.authority.remote.markReservedDispatchAttempt(reserved.receipt); dispatchAttempted = true; running.dispatchAttempted = true;
-        network = provider.dispatch({ prepared: clone(prepared), settings: clone(settings), bodyDigest: ownedIdentity.bodyDigest, credential: credential.credential, signal: controller.signal, taskDeadline: deadline });
+        network = this.asyncWork(() => provider.dispatch({ prepared: clone(prepared), settings: clone(settings), bodyDigest: ownedIdentity.bodyDigest, credential: credential.credential, signal: controller.signal, taskDeadline: deadline }));
         if (!network || typeof network.then !== "function") throw new RemoteExplanationError("PROVIDER_FAILED");
         // Observe immediately if the following synchronous commit fails; never retry.
         void network.catch(() => undefined); return task;
@@ -224,6 +228,7 @@ export class RemoteExplanationApplication {
       const rawNarrative = await this.bounded(network!, controller, deadline); this.checkpoint(controller, deadline);
       const validated = validateRemoteNarrative(rawNarrative, prepared.evidencePackage, prepared);
       const checked = await this.workspace(identity, controller, deadline); this.checkpoint(controller, deadline);
+      if (this.producer) await stopRemoteProducer(this.producer);
       const completed = this.gate(identity, stores => {
         this.checkpoint(controller, deadline); this.ports.authority.remote.assertPermission(ownedIdentity);
         const task = this.ports.authority.remote.task(ownedIdentity.taskId);
@@ -242,11 +247,12 @@ export class RemoteExplanationApplication {
       terminal = completed; releaseAllowed = true;
     } catch (error) {
       controller.abort();
+      if (this.producer) { try { await stopRemoteProducer(this.producer); } catch { throw safeFailure(error); } }
       if (registered && identity) {
         primaryFailure = safeFailure(error);
         try {
-          const task = this.ports.authority.remote.finish(identity.taskId, primaryFailure.code);
-          if (publicationStores) this.ports.authority.discardFailedExplanation(identity, publicationStores.settings, publicationStores.source);
+          const task = this.write(() => this.ports.authority.remote.finish(identity!.taskId, primaryFailure!.code));
+          if (publicationStores) this.write(() => this.ports.authority.discardFailedExplanation(identity!, publicationStores!.settings, publicationStores!.source));
           terminal = task; releaseAllowed = true;
           if (task.code) primaryFailure = new RemoteExplanationError(task.code);
         } catch (cleanupError) {
@@ -256,7 +262,7 @@ export class RemoteExplanationApplication {
       } else {
         if (reservation && !dispatchAttempted) {
           primaryFailure = remoteStoreFailure(error);
-          try { this.ports.authority.remote.immediate(() => this.ports.authority.remote.finishUndispatchedReservation(reservation!, primaryFailure!.code)); }
+          try { this.write(() => this.ports.authority.remote.immediate(() => this.ports.authority.remote.finishUndispatchedReservation(reservation!, primaryFailure!.code))); }
           catch { throw primaryFailure; } // Cleanup failure keeps the durable slot and original error.
         }
         const cancelled = identity ? this.ports.authority.remote.task(identity.taskId) : null;
@@ -269,7 +275,7 @@ export class RemoteExplanationApplication {
       if (identity) {
         this.running.delete(identity.taskId);
         if (registered && releaseAllowed) {
-          try { this.ports.authority.remote.releaseDispatch(identity.taskId); }
+          try { this.write(() => this.ports.authority.remote.releaseDispatch(identity!.taskId)); }
           catch (releaseError) { throw primaryFailure ?? remoteStoreFailure(releaseError); }
         }
       }
@@ -277,12 +283,12 @@ export class RemoteExplanationApplication {
     if (!terminal) throw new RemoteExplanationError("POLICY_INVALID");
     this.emit(terminal); return terminal;
   }
-  private emit(task: RemoteTaskRecord): void { try { this.ports.onTask?.(clone(task)); } catch { /* A consumer failure cannot mutate or resend a committed task. */ } }
+  private emit(task: RemoteTaskRecord): void { try { if (this.producer) assertRemoteProducerContext(this.producer); this.ports.onTask?.(clone(task)); } catch { /* A consumer failure cannot mutate or resend a committed task. */ } }
   cancel(raw: { contextHandle: string; taskId: string }): RemoteTaskRecord {
     try {
       const request = remoteCancelRequestSchema.parse(raw);
       let controller: AbortController | undefined;
-      const terminal = this.ports.authority.remote.immediate(() => {
+      const terminal = this.write(() => this.ports.authority.remote.immediate(() => {
         const context = this.ports.authority.remote.context(request.contextHandle); const task = this.ports.authority.remote.task(request.taskId);
         const running = this.running.get(request.taskId); const identity = task?.identity ?? running?.identity;
         if (!identity || this.blockedOwners.has(context.ownerSessionId) || identity.ownerSessionId !== context.ownerSessionId || identity.contextHandle !== request.contextHandle || identity.contextEpoch !== context.epoch || (task && running && canonicalJson(task.identity) !== canonicalJson(running.identity))) throw new RemoteExplanationError("CONTEXT_CHANGED");
@@ -290,7 +296,7 @@ export class RemoteExplanationApplication {
         controller?.abort(); // A terminal log failure must not let a validated local cancellation dispatch later.
         if (!task && running?.reservation) return this.ports.authority.remote.finishUndispatchedReservation(running.reservation, "CANCELLED");
         return task ? this.ports.authority.remote.finish(request.taskId, "CANCELLED") : this.ports.authority.remote.recordUndispatchedCancellation(identity, running!.createdAt);
-      });
+      }));
       controller?.abort(); return terminal;
     } catch (error) { throw remoteStoreFailure(error); }
   }
@@ -302,26 +308,27 @@ export class RemoteExplanationApplication {
       this.blockedOwners.add(ownerSessionId); this.previews.delete(ownerSessionId);
       this.preparations.get(ownerSessionId)?.abort();
       this.abort(task => task.identity.ownerSessionId === ownerSessionId);
-      const context = this.ports.authority.remote.immediate(() => {
+      const context = this.write(() => this.ports.authority.remote.immediate(() => {
         if (!ref) return this.ports.authority.remote.commitTrustedContext(ownerSessionId, null);
         const { settings, source } = this.ports.stores(ref);
         return settings.remote.immediate(() => source.remote.immediate(() => {
           const reference = source.remote.activation(ref.repositoryId, ref.snapshotId); this.active(reference);
           return this.ports.authority.remote.commitTrustedContext(ownerSessionId, reference);
         }));
-      });
+      }));
       if (context.active) this.blockedOwners.delete(ownerSessionId); return context;
     } catch (error) { throw remoteStoreFailure(error); }
   }
   saveAuthorization(repositoryId: string, expectedRevision: number, granted: boolean) {
-    const result = this.ports.authority.remote.saveAuthorization(repositoryId, expectedRevision, granted);
+    const result = this.write(() => this.ports.authority.remote.saveAuthorization(repositoryId, expectedRevision, granted));
     this.previews.clear(); this.abort(task => task.identity.repositoryId === repositoryId); return result;
   }
   saveProvider(expectedRevision: number, input: Omit<RemoteProviderSettings, "revision">) {
-    const result = this.ports.authority.remote.saveProvider(expectedRevision, input);
+    const result = this.write(() => this.ports.authority.remote.saveProvider(expectedRevision, input));
     this.previews.clear(); this.abort(() => true); return result;
   }
   recoverInterruptedTasks(): void {
+    if (this.producer) throw new RemoteExplanationError("POLICY_INVALID");
     this.ports.authority.remote.recoverInterrupted(); this.previews.clear();
     for (const controller of this.preparations.values()) controller.abort(); this.abort(() => true);
   }

@@ -57,3 +57,49 @@ describe("application-owned native recovery proof",()=>{
   });
 
 });
+
+import { createHash } from "node:crypto";
+import { assertRemoteProducerContext, admitRemoteProducer, executeRemoteProducer, stopRemoteProducer } from "./remote-recovery-capability.js";
+describe("opaque actual producer port", () => {
+  it.each([true, Promise.resolve(), {}])("context veto refuses non-undefined %s before admission", value => {
+    const d = domain(), ticket = d.create(randomUUID(), ["feature-explanation"], worker), admission = vi.fn();
+    const port = d.producer(ticket, (() => value) as never, work => { admission(); return work(); });
+    expect(() => admitRemoteProducer(port, () => ({ receipt: true }))).toThrow(); expect(admission).not.toHaveBeenCalled();
+  });
+  it("original receipt is admitted and exact stop does not wait for its own scope or sign a proof", async () => {
+    const d = domain(), ticket = d.create(randomUUID(), ["feature-explanation"], worker), port = d.producer(ticket, () => undefined, work => d.admit(ticket, work)), receipt = Object.freeze({ receipt: randomUUID() });
+    expect(admitRemoteProducer(port, () => receipt)).toBe(receipt); expect(() => assertRemoteProducerContext({ ...port })).toThrow();
+    await d.operation(ticket, "work", async () => { await stopRemoteProducer(port); expect(workers.at(-1)!.threadId).toBe(-1); expect(() => d.consume(port as never)).toThrow(); });
+    d.retire(ticket); const proof = await d.freezeAndStop(); expect(d.consume(proof)).toEqual([expect.objectContaining({ generation: 1 })]);
+  });
+  it.each(["proxy", "getter", "extra", "digest", "purpose", "outside-scope"])("wire %s sends no body", async kind => {
+    const d = domain(), ticket = d.create(randomUUID(), ["feature-explanation"], worker), port = d.producer(ticket, () => undefined, work => d.admit(ticket, work)), post = vi.spyOn(workers.at(-1)!, "postMessage");
+    const body = "{}", input = { purpose: "feature-explanation", body, bodyDigest: createHash("sha256").update(body).digest("hex") };
+    let reads = 0;
+    const raw = kind === "proxy" ? new Proxy(input, {}) : kind === "getter" ? Object.defineProperty({ ...input }, "body", { get() { reads++; return body; }, enumerable: true }) : kind === "extra" ? { ...input, injected: true } : kind === "digest" ? { ...input, bodyDigest: "a".repeat(64) } : kind === "purpose" ? { ...input, purpose: "ownership-semantic-assessment" } : input;
+    if (kind === "outside-scope") expect(() => executeRemoteProducer(port, raw as never)).toThrow();
+    else await d.operation(ticket, "work", async () => { expect(() => executeRemoteProducer(port, raw as never)).toThrow(); });
+    expect(reads).toBe(0); expect(post).not.toHaveBeenCalled(); await stopRemoteProducer(port);
+  });
+});
+
+describe("raw work retains native domain accounting", () => {
+  it("retired raw prepare work retains shared prepare budget and generation until actual settlement", async () => {
+    const d = domain(), owner = randomUUID(), first = d.create(owner, ["feature-explanation"], worker), other = d.create(owner, ["ownership-semantic-assessment"], worker), g = gate(); let pending!: Promise<unknown>, entered = false;
+    await d.operation(first, "prepare", async () => { pending = d.track(first, async () => { entered = true; await g.held; return true; }); void pending.catch(() => undefined); }); expect(entered).toBe(true);
+    const newWork = vi.fn(async () => true); await expect(d.operation(other, "prepare", newWork)).rejects.toMatchObject({ code: "BUSY" }); expect(newWork).not.toHaveBeenCalled(); d.retire(first);
+    let finished = false; const recovery = d.freezeAndStop().then(proof => { finished = true; return proof; }); await vi.waitFor(() => expect(workers.at(-1)!.threadId).toBe(-1)); expect(finished).toBe(false);
+    g.release(); await expect(pending).rejects.toMatchObject({ code: "POLICY_INVALID" }); expect(d.consume(await recovery).map(p => p.generation)).toEqual([1, 2]);
+  });
+  it("raw work consumes shared pending budget before callback invocation", async () => {
+    const d = domain(), first = d.create(randomUUID(), ["feature-explanation"], worker), g = gate(), work = vi.fn(async () => { await g.held; return true; }), refused = vi.fn(async () => true); let pending: Promise<unknown>[] = [];
+    await d.operation(first, "work", async () => { pending = Array.from({ length: 19 }, () => d.track(first, work)); await expect(d.track(first, refused)).rejects.toMatchObject({ code: "LIMIT_EXCEEDED" }); });
+    expect(work).toHaveBeenCalledTimes(19); expect(refused).not.toHaveBeenCalled(); g.release(); await Promise.all(pending); await d.stopParticipant(first);
+  });
+  it("original stop deadline remains conservative when raw work outlives caller", async () => {
+    const d = domain(), ticket = d.create(randomUUID(), ["feature-explanation"], worker), g = gate(); let pending!: Promise<unknown>;
+    await d.operation(ticket, "work", async () => { pending = d.track(ticket, () => g.held); void pending.catch(() => undefined); });
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] }); const recovery = d.freezeAndStop().catch(error => error); await vi.advanceTimersByTimeAsync(60_001); expect(await recovery).toHaveProperty("code", "INTERRUPTED"); vi.useRealTimers();
+    const later = vi.fn(async () => true); expect(() => d.track(ticket, later)).toThrow(); expect(later).not.toHaveBeenCalled(); g.release(); await expect(pending).rejects.toHaveProperty("code"); expect(d.consume(await d.freezeAndStop())).toHaveLength(1);
+  });
+});

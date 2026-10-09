@@ -42,3 +42,15 @@ describe("private semantic reservation SQL lifecycle", () => {
     } finally { store.close(); }
   });
 });
+
+describe("semantic synchronous producer refusal contract", () => {
+  it.each([true, false, Promise.resolve(), {}])("non-undefined context %s refuses before material or SQL", value => {
+    const authority = new GraphStore(":memory:", "global"), source = new GraphStore(), ledger = new OwnershipSemanticReservationStore(raw(authority), authority);
+    let reads = 0, admissions = 0;
+    const issuer = Object.defineProperty({}, "takeReservation", { get() { reads++; throw Error("forbidden material read"); } });
+    try {
+      expect(() => ledger.reserve(issuer as never, {} as never, source, raw(source), raw(source), undefined, { context: (() => value) as never, admit: work => { admissions++; return work(); } })).toThrowError(expect.objectContaining({ code: "INVALID_RECEIPT" }));
+      expect(reads).toBe(0); expect(admissions).toBe(0); expect(raw(authority).prepare("SELECT * FROM remote_task_registry").all()).toEqual([]); expect(raw(authority).prepare("SELECT * FROM remote_provider_lease").all()).toEqual([]);
+    } finally { authority.close(); source.close(); }
+  });
+});

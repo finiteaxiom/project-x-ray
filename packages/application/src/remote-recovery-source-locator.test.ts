@@ -286,3 +286,252 @@ describe("held-map async purpose settings and close guards", () => {
     expect(run.worker.threadId).toBe(-1);
   });
 });
+
+import { createHeldFeatureProducer, createHeldSemanticProducer } from "./remote-recovery-source-locator.js";
+import { OWNERSHIP_SEMANTIC_POLICY_CATEGORIES, type OwnershipSemanticPrepareRequest } from "@project-xray/contracts";
+
+async function producerFixture(layout: "legacy" | "split" | "hybrid") {
+  const base = await mkdtemp(join(tmpdir(), "xray-producer-real-")); roots.push(base); const project = join(base, "project"); await mkdir(project);
+  await writeFile(join(project, "flow.ts"), "export function leaf(){return 42;}\nexport function middle(){return leaf();}\nexport function start(){return middle();}\n");
+  const options = { databasePath: join(base, "authority.sqlite"), cacheRoot: join(base, "cache"), ...(layout === "split" ? { projectDatabaseRoot: join(base, "projects") } : {}) };
+  let app = new XRayApplication(options); handles.push(app); let snapshot = await app.indexProject(project);
+  if (layout === "hybrid") { app.saveIgnoreSettings({ repositoryId: snapshot.repositoryId, snapshotId: snapshot.snapshotId, expectedRevision: 0, rules: ["owned-current-settings"] }); snapshot = await app.indexProject(project); }
+  const ref = { repositoryId: snapshot.repositoryId, snapshotId: snapshot.snapshotId };
+  const question = (await app.createOwnershipQuestions({ ...ref, scope: { kind: "project" }, count: 20 })).find(q => q.kind === "call-direction")!, check = question.deterministicChecks[0]!;
+  if (check.kind !== "call-direction") throw Error("Missing real question");
+  const proof = snapshot.evidence.find(e => e.id === snapshot.edges.find(e => e.id === check.edgeId)!.evidenceId)!;
+  expect((await app.gradeOwnershipAnswer({ ...ref, questionId: question.id, questionVersion: question.version, structuredAnswer: { kind: "call-direction", callerNodeId: check.sourceNodeId, calleeNodeId: check.targetNodeId }, answer: "根据真实源码引用解释调用方向。", selfConfidence: .5, citations: [{ ...proof.span, evidenceId: proof.id }] })).passed).toBe(true);
+  let source = internal(app).snapshotStores.get(ref.snapshotId)!; const attempt = source.listOwnershipAttempts(ref.repositoryId).find(a => !a.legacy)!;
+  source.saveMastery({ ...ref, questionId: question.id, concept: attempt.concept.label, score: attempt.locationScore, completedAt: attempt.completedAt });
+  if (layout === "hybrid") { app.close(); app = new XRayApplication({ ...options, projectDatabaseRoot: join(base, "projects") }); handles.push(app); app.saveIgnoreSettings({ ...ref, expectedRevision: 0, rules: ["owned-current-settings"] }); source = internal(app).snapshotStores.get(ref.snapshotId)!; }
+  handles.push(source); const authority = internal(app).legacyStore, settings = internal(app).stores.get(ref.repositoryId) ?? authority;
+  authority.remote.saveProvider(0, { provider: "openai", model: "gpt-4.1-mini", credentialRevision: 1, credentialStatus: "configured", outputTokens: 2048 }); authority.remote.saveAuthorization(ref.repositoryId, 0, true);
+  const authorization = authority.loadOwnershipSemanticAuthorization(ref.repositoryId);
+  authority.grantOwnershipSemanticAuthorization({ repositoryId: ref.repositoryId, expectedRevision: authorization.revision, expectedProviderRevision: authority.remote.provider().revision, purpose: "ownership-semantic-assessment", disclosureVersion: "ownership-semantics/1.0.0", categories: [...OWNERSHIP_SEMANTIC_POLICY_CATEGORIES] });
+  const context = authority.remote.commitTrustedContext(randomUUID(), source.remote.activation(ref.repositoryId, ref.snapshotId));
+  const request: OwnershipSemanticPrepareRequest = { ...ref, contextHandle: context.contextHandle, attemptId: attempt.attemptId, purpose: "ownership-semantic-assessment" };
+  expect(await app.getSnapshotState(ref)).toMatchObject({ status: "current" }); expect(source.listMastery(ref.snapshotId)).toHaveLength(1);
+  return { app, base, project, ref, source, authority, settings, request, context, snapshot, attempt };
+}
+function producerExecutor(mode: "normal" | "hold" | "invalid" = "normal") {
+  const code = `const {parentPort,workerData}=require('node:worker_threads');const {createHash}=require('node:crypto');parentPort.on('message',message=>{
+    if(message.version!=='1.0.0'||createHash('sha256').update(message.body).digest('hex')!==message.bodyDigest)throw Error('invalid wire');
+    const body=JSON.parse(message.body),data=JSON.parse(body.input[0].content[0].text);
+    let raw;
+    if(message.purpose==='feature-explanation'){const p=data;raw={version:'1.0.0',repositoryId:p.repositoryId,snapshotId:p.snapshotId,packageId:p.packageId,claims:[{text:'静态源码证据支持调用关系。',evidenceIds:[p.proofs.find(e=>e.confidence==='verified').id],confidence:'inferred'}],unknowns:[]};}
+    else {const p=data.data.semanticPackage;raw={version:'1.0.0',assessmentPackageId:p.assessmentPackageId,criteria:p.rubric.criteria.map(c=>({criterionId:c.criterionId,verdict:'supported',explanation:'真实源码支持。',evidenceIds:c.requiredEvidenceIds,limitationIds:[],answerRanges:c.answerScope}))};}
+    if(workerData==='invalid')raw={invalid:true};if(workerData!=='hold')parentPort.postMessage({requestId:message.requestId,raw});
+  });`;
+  const actual = new Worker(code, { eval: true, workerData: mode }); workers.push(actual); const post = vi.spyOn(actual, "postMessage"); return { actual, post };
+}
+describe("real held producer integration", () => {
+  it.each(["legacy", "split", "hybrid"].flatMap(layout => ["feature", "semantic"].map(purpose => ({ layout: layout as "legacy" | "split" | "hybrid", purpose }))))("actual $purpose executor created before prepare and sends once layout=$layout", async ({ layout, purpose }) => {
+    const f = await producerFixture(layout), old = history(f.source); let execution!: ReturnType<typeof producerExecutor>; const factory = vi.fn(() => (execution = producerExecutor()).actual);
+    if (purpose === "feature") {
+      const credentials = vi.fn(async () => ({ credential: "fixture-only", revision: 1 }));
+      const flow = createHeldFeatureProducer(f.app, { ref: f.ref, contextHandle: f.context.contextHandle, createWorker: factory, credentials: { read: credentials } });
+      expect(factory).toHaveBeenCalledTimes(1); expect(execution.post).not.toHaveBeenCalled(); expect(credentials).not.toHaveBeenCalled();
+      const preview = await flow.prepare({ ...f.ref, contextHandle: f.context.contextHandle, purpose: "feature-explanation", query: "start" });
+      expect(execution.post).not.toHaveBeenCalled(); expect(credentials).not.toHaveBeenCalled();
+      const task = await flow.start({ taskId: randomUUID(), contextHandle: f.context.contextHandle, packageId: preview.packageId, previewId: preview.previewId });
+      expect(task.phase).toBe("completed"); expect((await flow.result(task.identity.taskId))?.identity).toEqual(task.identity); expect(credentials).toHaveBeenCalledTimes(1); expect(execution.post).toHaveBeenCalledTimes(1);
+      expect((execution.post.mock.calls[0]![0] as { bodyDigest: string }).bodyDigest).toBe(task.identity.bodyDigest); flow.close();
+    } else {
+      const flow = createHeldSemanticProducer(f.app, { ref: f.ref, contextHandle: f.context.contextHandle, createWorker: factory });
+      expect(factory).toHaveBeenCalledTimes(1); const token = await flow.prepare(f.request); expect(execution.post).not.toHaveBeenCalled();
+      const metadata = flow.reserve(token), lease = raw(f.authority).prepare("SELECT * FROM remote_provider_lease").all(); expect(lease).toHaveLength(1); expect(execution.post).not.toHaveBeenCalled();
+      const result = await flow.start(metadata.reservation); expect(result.identity.taskId).toBe(metadata.taskId); expect(result.createdAt).toBe(metadata.createdAt); expect(await flow.read(metadata.reservation)).toEqual(result); expect(execution.post).toHaveBeenCalledTimes(1); flow.close();
+    }
+    expect(factory).toHaveBeenCalledTimes(1); expect(execution.actual.threadId).toBe(-1); expect(history(f.source)).toBe(old); expect(raw(f.authority).prepare("SELECT * FROM remote_provider_lease").all()).toEqual([]);
+  });
+});
+
+function heldPause() { let entered!: () => void, release!: () => void; return { entered: new Promise<void>(r => entered = r), held: new Promise<void>(r => release = r), enter: () => entered(), release: () => release() }; }
+function productFlows(f: Awaited<ReturnType<typeof producerFixture>>, purpose: "feature" | "semantic", mode: "normal" | "hold" | "invalid" = "normal") {
+  let execution!: ReturnType<typeof producerExecutor>; const factory = vi.fn(() => (execution = producerExecutor(mode)).actual);
+  const credentials = vi.fn(async () => ({ credential: "fixture-only", revision: 1 }));
+  return { feature: purpose === "feature" ? createHeldFeatureProducer(f.app, { ref: f.ref, contextHandle: f.context.contextHandle, createWorker: factory, credentials: { read: credentials } }) : null,
+    semantic: purpose === "semantic" ? createHeldSemanticProducer(f.app, { ref: f.ref, contextHandle: f.context.contextHandle, createWorker: factory }) : null,
+    factory, credentials, execution: () => execution };
+}
+async function preparedProduct(f: Awaited<ReturnType<typeof producerFixture>>, purpose: "feature" | "semantic", mode: "normal" | "hold" | "invalid" = "normal") {
+  const flows = productFlows(f, purpose, mode);
+  if (flows.feature) { const preview = await flows.feature.prepare({ ...f.ref, contextHandle: f.context.contextHandle, purpose: "feature-explanation", query: "start" }); const id = randomUUID();
+    return { ...flows, id, metadata: undefined, start: () => flows.feature!.start({ taskId: id, previewId: preview.previewId, packageId: preview.packageId, contextHandle: preview.contextHandle }), cancel: () => flows.feature!.cancel({ taskId: id, contextHandle: preview.contextHandle }) }; }
+  const token = await flows.semantic!.prepare(f.request), metadata = flows.semantic!.reserve(token);
+  return { ...flows, id: metadata.taskId, metadata, start: () => flows.semantic!.start(metadata.reservation), cancel: () => flows.semantic!.cancel(metadata.reservation) };
+}
+const productCases = ["legacy", "split", "hybrid"].flatMap(layout => ["feature", "semantic"].map(purpose => ({ layout: layout as "legacy" | "split" | "hybrid", purpose: purpose as "feature" | "semantic" })));
+describe("real producer failure and asynchronous SQL gates", () => {
+  it.each(["legacy", "split", "hybrid"] as const)("semantic reserved with actual executor not yet sent recovers exact T1 layout=%s", async layout => {
+    const f = await producerFixture(layout), run = await preparedProduct(f, "semantic"), old = history(f.source), row = raw(f.authority).prepare("SELECT * FROM remote_task_registry WHERE task_id=?").get(run.id);
+    expect(run.execution().post).not.toHaveBeenCalled(); await expect(recover(heldStoreRemoteRecovery(f.app))).resolves.toMatchObject({ released: true });
+    expect(run.execution().actual.threadId).toBe(-1); expect(run.execution().post).not.toHaveBeenCalled(); const task = raw(f.authority).prepare("SELECT * FROM ownership_semantic_tasks WHERE task_id=?").get(run.id) as { created_at: string; phase: string; payload: string };
+    expect(task.created_at).toBe((row as { created_at: string }).created_at); expect(task.phase).toBe("interrupted"); expect(history(f.source)).toBe(old); expect(raw(f.authority).prepare("SELECT * FROM remote_provider_lease").all()).toEqual([]);
+  });
+  it.each(productCases)("prepare actual wait is counted and freeze prevents late $purpose preview layout=$layout", async ({ layout, purpose }) => {
+    const f = await producerFixture(layout), run = productFlows(f, purpose), gate = heldPause(), before = rows(f.authority), old = history(f.source);
+    if (purpose === "feature") { const real = f.app.getSnapshotState.bind(f.app); vi.spyOn(f.app, "getSnapshotState").mockImplementationOnce(async (...args) => { const value = await real(...args); gate.enter(); await gate.held; return value; }); }
+    else { const real = crypto.subtle.digest.bind(crypto.subtle); vi.spyOn(crypto.subtle, "digest").mockImplementationOnce(async (...args) => { const value = await real(...args); gate.enter(); await gate.held; return value; }); }
+    const pending = (run.feature ? run.feature.prepare({ ...f.ref, contextHandle: f.context.contextHandle, purpose: "feature-explanation", query: "start" }) : run.semantic!.prepare(f.request)).catch(error => error); await gate.entered;
+    const recovery = recover(heldStoreRemoteRecovery(f.app)); await vi.waitFor(() => expect(run.execution().actual.threadId).toBe(-1)); expect(rows(f.authority)).toBe(before); expect(history(f.source)).toBe(old);
+    gate.release(); expect(await pending).toHaveProperty("code"); await expect(recovery).resolves.toMatchObject({ released: true }); expect(run.execution().post).not.toHaveBeenCalled(); expect(run.credentials).not.toHaveBeenCalled(); expect(history(f.source)).toBe(old);
+  });
+  it.each(productCases)("actual $purpose promotion commit failure has one send and no implicit retry layout=$layout", async ({ layout, purpose }) => {
+    const f = await producerFixture(layout), run = await preparedProduct(f, purpose), db = raw(f.authority), old = history(f.source);
+    db.exec("CREATE TABLE producer_parent(id INTEGER PRIMARY KEY);CREATE TABLE producer_child(id INTEGER REFERENCES producer_parent(id) DEFERRABLE INITIALLY DEFERRED);");
+    db.exec(purpose === "feature" ? "CREATE TRIGGER producer_fault AFTER INSERT ON explanation_tasks BEGIN INSERT INTO producer_child VALUES(1);END" : "CREATE TRIGGER producer_fault AFTER INSERT ON ownership_semantic_tasks WHEN NEW.phase='dispatched' BEGIN INSERT INTO producer_child VALUES(1);END");
+    await expect(run.start()).rejects.toHaveProperty("code"); expect(run.execution().post).toHaveBeenCalledTimes(1); expect(run.execution().actual.threadId).toBe(-1); expect(db.prepare("SELECT * FROM remote_provider_lease").all()).toHaveLength(1); expect(history(f.source)).toBe(old);
+    const registry = db.prepare("SELECT * FROM remote_task_registry WHERE task_id=?").get(run.id) as { created_at: string; identity_payload: string }; db.exec("DROP TRIGGER producer_fault");
+    await expect(recover(heldStoreRemoteRecovery(f.app))).resolves.toMatchObject({ released: true }); expect(run.execution().post).toHaveBeenCalledTimes(1); const task = db.prepare(`SELECT * FROM ${purpose === "feature" ? "explanation_tasks" : "ownership_semantic_tasks"} WHERE task_id=?`).get(run.id) as { payload: string };
+    expect(JSON.parse(task.payload).createdAt).toBe(registry.created_at); expect(JSON.parse(task.payload).identity).toEqual(JSON.parse(registry.identity_payload)); expect(history(f.source)).toBe(old);
+  });
+  it.each(productCases)("real $purpose publication wait cannot commit cleanup after freeze layout=$layout", async ({ layout, purpose }) => {
+    const f = await producerFixture(layout), run = await preparedProduct(f, purpose), gate = heldPause(), old = history(f.source);
+    if (purpose === "feature") { const real = f.app.getSnapshotState.bind(f.app); let calls = 0; vi.spyOn(f.app, "getSnapshotState").mockImplementation(async (...args) => { const value = await real(...args); if (++calls === 2) { gate.enter(); await gate.held; } return value; }); }
+    else { const publish = f.source.publishOwnershipSemanticExecution.bind(f.source), real = crypto.subtle.digest.bind(crypto.subtle); vi.spyOn(f.source, "publishOwnershipSemanticExecution").mockImplementationOnce((...args) => { vi.spyOn(crypto.subtle, "digest").mockImplementationOnce(async (...values) => { const value = await real(...values); gate.enter(); await gate.held; return value; }); return publish(...args); }); }
+    const pending = run.start().catch(error => error); await gate.entered; const before = rows(f.authority), source = rows(f.source), recovery = recover(heldStoreRemoteRecovery(f.app)); await vi.waitFor(() => expect(run.execution().actual.threadId).toBe(-1)); expect(rows(f.authority)).toBe(before); expect(rows(f.source)).toBe(source);
+    gate.release(); expect(await pending).toHaveProperty("code"); await expect(recovery).resolves.toMatchObject({ released: true }); expect(run.execution().post).toHaveBeenCalledTimes(1); expect(history(f.source)).toBe(old); expect(raw(f.authority).prepare("SELECT * FROM remote_provider_lease").all()).toEqual([]);
+  });
+  it.each(productCases)("normal $purpose cancel stops same actual executor and safe new producer retries layout=$layout", async ({ layout, purpose }) => {
+    const f = await producerFixture(layout), run = await preparedProduct(f, purpose, "hold"), old = history(f.source), pending = run.start().catch(error => error);
+    await vi.waitFor(() => expect(run.execution().post).toHaveBeenCalledTimes(1)); await run.cancel(); const outcome = await pending; expect(outcome).toBeDefined(); expect(run.execution().actual.threadId).toBe(-1); expect(raw(f.authority).prepare("SELECT * FROM remote_provider_lease").all()).toEqual([]); expect(history(f.source)).toBe(old);
+    const next = await preparedProduct(f, purpose); await expect(next.start()).resolves.toBeDefined(); expect(next.execution().post).toHaveBeenCalledTimes(1); expect(run.execution().post).toHaveBeenCalledTimes(1); expect(history(f.source)).toBe(old);
+  });
+});
+
+describe("real producer domain boundaries", () => {
+  it.each(["throw", "proxy", "promise"])("actual executor creation %s leaves unknown resource blocked", async kind => {
+    const f = await producerFixture("split"), old = rows(f.authority), historyBefore = history(f.source), actual = producerExecutor();
+    expect(() => createHeldSemanticProducer(f.app, { ref: f.ref, contextHandle: f.context.contextHandle, createWorker: () => { if (kind === "throw") throw Error("fixture failure"); return kind === "proxy" ? new Proxy(actual.actual, {}) : Promise.resolve(actual.actual) as never; } })).toThrow();
+    await expect(recover(heldStoreRemoteRecovery(f.app))).rejects.toHaveProperty("code"); expect(rows(f.authority)).toBe(old); expect(history(f.source)).toBe(historyBefore); expect(actual.post).not.toHaveBeenCalled(); expect(actual.actual.threadId).not.toBe(-1);
+  });
+  it.each(["legacy", "split", "hybrid"] as const)("actual purposes share prepare and reserved occupancy layout=%s", async layout => {
+    const f = await producerFixture(layout), semantic = productFlows(f, "semantic"), feature = productFlows(f, "feature"), gate = heldPause(), real = crypto.subtle.digest.bind(crypto.subtle);
+    vi.spyOn(crypto.subtle, "digest").mockImplementationOnce(async (...args) => { const value = await real(...args); gate.enter(); await gate.held; return value; });
+    const pending = semantic.semantic!.prepare(f.request); await gate.entered;
+    await expect(feature.feature!.prepare({ ...f.ref, contextHandle: f.context.contextHandle, purpose: "feature-explanation", query: "start" })).rejects.toMatchObject({ code: "BUSY" });
+    gate.release(); const reserved = semantic.semantic!.reserve(await pending); const lease = raw(f.authority).prepare("SELECT * FROM remote_provider_lease").all(); expect(lease).toHaveLength(1);
+    const competing = await preparedProduct(f, "feature"); await expect(competing.start()).rejects.toMatchObject({ code: "BUSY" }); expect(competing.execution().post).not.toHaveBeenCalled(); expect(raw(f.authority).prepare("SELECT * FROM remote_provider_lease").all()).toEqual(lease);
+    await semantic.semantic!.cancel(reserved.reservation); expect(semantic.execution().actual.threadId).toBe(-1); expect(semantic.execution().post).not.toHaveBeenCalled(); expect(raw(f.authority).prepare("SELECT * FROM remote_provider_lease").all()).toEqual([]);
+  });
+  it.each(productCases)("actual $purpose source commit then global completion failure preserves history layout=$layout", async ({ layout, purpose }) => {
+    const f = await producerFixture(layout), run = await preparedProduct(f, purpose), db = raw(f.authority), before = history(f.source);
+    db.exec("CREATE TABLE producer_parent(id INTEGER PRIMARY KEY);CREATE TABLE producer_child(id INTEGER REFERENCES producer_parent(id) DEFERRABLE INITIALLY DEFERRED);");
+    db.exec(`CREATE TRIGGER producer_completion_fault AFTER UPDATE OF phase ON ${purpose === "feature" ? "explanation_tasks" : "ownership_semantic_tasks"} WHEN NEW.phase='completed' BEGIN INSERT INTO producer_child VALUES(1);END`);
+    const result = await run.start().catch(error => error); expect(result).toHaveProperty(purpose === "feature" ? "phase" : "code"); if (purpose === "feature") expect(result.phase).toBe("failed");
+    expect(run.execution().post).toHaveBeenCalledTimes(1); expect(run.execution().actual.threadId).toBe(-1); expect(history(f.source)).toBe(before);
+    expect(raw(f.source).prepare(`SELECT * FROM ${purpose === "feature" ? "remote_explanations" : "ownership_semantic_results"}`).all()).toEqual([]);
+    db.exec("DROP TRIGGER producer_completion_fault"); await expect(recover(heldStoreRemoteRecovery(f.app))).resolves.toMatchObject({ released: true }); expect(history(f.source)).toBe(before); expect(run.execution().post).toHaveBeenCalledTimes(1);
+  });
+  it.each(productCases)("actual $purpose release BUSY keeps completed artifact and stops native executor layout=$layout", async ({ layout, purpose }) => {
+    const f = await producerFixture(layout), run = await preparedProduct(f, purpose), before = history(f.source), db = raw(f.authority), peer = new Database(db.name); handles.push(peer); db.pragma("busy_timeout=0");
+    run.execution().actual.once("exit", () => peer.exec("BEGIN IMMEDIATE"));
+    await expect(run.start()).rejects.toMatchObject({ code: "BUSY" }); expect(run.execution().actual.threadId).toBe(-1); expect(run.execution().post).toHaveBeenCalledTimes(1); expect(history(f.source)).toBe(before);
+    const task = db.prepare(`SELECT * FROM ${purpose === "feature" ? "explanation_tasks" : "ownership_semantic_tasks"} WHERE task_id=?`).get(run.id) as { phase: string };
+    // Feature stops before publication; semantic stops after authoritative completion.
+    expect(task.phase).toBe(purpose === "feature" ? "dispatched" : "completed"); expect(db.prepare("SELECT * FROM remote_provider_lease").all()).toHaveLength(1); peer.exec("ROLLBACK");
+    await expect(recover(heldStoreRemoteRecovery(f.app))).resolves.toMatchObject({ released: true }); expect(history(f.source)).toBe(before); expect(run.execution().post).toHaveBeenCalledTimes(1); expect(db.prepare("SELECT * FROM remote_provider_lease").all()).toEqual([]);
+  });
+  it.each(productCases.flatMap(value => ["source", "settings", "close"].map(change => ({ ...value, change }))))("actual $purpose late read refuses $change layout=$layout", async ({ layout, purpose, change }) => {
+    const f = await producerFixture(layout), run = await preparedProduct(f, purpose); await run.start(); const before = history(f.source), gate = heldPause(), historyPeer = new Database(raw(f.source).name); handles.push(historyPeer);
+    if (purpose === "feature") { const real = f.app.getSnapshotState.bind(f.app); vi.spyOn(f.app, "getSnapshotState").mockImplementationOnce(async (...args) => { const value = await real(...args); gate.enter(); await gate.held; return value; }); }
+    else { const real = crypto.subtle.digest.bind(crypto.subtle); vi.spyOn(crypto.subtle, "digest").mockImplementationOnce(async (...args) => { const value = await real(...args); gate.enter(); await gate.held; return value; }); }
+    const pending = (run.feature ? run.feature.result(run.id) : run.semantic!.read(run.metadata!.reservation)).catch(error => error); await gate.entered;
+    const oldSource = internal(f.app).snapshotStores.get(f.ref.snapshotId), oldSettings = internal(f.app).stores.get(f.ref.repositoryId), replacement = new GraphStore(":memory:", "project"); handles.push(replacement);
+    if (change === "source") internal(f.app).snapshotStores.set(f.ref.snapshotId, replacement); else if (change === "settings") internal(f.app).stores.set(f.ref.repositoryId, replacement); else f.app.close();
+    gate.release(); expect(await pending).toHaveProperty("code"); expect(history({ database: historyPeer } as unknown as GraphStore)).toBe(before); expect(run.execution().post).toHaveBeenCalledTimes(1);
+    if (change !== "close") { if (oldSource) internal(f.app).snapshotStores.set(f.ref.snapshotId, oldSource); if (oldSettings) internal(f.app).stores.set(f.ref.repositoryId, oldSettings); else internal(f.app).stores.delete(f.ref.repositoryId); await expect(recover(heldStoreRemoteRecovery(f.app))).resolves.toMatchObject({ released: true }); }
+  });
+});
+
+
+describe("root pending workspace scope challenge", () => {
+  it.each(["legacy", "split", "hybrid"] as const)("cancellation cannot certify recovery before real old workspace settles layout=%s", async layout => {
+    const f = await producerFixture(layout), run = await preparedProduct(f, "feature"), gate = heldPause();
+    const real = f.app.getSnapshotState.bind(f.app); let workspaceSettled = false;
+    vi.spyOn(f.app, "getSnapshotState").mockImplementationOnce(async (...args) => {
+      const result = await real(...args); gate.enter(); await gate.held; workspaceSettled = true; return result;
+    });
+    const before = history(f.source), pending = run.start().catch(error => error);
+    await gate.entered; await run.cancel(); const cancelled = await pending;
+    expect(cancelled).toBeDefined(); expect(run.execution().actual.threadId).toBe(-1); expect(run.execution().post).not.toHaveBeenCalled();
+    let finished = false; const recovery = recover(heldStoreRemoteRecovery(f.app)).then(value => { finished = true; return value; });
+    try {
+      await new Promise(resolve => setTimeout(resolve, 75));
+      expect(workspaceSettled).toBe(false);
+      expect(finished, "old actual workspace Promise remains pending after bounded cancellation").toBe(false);
+    } finally { gate.release(); await recovery; }
+    expect(workspaceSettled).toBe(true); expect(history(f.source)).toBe(before); expect(run.execution().post).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("root pending semantic workspace scope challenge", () => {
+  it.each(["legacy", "split", "hybrid"] as const)("semantic cancellation retains actual preparation work layout=%s", async layout => {
+    const f = await producerFixture(layout), run = productFlows(f, "semantic"), gate = heldPause();
+    const real = f.app.getSnapshotState.bind(f.app); let workspaceSettled = false;
+    vi.spyOn(f.app, "getSnapshotState").mockImplementationOnce(async (...args) => {
+      const result = await real(...args); gate.enter(); await gate.held; workspaceSettled = true; return result;
+    });
+    const before = history(f.source), pending = run.semantic!.prepare(f.request).catch(error => error);
+    await gate.entered; await run.semantic!.cancel(); await pending;
+    expect(run.execution().actual.threadId).toBe(-1); expect(run.execution().post).not.toHaveBeenCalled();
+    let finished = false; const recovery = recover(heldStoreRemoteRecovery(f.app)).then(value => { finished = true; return value; });
+    try {
+      await new Promise(resolve => setTimeout(resolve, 75)); expect(workspaceSettled).toBe(false);
+      expect(finished, "old actual semantic workspace Promise remains pending after cancellation").toBe(false);
+    } finally { gate.release(); await recovery; }
+    expect(workspaceSettled).toBe(true); expect(history(f.source)).toBe(before); expect(run.execution().post).not.toHaveBeenCalled();
+  });
+});
+
+describe("raw producer asynchronous settlement", () => {
+  it.each(productCases.flatMap(value => ["before-read", "after-read"].flatMap(cut => ["cancel", "timeout"].map(stop => ({ ...value, cut, stop })))))("$purpose $stop retains raw workspace at $cut layout=$layout", async ({ layout, purpose, cut, stop }) => {
+    const f = await producerFixture(layout), started = purpose === "feature" ? await preparedProduct(f, purpose) : null, run = started ?? productFlows(f, purpose), gate = heldPause(), before = history(f.source), real = f.app.getSnapshotState.bind(f.app); let settled = false, reads = 0;
+    vi.spyOn(f.app, "getSnapshotState").mockImplementationOnce(async (...args) => {
+      if (cut === "before-read") { gate.enter(); await gate.held; }
+      const result = await real(...args); reads++;
+      if (cut === "after-read") { gate.enter(); await gate.held; }
+      settled = true; return result;
+    });
+    if (stop === "timeout") vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date", "performance"] });
+    const pending = (started ? started.start() : run.semantic!.prepare(f.request)).catch(error => error); await gate.entered;
+    if (stop === "timeout") await vi.advanceTimersByTimeAsync(purpose === "feature" ? 90_001 : 30_001);
+    else if (started) await started.cancel(); else await run.semantic!.cancel();
+    const outcome = await pending; expect(outcome).toBeDefined(); if (stop === "timeout") expect(outcome).toHaveProperty("code", "TIMEOUT"); vi.useRealTimers();
+    expect(settled).toBe(false); expect(reads).toBe(cut === "before-read" ? 0 : 1); expect(run.execution().actual.threadId).toBe(-1); expect(run.execution().post).not.toHaveBeenCalled();
+    let finished = false; const recovery = recover(heldStoreRemoteRecovery(f.app)).then(value => { finished = true; return value; });
+    try { await new Promise(resolve => setTimeout(resolve, 75)); expect(finished).toBe(false); expect(settled).toBe(false); expect(history(f.source)).toBe(before); }
+    finally { gate.release(); await recovery; }
+    expect(settled).toBe(true); expect(reads).toBe(1); expect(history(f.source)).toBe(before); expect(run.execution().post).not.toHaveBeenCalled();
+  });
+  it.each(["legacy", "split", "hybrid"] as const)("raw credential read continues occupying scope after cancellation layout=%s", async layout => {
+    const f = await producerFixture(layout), run = await preparedProduct(f, "feature"), gate = heldPause(), old = history(f.source); let settled = false;
+    run.credentials.mockImplementationOnce(async () => { gate.enter(); await gate.held; settled = true; return { credential: "fixture-only", revision: 1 }; });
+    const pending = run.start().catch(error => error); await gate.entered; await run.cancel(); await pending; expect(settled).toBe(false); expect(run.execution().post).not.toHaveBeenCalled();
+    let finished = false; const recovery = recover(heldStoreRemoteRecovery(f.app)).then(value => { finished = true; return value; });
+    try { await new Promise(resolve => setTimeout(resolve, 75)); expect(finished).toBe(false); }
+    finally { gate.release(); await recovery; }
+    expect(settled).toBe(true); expect(history(f.source)).toBe(old); expect(run.credentials).toHaveBeenCalledTimes(1); expect(run.execution().post).not.toHaveBeenCalled();
+  });
+});
+
+describe("raw semantic validator and adapter settlement", () => {
+  it.each(["legacy", "split", "hybrid"].flatMap(layout => ["validator", "adapter"].map(phase => ({ layout: layout as "legacy" | "split" | "hybrid", phase }))))("cancel retains actual $phase and prepare budget layout=$layout", async ({ layout, phase }) => {
+    const f = await producerFixture(layout), run = productFlows(f, "semantic"), gate = heldPause(), old = history(f.source);
+    const preparations = (f.source as unknown as { semanticPreparations: { validate(input: unknown): Promise<unknown> } }).semanticPreparations, realValidate = preparations.validate.bind(preparations); let validated = false, held = false, settled = false;
+    vi.spyOn(preparations, "validate").mockImplementationOnce(async input => {
+      const result = await realValidate(input); validated = true;
+      if (phase === "validator") { gate.enter(); await gate.held; settled = true; }
+      return result;
+    });
+    if (phase === "adapter") { const realDigest = crypto.subtle.digest.bind(crypto.subtle); vi.spyOn(crypto.subtle, "digest").mockImplementation(async (...args) => { const result = await realDigest(...args); if (validated && !held) { held = true; gate.enter(); await gate.held; settled = true; } return result; }); }
+    const pending = run.semantic!.prepare(f.request).catch(error => error); await gate.entered; await run.semantic!.cancel(); await pending; expect(settled).toBe(false);
+    const next = productFlows(f, "semantic"); await expect(next.semantic!.prepare(f.request)).rejects.toHaveProperty("code", "BUSY"); expect(next.execution().post).not.toHaveBeenCalled();
+    let finished = false; const recovery = recover(heldStoreRemoteRecovery(f.app)).then(value => { finished = true; return value; });
+    try { await new Promise(resolve => setTimeout(resolve, 75)); expect(finished).toBe(false); expect(history(f.source)).toBe(old); }
+    finally { gate.release(); await recovery; }
+    expect(settled).toBe(true); expect(history(f.source)).toBe(old); expect(run.execution().post).not.toHaveBeenCalled(); expect(raw(f.authority).prepare("SELECT * FROM remote_provider_lease").all()).toEqual([]);
+  });
+});

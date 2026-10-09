@@ -83,7 +83,10 @@ export interface ConsumedSemanticPreparation {
   readonly bodyDigest: string; readonly bodyBytes: number; readonly responsesPreparation: SemanticResponsesPreparation;
   readonly provider: "openai"; readonly model: string; readonly outputTokens: number; readonly preparedReference: PreparedSemanticBinding;
 }
+/** Internal async accounting only; never grants SQL, source or native-stop authority. */
+export interface SemanticAsyncTracker { track<T>(work: () => Promise<T>): Promise<T> }
 interface Prepared {
+  tracker?: SemanticAsyncTracker;
   request: OwnershipSemanticPrepareRequest; authority: GraphStore; settings: GraphStore; main: SemanticMainCapture; identity: GlobalIdentity;
   capture: Capture; adapter: SemanticPromptPreparation; adapterRequestDigest: string;
   responses: SemanticResponsesPreparation; responsesPreimage: string;
@@ -139,14 +142,19 @@ export class OwnershipSemanticPreparationStore {
       || digest(prepared.responses.body) !== prepared.responses.bodyDigest || Buffer.byteLength(prepared.responses.body, "utf8") !== prepared.responses.requestBytes
       || prepared.responses.requestBytes > 65536) fail();
   }
-  async prepare(raw: OwnershipSemanticPrepareRequest, authority: GraphStore, settings: GraphStore, signal: AbortSignal): Promise<PreparedSemanticBinding> {
+  private step<T>(work: () => Promise<T>, signal: AbortSignal, tracker?: SemanticAsyncTracker): Promise<T> {
+    checkSemanticAbort(signal);
+    const pending = tracker ? tracker.track(() => { checkSemanticAbort(signal); return work(); }) : work();
+    return awaitSemanticStep(pending, signal);
+  }
+  async prepare(raw: OwnershipSemanticPrepareRequest, authority: GraphStore, settings: GraphStore, signal: AbortSignal, tracker?: SemanticAsyncTracker): Promise<PreparedSemanticBinding> {
     try {
       this.open(); const request = captureSemanticPrepareRequest(raw); checkSemanticAbort(signal);
       const main = structuredClone(this.ports!.main.capture(request, authority, settings, this.owner));
       const identity = authority.withOwnershipSemanticAuthorityLock(() => this.identity(request, authority, settings));
       if (!equal(main.reference, { repositoryId: request.repositoryId, snapshotId: request.snapshotId, activation: identity.activation.activation })) fail("CONTEXT_CHANGED");
       const checkWorkspace = async () => {
-        const state = await awaitSemanticStep(this.ports!.main.checkWorkspace(request, signal), signal);
+        const state = await this.step(() => this.ports!.main.checkWorkspace(request, signal), signal, tracker);
         if (state.status !== "current") fail("NOT_CURRENT"); this.open();
         this.ports!.main.assert(main, request, authority, settings, this.owner);
       };
@@ -154,9 +162,9 @@ export class OwnershipSemanticPreparationStore {
       const captured = this.db.transaction(() => this.capture(request.attemptId)).deferred();
       if (captured.capsule.attempt.repositoryId !== request.repositoryId || captured.capsule.attempt.snapshotId !== request.snapshotId || !captured.capsule.material.current
         || captured.capsule.material.activation !== identity.activation.activation) fail("NOT_CURRENT");
-      const semanticPackage = await awaitSemanticStep(this.validate(captured.capsule), signal);
-      const responses = await awaitSemanticStep(this.ports!.adapter({ semanticPackage, submittedAnswer: captured.capsule.attempt.semanticText,
-        model: identity.provider.model!, maxOutputTokens: identity.provider.outputTokens }), signal);
+      const semanticPackage = await this.step(() => this.validate(captured.capsule), signal, tracker);
+      const responses = await this.step(() => this.ports!.adapter({ semanticPackage, submittedAnswer: captured.capsule.attempt.semanticText,
+        model: identity.provider.model!, maxOutputTokens: identity.provider.outputTokens }), signal, tracker);
       const adapter = responses.prepared;
       const bytes = Buffer.byteLength(adapter.serializedRequest, "utf8");
       if (bytes > 65536 || adapter.requestBytes !== bytes) fail("REQUEST_TOO_LARGE");
@@ -172,7 +180,7 @@ export class OwnershipSemanticPreparationStore {
         || fullBody.instructions !== body.systemInstructions || !equal(fullBody.input, [{ role: "user", content: [{ type: "input_text", text: canonicalJson({ protocolVersion: body.protocolVersion, data: body.data }) }] }])
         || fullBody.text?.format?.type !== "json_schema" || fullBody.text.format.name !== "xray_ownership_semantic_assessment_v1" || fullBody.text.format.strict !== true) fail();
       await checkWorkspace();
-      const prepared: Prepared = { request, authority, settings, main, identity, capture: captured, adapter,
+      const prepared: Prepared = { ...(tracker ? { tracker } : {}), request, authority, settings, main, identity, capture: captured, adapter,
         responses, responsesPreimage: canonicalJson(responses),
         adapterRequestDigest: digest(adapter.serializedRequest), assessmentPackageId: semanticPackage.assessmentPackageId, semanticPackage: structuredClone(semanticPackage), signal, expiresAt: Date.now() + SEMANTIC_PREPARATION_TIMEOUT_MS };
       this.db.transaction(() => this.current(prepared)).deferred();
@@ -205,10 +213,10 @@ export class OwnershipSemanticPreparationStore {
     } catch (error) { throw semanticPreparationFailure(error); }
   }
 
-  async prepareReservation(raw: OwnershipSemanticPrepareRequest, authority: GraphStore, settings: GraphStore, signal: AbortSignal): Promise<PreparedSemanticReservation> {
+  async prepareReservation(raw: OwnershipSemanticPrepareRequest, authority: GraphStore, settings: GraphStore, signal: AbortSignal, tracker?: SemanticAsyncTracker): Promise<PreparedSemanticReservation> {
     // Reuse the actual compiled full-body validation, then move its private material
     // into an independent map. The intermediate Q3 token never leaves this class.
-    const old = await this.prepare(raw, authority, settings, signal);
+    const old = await this.prepare(raw, authority, settings, signal, tracker);
     const prepared = this.#prepared.get(old); this.#prepared.delete(old);
     if (!prepared) fail("INVALID_RECEIPT");
     try {
@@ -257,7 +265,7 @@ export class OwnershipSemanticPreparationStore {
       semanticPackage: prepared.semanticPackage,
       submittedAnswer: prepared.capture.capsule.attempt.semanticText,
       checkWorkspace: async () => {
-        const state = await awaitSemanticStep(this.ports!.main.checkWorkspace(prepared.request, prepared.signal), prepared.signal);
+        const state = await this.step(() => this.ports!.main.checkWorkspace(prepared.request, prepared.signal), prepared.signal, prepared.tracker);
         if (state.status !== "current") fail("NOT_CURRENT"); this.open();
       },
       begin: () => { prepared.expiresAt = Date.now() + 90_000; },

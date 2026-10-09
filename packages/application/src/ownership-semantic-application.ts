@@ -1,4 +1,5 @@
 import { Worker } from "node:worker_threads";
+import { assertRemoteProducerContext, admitRemoteProducer, stopRemoteProducer, remoteProducerWorker, executeRemoteProducer, trackRemoteProducer, type RemoteProducerPort } from "./remote-recovery-capability.js";
 import { types } from "node:util";
 import { remoteFailureCodeSchema, type OwnershipSemanticPrepareRequest, type OwnershipSemanticResultEnvelope, type RemoteFailureCode } from "@project-xray/contracts";
 import { captureSemanticPrepareRequest, OwnershipSemanticPreparationError, SEMANTIC_PREPARATION_TIMEOUT_MS,
@@ -34,10 +35,12 @@ export class OwnershipSemanticApplication {
   #closed = false; #slot: Slot | null = null;
   constructor(private readonly authority: GraphStore,
     private readonly stores: (request: OwnershipSemanticPrepareRequest) => { source: GraphStore; settings: GraphStore },
-    private readonly execution?: OwnershipSemanticExecutionPorts) {}
+    private readonly execution?: OwnershipSemanticExecutionPorts, private readonly producer?: RemoteProducerPort) {}
+  private asyncWork<T>(work: () => Promise<T>): Promise<T> { return this.producer ? trackRemoteProducer(this.producer, work) : work(); }
   private clearWaits(slot: Slot): void { clearTimeout(slot.timer); if (slot.poll) clearInterval(slot.poll); if (slot.deadline) clearTimeout(slot.deadline); }
   private stopWorker(slot: Slot): Promise<number> {
     if (!slot.worker) return Promise.reject(new OwnershipSemanticExecutionError("POLICY_INVALID"));
+    if (this.producer) return slot.stopping ??= stopRemoteProducer(this.producer).then(() => 0);
     return slot.stopping ??= Worker.prototype.terminate.call(slot.worker);
   }
   private discard(slot: Slot): void {
@@ -62,7 +65,7 @@ export class OwnershipSemanticApplication {
     const slot: Slot = { source, controller, detach: () => signal?.removeEventListener("abort", abort), timer: setTimeout(() => controller.abort(new OwnershipSemanticPreparationError("TIMEOUT")), SEMANTIC_PREPARATION_TIMEOUT_MS), starting: false, attempted: false, committed: false, completed: false, released: false, activeOperations: 0 };
     this.#slot = slot;
     try {
-      const token = await source.prepareOwnershipSemanticReservation(request, this.authority, settings, controller.signal);
+      const token = await source.prepareOwnershipSemanticReservation(request, this.authority, settings, controller.signal, this.producer ? { track: work => this.asyncWork(work) } : undefined);
       if (this.#closed || this.#slot !== slot || controller.signal.aborted) { source.revokeOwnershipSemanticReservationPreparation(token); throw new OwnershipSemanticExecutionError("CANCELLED"); }
       slot.token = token; clearTimeout(slot.timer); return token;
     } catch (error) { this.discard(slot); throw failure(error, "POLICY_INVALID"); }
@@ -70,7 +73,7 @@ export class OwnershipSemanticApplication {
   reserve(token: PreparedSemanticReservation): SemanticReservedMetadata {
     const slot = this.#slot;
     if (this.#closed || !slot || slot.token !== token || slot.reserved) throw new OwnershipSemanticExecutionError("POLICY_INVALID");
-    try { const result = slot.source.reserveOwnershipSemantic(token); delete slot.token; slot.reserved = result; return result; }
+    try { const result = slot.source.reserveOwnershipSemantic(token, this.producer ? { context: () => assertRemoteProducerContext(this.producer!), admit: work => admitRemoteProducer(this.producer!, work) } : undefined); delete slot.token; slot.reserved = result; return result; }
     catch (error) { this.discard(slot); throw failure(error, "POLICY_INVALID"); }
   }
   private owned(ticket: SemanticReservation): Slot {
@@ -93,17 +96,22 @@ export class OwnershipSemanticApplication {
   }
   async start(ticket: SemanticReservation): Promise<OwnershipSemanticResultEnvelope> {
     const slot = this.owned(ticket);
-    if (!this.execution) throw new OwnershipSemanticExecutionError("NOT_CONFIGURED");
+    if (!this.execution && !this.producer) throw new OwnershipSemanticExecutionError("NOT_CONFIGURED");
     if (slot.starting || slot.attempted) throw new OwnershipSemanticExecutionError("BUSY"); slot.starting = true; slot.activeOperations++;
     try {
       await slot.source.beginOwnershipSemanticExecution(ticket, prepared => {
         slot.attempted = true; slot.prepared = prepared;
         let worker: Worker;
-        try { worker = this.execution!.createWorker(prepared); }
+        try {
+          if (this.producer) {
+            worker = remoteProducerWorker(this.producer);
+            slot.response = executeRemoteProducer(this.producer, { purpose: "ownership-semantic-assessment", body: prepared.body, bodyDigest: prepared.bodyDigest }).then(raw => ({ raw }), error => ({ error: failure(error) }));
+          } else worker = this.execution!.createWorker(prepared);
+        }
         catch (error) { slot.executionFailure = failure(error); throw slot.executionFailure; }
         if (types.isPromise(worker)) void Promise.prototype.then.call(worker, undefined, () => undefined);
         if (types.isProxy(worker) || !(worker instanceof Worker)) { slot.executionFailure = new OwnershipSemanticExecutionError("PROVIDER_FAILED"); throw slot.executionFailure; } slot.worker = worker;
-        slot.response = new Promise<unknown>((resolve, reject) => {
+        if (!this.producer) slot.response = new Promise<unknown>((resolve, reject) => {
           worker.once("message", resolve); worker.once("error", () => reject(new OwnershipSemanticExecutionError("PROVIDER_FAILED")));
           worker.once("exit", () => reject(new OwnershipSemanticExecutionError("PROVIDER_FAILED")));
         }).then(raw => ({ raw }), error => ({ error: failure(error) }));
@@ -113,10 +121,12 @@ export class OwnershipSemanticApplication {
       const outcome = await slot.response!;
       if ("error" in outcome) throw outcome.error;
       if (this.#closed || slot.controller.signal.aborted) throw new OwnershipSemanticExecutionError(slot.cancelCode ?? "CANCELLED");
+      if (this.producer) assertRemoteProducerContext(this.producer);
       // Actual LLM validator uses the exact private WeakMap-bound prepared object,
       // captures raw message before await, and returns deeply frozen response data.
-      const response = await validatePreparedOwnershipSemanticResponse(slot.prepared!.prepared as PreparedOwnershipSemanticRequest, outcome.raw);
+      const response = await this.asyncWork(() => validatePreparedOwnershipSemanticResponse(slot.prepared!.prepared as PreparedOwnershipSemanticRequest, outcome.raw));
       if (this.#closed || slot.controller.signal.aborted) throw new OwnershipSemanticExecutionError(slot.cancelCode ?? "CANCELLED");
+      if (this.producer) assertRemoteProducerContext(this.producer);
       await slot.source.publishOwnershipSemanticExecution(ticket, response);
       await this.stopWorker(slot);
       slot.source.releaseOwnershipSemanticExecution(ticket, slot.worker!);
@@ -125,6 +135,7 @@ export class OwnershipSemanticApplication {
     } catch (error) {
       this.clearWaits(slot);
       const primary = slot.cancelCode ? new OwnershipSemanticExecutionError(slot.cancelCode) : slot.executionFailure ?? failure(error, slot.committed ? "INVALID_RESPONSE" : "PROVIDER_FAILED");
+      if (this.producer) { try { await stopRemoteProducer(this.producer); } catch { throw primary; } }
       if (!this.#closed) {
         let cleaned = false;
         try { slot.source.failOwnershipSemanticExecution(ticket, primary.code); cleaned = true; } catch { /* Preserve primary and occupation. */ }

@@ -616,14 +616,14 @@ export class GraphStore {
   revokeOwnershipSemanticBinding(token: PreparedSemanticBinding): void { this.semanticPreparations.revoke(token); }
   withOwnershipSemanticRevisions<T>(token: PreparedSemanticBinding, work: (receipt: SemanticRevisionReceipt) => T): T { return this.semanticPreparations.withRevisions(token, work); }
   consumeOwnershipSemanticRevision(receipt: SemanticRevisionReceipt) { return this.semanticPreparations.consume(receipt); }
-  prepareOwnershipSemanticReservation(request: import("@project-xray/contracts").OwnershipSemanticPrepareRequest, authority: GraphStore, settings: GraphStore, signal: AbortSignal): Promise<PreparedSemanticReservation> {
-    return this.semanticPreparations.prepareReservation(request, authority, settings, signal);
+  prepareOwnershipSemanticReservation(request: import("@project-xray/contracts").OwnershipSemanticPrepareRequest, authority: GraphStore, settings: GraphStore, signal: AbortSignal, tracker?: import("./ownership-semantic-preparation-store.js").SemanticAsyncTracker): Promise<PreparedSemanticReservation> {
+    return this.semanticPreparations.prepareReservation(request, authority, settings, signal, tracker);
   }
   revokeOwnershipSemanticReservationPreparation(token: PreparedSemanticReservation): void { this.semanticPreparations.revokeReservation(token); }
-  reserveOwnershipSemantic(token: PreparedSemanticReservation): SemanticReservedMetadata {
+  reserveOwnershipSemantic(token: PreparedSemanticReservation, producer?: import("./ownership-semantic-reservation-store.js").SemanticProducerWriteGate): SemanticReservedMetadata {
     try {
       const { authority, settings } = this.semanticPreparations.reservationStores(token);
-      const metadata = authority.semanticReservations.reserve(this.semanticPreparations, token, this, settings.database, this.database, this.semanticResults);
+      const metadata = authority.semanticReservations.reserve(this.semanticPreparations, token, this, settings.database, this.database, this.semanticResults, producer);
       this.reservationAuthorities.set(metadata.reservation, authority); return metadata;
     } finally { this.semanticPreparations.revokeReservation(token); }
   }

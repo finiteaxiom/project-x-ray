@@ -17,7 +17,11 @@ export interface SemanticReservedMetadata {
   readonly createdAt: string;
   readonly phase: "reserved";
 }
+/** Internal synchronous producer gate, independent of native execution types.
+ * Context refusal returns exactly undefined; admission preserves work's value. */
+export interface SemanticProducerWriteGate { context(): void; admit<T>(work: () => T): T }
 interface Reserved {
+  producer?: SemanticProducerWriteGate;
   identity: OwnershipSemanticCapturedIdentity;
   createdAt: string;
   source: GraphStore;
@@ -45,8 +49,22 @@ export class OwnershipSemanticReservationStore {
   private outside(databases: Database.Database[]): void {
     this.open(); if (databases.some(db => !db.open || db.inTransaction)) fail();
   }
+  private admitted<T>(producer: SemanticProducerWriteGate | undefined, work: () => T): T {
+    if (!producer) return work();
+    const check = () => { if (typeof producer.context !== "function" || producer.context() !== undefined) fail(); };
+    try {
+    check(); let called = false, value!: T;
+    const result = producer.admit(() => { if (called) fail(); called = true; check(); value = work(); return value; });
+    if (!called || result !== value || types.isPromise(result) || types.isProxy(result)) fail();
+    check(); return result;
+    } catch (error) { throw semanticPreparationFailure(error); }
+  }
   reserve(issuer: OwnershipSemanticPreparationStore, token: PreparedSemanticReservation,
-    source: GraphStore, settings: Database.Database, sourceDb: Database.Database, results?: OwnershipSemanticResultStore): SemanticReservedMetadata {
+    source: GraphStore, settings: Database.Database, sourceDb: Database.Database, results?: OwnershipSemanticResultStore, producer?: SemanticProducerWriteGate): SemanticReservedMetadata {
+    return this.admitted(producer, () => this.reserveOwned(issuer, token, source, settings, sourceDb, results, producer));
+  }
+  private reserveOwned(issuer: OwnershipSemanticPreparationStore, token: PreparedSemanticReservation,
+    source: GraphStore, settings: Database.Database, sourceDb: Database.Database, results?: OwnershipSemanticResultStore, producer?: SemanticProducerWriteGate): SemanticReservedMetadata {
     try {
       this.outside([this.db, settings, sourceDb]);
       // Deduplicate compatibility layouts while retaining global -> settings -> source order.
@@ -63,7 +81,7 @@ export class OwnershipSemanticReservationStore {
           const createdAt = tasks.reserve(material.identity);
           material.recheck();
           this.assertReserved(material.identity, createdAt);
-          return { identity: material.identity, createdAt, source, settings, sourceDb, material, results, starting: false, attempted: false };
+          return { ...(producer ? { producer } : {}), identity: material.identity, createdAt, source, settings, sourceDb, material, results, starting: false, attempted: false };
         }).immediate();
       } catch (error) { failed = true; throw error; }
       finally {
@@ -91,6 +109,10 @@ export class OwnershipSemanticReservationStore {
       || new OwnershipSemanticTaskStore(this.db, "global").read(identity.taskId)) fail();
   }
   cancel(ticket: SemanticReservation, source: GraphStore): void {
+    const saved = this.#tickets.get(ticket); if (!saved) fail();
+    return this.admitted(saved.producer, () => this.cancelOwned(ticket, source));
+  }
+  private cancelOwned(ticket: SemanticReservation, source: GraphStore): void {
     try {
       this.open(); const saved = this.#tickets.get(ticket);
       if (!saved || saved.source !== source || saved.attempted) fail();
@@ -112,6 +134,9 @@ export class OwnershipSemanticReservationStore {
   }
   /** Secondary read locks survive the actual authoritative outer COMMIT. */
   private locked<T>(saved: Reserved, work: () => T): T {
+    return this.admitted(saved.producer, () => this.lockedOwned(saved, work));
+  }
+  private lockedOwned<T>(saved: Reserved, work: () => T): T {
     this.outside([this.db, saved.settings, saved.sourceDb]);
     const held: Database.Database[] = []; let failed = false;
     try { return this.db.transaction(() => {
@@ -176,6 +201,10 @@ export class OwnershipSemanticReservationStore {
    * Caller handles resource exit separately; no error path releases a lease. */
   failExecution(ticket: SemanticReservation, source: GraphStore, code: RemoteFailureCode): void {
     const saved = this.saved(ticket, source);
+    return this.admitted(saved.producer, () => this.failExecutionOwned(ticket, source, code));
+  }
+  private failExecutionOwned(ticket: SemanticReservation, source: GraphStore, code: RemoteFailureCode): void {
+    const saved = this.saved(ticket, source);
     try {
       this.outside([this.db, saved.settings, saved.sourceDb]);
       this.db.transaction(() => {
@@ -194,6 +223,10 @@ export class OwnershipSemanticReservationStore {
     } catch (error) { throw semanticPreparationFailure(error); }
   }
   releaseExecution(ticket: SemanticReservation, source: GraphStore, worker: Worker): void {
+    const saved = this.saved(ticket, source);
+    return this.admitted(saved.producer, () => this.releaseExecutionOwned(ticket, source, worker));
+  }
+  private releaseExecutionOwned(ticket: SemanticReservation, source: GraphStore, worker: Worker): void {
     const saved = this.saved(ticket, source);
     // Native worker state, not a caller Boolean, Promise settlement, event emitted
     // by a fixture, abort signal, or mutable public threadId property.

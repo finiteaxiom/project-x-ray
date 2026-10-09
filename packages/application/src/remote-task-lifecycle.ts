@@ -1,6 +1,6 @@
 import { RemoteExplanationError, type SnapshotRef } from "@project-xray/contracts";
 import { type GraphStore, type RemoteRecoveryIssuer, type RemoteRecoverySource } from "@project-xray/graph";
-import { NativeRemoteRecoveryDomain, type RemoteParticipant, type RemotePurpose } from "./remote-recovery-capability.js";
+import { NativeRemoteRecoveryDomain, type RemoteParticipant, type RemotePurpose, type RemoteProducerPort } from "./remote-recovery-capability.js";
 import type { Worker } from "node:worker_threads";
 const lifecycleOwners = new WeakSet<GraphStore>();
 /** Internal native execution domain. Not an XRayApplication factory or IPC API;
@@ -16,6 +16,9 @@ export class RemoteTaskLifecycle {
     this.#issuer = authority.openRemoteRecoveryIssuer(); lifecycleOwners.add(authority);
   }
   create(owner: string, purposes: readonly RemotePurpose[], factory: () => Worker): RemoteParticipant { return this.#domain.create(owner, purposes, factory); }
+  producer(ticket: RemoteParticipant, contextVeto: () => void): RemoteProducerPort {
+    return this.#domain.producer(ticket, contextVeto, work => this.admit(ticket, work));
+  }
   retire(ticket: RemoteParticipant): void { this.#domain.retire(ticket); }
   operation<T>(ticket: RemoteParticipant, kind: "prepare" | "work", work: () => Promise<T>): Promise<T> { return this.#domain.operation(ticket, kind, work); }
   admit<T>(ticket: RemoteParticipant, work: () => T): T {
