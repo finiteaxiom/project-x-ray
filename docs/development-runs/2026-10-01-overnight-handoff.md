@@ -750,3 +750,23 @@ root Sol原20为1047/1047、349.22秒，main原20排除ignored staging为1047/10
 root按已审查生产者方案及实际desktop源码划下一必要S3-C/D完整后台接线，非新产品/第五批，计划2026-10-09-shared-recovery-desktop-integration.md SHA256CE503C46C42091A91241C24F90EA0AC1BC360CEEFC5C7752E73D8BFFAF2614DC。原Sol380全hash不变后仅同步新计划为381前像，baseline SHA2568DA9234F96E4771968C11E179C8B2BA9FECEEB28885BC9B20784BCC23036B820。限定11source及同名test、两有限配置、自有记录最多25，不需要不填数；全部graph/core/native/LLM/公开IPC/preload/UI/cache/migration/AGENTS/依赖冻结。
 
 已实际送达原Sol/gpt-6.1-sol/medium/5170；timeout0确认turn01a12073-0e26-76e1-aace-9a392df9a632 active/inProgress/error null、最新cursor e72a78e4-e5a5-4cc4-a1f2-bc049f9e1ee5:7；Luna idle冻结cursor cc7a604c-7723-40c7-aab7-eab12108d9bd:1。仅一个实际application/authority宿主，真正执行子Worker提前登记/main不凭RPC或宿主exit清lease，semantic仅严格私有无默认HTTP入口。未稳定交付不测试活动源，无重型窗口/GUI/网络/实际钥匙/隐私操作。定时实核ACTIVE/原15分钟/原target，有四批内工作继续；四批收尾或仅外部剩余时暂停，不启动第五批。
+
+
+2026-10-09本次Git实际回执：内部产品9f7bef8e33f28db6a78ace89c4964aa6c62f9358、协调记录983045fb91d273be0a5503a54904bace4c335c59。最初push返回remote ref锁冲突，独立ls-remote已确认远程为9f7bef8，未据错误返回称命令成功；随后普通push 9f7bef8→983045f exit0，独立ls-remote再次确认origin/main完整SHA983045fb91d273be0a5503a54904bace4c335c59。无force/分支合并/TLS设置改变。协调文档EOF空行导致cached diff --check首次失败，仅修本轮追加末尾空行后重核九文件精确范围通过再提交；源/断言不变。此回执随下一稳定切片归档，不为自身再循环提交。旧B2六行WIP及AGENTS原hash仍保持，非整个checkout干净。Sol下一S3-C/D实际已开工，Luna冻结，无新交付不作重复验证/周期播报。
+最新紧凑检查cursor：Sol e72a78e4-e5a5-4cc4-a1f2-bc049f9e1ee5:12，turn01a12073-0e26-76e1-aace-9a392df9a632仍active/inProgress/error null；381前像当前旧9/新7均在限定范围，范围外零改动，HEAD455d4ad保持。Luna cc7a604c-7723-40c7-aab7-eab12108d9bd:1仍idle。开发方报告首次轮换owner留下未登记owner、宿主失效改写终态两问题已自测修正；稳定后须独立核首次退休以及宿主丢失仍原T1/lease，不据5项自测记已验收。无稳定交付，不测试活动源。下轮携此实际cursor，不硬编码历史阶段。
+
+
+## 2026-10-10 S3-C/D稳定交付与独立验收继续
+
+root核381前像→388冻结交付，旧9/新7/372保持；由精确前像独立apply窄patch重建388全SHA一致，零换行例外，旧WIP完整保留。独立8文件94/94、38.49秒；额外退休DTO完整broker.close后T1/lease不变1/1、2.66秒，首次副本包解析零测试单列工具问题后修正导入通过。另仅授权Sol原artifact harness私有session/sequence包壳+自身记录，旧2/386保持，root核全hash/原3断言/5000ms及15000ms/反向check。详见2026-10-09-shared-recovery-desktop-independent-review。
+
+旧root原20会话7058失效无终态，不能记通过；冻结388hash再核一致后重取原20组合，日志/exit receipt持久到ignored desktop-review。两用途/三布局raw工作退休扩展、五包类型与本轮构建/产物仍待实际结果，未打开重型窗口/GUI/HTTP/凭据。S3-C/D尚未整批接受或main集成，Git HEAD983045fb/Sol455d4ad保持，无新Git写入；旧B2六行WIP和AGENTS原hash保持，新增规则0。
+
+最近实际紧凑游标Sol78b7bf13-6258-4f0c-a475-4126d20395e5:1，turn01a120fb-49db-7090-a23c-aa168ff0591b completed/error null/idle；Luna最新实际252a05f9-35a2-41f6-a33e-c739c9427f64:1/notLoaded，原交付不重复派发。两聊天冻结，有四批内本地检查继续；定时仍原ACTIVE/15分钟，非第五批，收尾或仅外部条件后暂停。
+
+
+## 2026-10-10 S3-C/D本地技术门已独立通过
+
+root原20完整重跑1047/1047、314.21秒exit0；先前7058失效无终态仍不补造结果。独立两用途×三布局实际raw workspace退休扩展6/6、3.49秒；原94/94与完整close后实际T1/lease不变1/1保持，五包tsc noEmit串行exit0。Sol已冻结idle后root单一技术窗口运行正常desktop build exit0、原artifact bootstrap1/1（1.23秒）及实际编译executor在自有fetch guard下7/7（1.57秒），守卫0调用、非生产HTTP/质量；三原业务断言及5000/15000ms不变。窗口已关闭，388源码hash全相同，未Electron/GUI/OS凭据/外发/发布。证据receipt4C13593282AEB6876CB017A5CF951E68222882718BB05119E8295A578A1EC3C9，详见shared-recovery-desktop-independent-review。
+
+后台源码/离线回归/Node产物技术门通过，不记生产接线整体验收或GUI完成。root实际main-vs-Sol差异显示主目录仍缺原B2实际后台链，下一必要本地动作是精确main接线及集成后技术复验，保留主目录contracts导出顺序、原缓存/analyzer等差异，禁止整份Sol index覆盖；GUI前不提交production接线，稳定后才派原Luna 1D UI。两开发线程仍冻结，无冲突派发、无第五批。AGENTS0、旧B2六行WIP保持；本轮产品尚未main集成/提交/合并/推送，协调记录Git动作另核实际SHA。四批仍有此本地依赖可推进，project-x-ray继续原ACTIVE/15分钟，不无限空等外部条件。
