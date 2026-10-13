@@ -1,0 +1,34 @@
+const fs = require("node:fs") as typeof import("node:fs");
+const child = require("node:child_process") as typeof import("node:child_process");
+import { describe, expect, it, vi } from "vitest";
+type Observation = { status: string; snapshotStatus: string; signatureStatus: string; identity: { volume: string; fileId: string }; bytesRead: number; bufferBytes: number; readCalls: number; sha256: string; heldHandles: number; peCapture: { version: number; fileBytes: number; dosHex: string; peOffset: number | null; peHex: string } };
+type Output = Omit<Observation,"peCapture"> & { pe: { peStatus: string; machine: string | null; architecture: string | null; issue: string | null } };
+const api = require("../scripts/windows-artifact-pe-capture.cjs") as { consumePeCapture(input: unknown): Output };
+function fixture(size=100, offset=64, machine=0x8664): Observation {
+  const dos=Buffer.alloc(Math.min(64,size));if(size>=64){dos.write("MZ");dos.writeUInt32LE(offset,60);}
+  const pe=Buffer.alloc(24);pe.write("PE\0\0",0,"ascii");pe.writeUInt16LE(machine,4);
+  const valid=size>=64&&offset>=64&&offset+24<=size;
+  return {status:"observed",snapshotStatus:"incomplete",signatureStatus:"not-evaluated",identity:{volume:"A".repeat(16),fileId:"B".repeat(32)},bytesRead:size,bufferBytes:1048576,readCalls:Math.ceil(size/1048576)+1,sha256:"c".repeat(64),heldHandles:4,peCapture:{version:1,fileBytes:size,dosHex:dos.toString("hex"),peOffset:valid?offset:null,peHex:valid?pe.toString("hex"):""}};
+}
+describe("bounded internal same-HANDLE PE DTO consumer",()=>{
+  it("imports without filesystem/process effects and exports one frozen pure entry",()=>{
+    const read=vi.spyOn(fs,"openSync"), loaderRead=vi.spyOn(fs,"readFileSync"), spawn=vi.spyOn(child,"spawn");
+    try {delete require.cache[require.resolve("../scripts/windows-artifact-pe-capture.cjs")];const loaded=require("../scripts/windows-artifact-pe-capture.cjs");expect(Object.keys(loaded)).toEqual(["consumePeCapture"]);expect(Object.isFrozen(loaded)).toBe(true);expect(read).not.toHaveBeenCalled();expect(spawn).not.toHaveBeenCalled();expect(loaderRead.mock.calls).toHaveLength(1);expect(loaderRead.mock.calls[0]![0]).toBe(require.resolve("../scripts/windows-artifact-pe-capture.cjs"));}finally{vi.restoreAllMocks();}
+  });
+  it.each([[0x8664,"8664","x64"],[0x14c,"014C","x86"],[0xaa64,"AA64","unknown"]] as const)("uses the real PE constructor for machine %i",(machine,hex,architecture)=>{const output=api.consumePeCapture(fixture(100,64,machine));expect(output.pe).toEqual({peStatus:"pe",machine:hex,architecture,issue:architecture==="unknown"?"unknown-machine":null});expect(output.snapshotStatus).toBe("incomplete");expect(output.signatureStatus).toBe("not-evaluated");});
+  it.each([0,13,63])("retains short-DOS semantics for %i bytes",size=>{expect(api.consumePeCapture(fixture(size)).pe).toEqual({peStatus:"unknown",machine:null,architecture:null,issue:"short-dos-header"});});
+  it.each([63,77,0xffffffff])("re-derives invalid or out-of-file offset %i",offset=>{expect(api.consumePeCapture(fixture(100,offset)).pe.issue).toBe(offset<64?"invalid-pe-header-offset":"pe-header-range-out-of-file");});
+  it("keeps non-PE and bad PE signature distinct",()=>{const non=fixture();non.peCapture.dosHex="00".repeat(64);non.peCapture.peOffset=null;non.peCapture.peHex="";expect(api.consumePeCapture(non).pe.peStatus).toBe("non-pe");const bad=fixture();bad.peCapture.peHex="00".repeat(24);expect(api.consumePeCapture(bad).pe.issue).toBe("pe-signature-mismatch");});
+  it.each([64,1048565,1048576,1048599,2147483624])("accepts exact bounded range at %i without whole-file allocation",offset=>{const input=fixture(Math.max(offset+24,100),offset);expect(api.consumePeCapture(input).pe.architecture).toBe("x64");});
+  it("captures all fields synchronously and strips raw material before returning frozen output",()=>{const input=fixture(),output=api.consumePeCapture(input);input.identity.fileId="D".repeat(32);input.peCapture.peHex="00".repeat(24);input.sha256="e".repeat(64);expect(output.identity.fileId).toBe("B".repeat(32));expect(output.pe.architecture).toBe("x64");expect(output.sha256).toBe("c".repeat(64));expect(Object.isFrozen(output)).toBe(true);expect(Object.isFrozen(output.identity)).toBe(true);expect(Object.isFrozen(output.pe)).toBe(true);expect(JSON.stringify(output)).not.toContain("dosHex");expect(JSON.stringify(output)).not.toContain("peHex");});
+  it.each(["root","capture","identity"])("rejects %s getters and proxies without executing them",which=>{for(const proxy of [false,true]){const input=fixture(),target=which==="root"?input:which==="capture"?input.peCapture:input.identity;const getter=vi.fn(()=>"private");if(proxy){const wrapped=new Proxy(target,{get:getter,ownKeys:getter as never});if(which==="root")expect(()=>api.consumePeCapture(wrapped)).toThrow("PE capture is invalid");else{if(which==="capture")input.peCapture=wrapped as Observation["peCapture"];else input.identity=wrapped as Observation["identity"];expect(()=>api.consumePeCapture(input)).toThrow("PE capture is invalid");}}else{Object.defineProperty(target,which==="root"?"sha256":which==="capture"?"dosHex":"volume",{enumerable:true,get:getter});expect(()=>api.consumePeCapture(input)).toThrow("PE capture is invalid");}expect(getter).not.toHaveBeenCalled();}});
+  it.each([
+    (o:Observation)=>{o.peCapture.version=2;}, (o:Observation)=>{o.peCapture.fileBytes++;}, (o:Observation)=>{o.peCapture.dosHex=o.peCapture.dosHex.toUpperCase();},
+    (o:Observation)=>{o.peCapture.dosHex+="00";}, (o:Observation)=>{o.peCapture.peHex=o.peCapture.peHex.slice(2);}, (o:Observation)=>{o.peCapture.peOffset=65;},
+    (o:Observation)=>{o.bytesRead=-1;}, (o:Observation)=>{o.bytesRead=2147483649;o.peCapture.fileBytes=o.bytesRead;}, (o:Observation)=>{o.readCalls=1;}, (o:Observation)=>{o.readCalls=o.bytesRead+2;},
+    (o:Observation)=>{o.bufferBytes=2048;}, (o:Observation)=>{o.heldHandles=66;}, (o:Observation)=>{o.identity.fileId="a".repeat(32);}, (o:Observation)=>{o.sha256="C".repeat(64);},
+    (o:Observation)=>{o.signatureStatus="verified";}, (o:Observation)=>{o.snapshotStatus="complete";}, (o:Observation)=>{Object.assign(o,{path:"private"});}, (o:Observation)=>{Object.assign(o.peCapture,{machine:"8664"});},
+    (o:Observation)=>{Object.defineProperty(o,"sha256",{value:o.sha256,enumerable:false});}, (o:Observation)=>{Object.assign(o,{[Symbol("extra")]:true});},
+  ])("rejects malformed internal captures with one fixed error",mutate=>{const o=fixture();mutate(o);try{api.consumePeCapture(o);throw Error("unexpected-success");}catch(error){expect(error).toMatchObject({code:"PE_CAPTURE_INVALID",message:"PE capture is invalid"});}});
+  it("does not treat a manually fabricated hash/identity as authenticated source",()=>{const output=api.consumePeCapture(fixture());expect(Object.keys(output)).not.toContain("sourceAuthenticated");expect(output.snapshotStatus).toBe("incomplete");});
+});

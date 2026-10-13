@@ -13,7 +13,7 @@ import {
   readProjectFile, readSecureProjectFile, sourceFingerprint, stableId, throwIfAborted, type LanguageAnalyzer, type SecureReadScope, type SecureReadTestHooks,
 } from "@project-xray/analyzer-core";
 import { TypeScriptAnalyzer } from "@project-xray/analyzer-typescript";
-import { PythonAnalyzer } from "@project-xray/analyzer-python";
+import { PythonAnalyzer, PythonParseReuseSession, type PythonParseWork } from "@project-xray/analyzer-python";
 import { captureComparison, cloneRepository, comparisonStateFingerprint, getGitHead, type CapturedSide } from "@project-xray/git";
 import { GraphStore, overviewFromSnapshot, queryFlow, searchNodes, type NavigationValiditySample } from "@project-xray/graph";
 import { buildOwnershipRubricCapsule, createQuestions, createOwnershipQuestionGeneratorPort, gradeAnswer, type OwnershipRubricSource } from "@project-xray/ownership";
@@ -31,7 +31,7 @@ export interface XRayApplicationOptions {
   cacheRoot: string;
   onProgress?: (progress: IndexProgress) => void;
 }
-export interface IndexOptions { signal?: AbortSignal; onProgress?: (progress: IndexProgress) => void; testOnlySecureReadHooks?: SecureReadTestHooks }
+export interface IndexOptions { testOnlyDisablePythonParseCache?: boolean; onIndexWork?: (work: PythonParseWork & { capturedFiles: number; verifiedFiles: number; decodedBytes: number; typeScriptProgramCalls: number; typeScriptInputFiles: number; graphRowsPrepared: number; finalizeMs: number; graphPublicationMs: number; cachePublicationMs: number; cachePublished: boolean }) => void; signal?: AbortSignal; onProgress?: (progress: IndexProgress) => void; testOnlySecureReadHooks?: SecureReadTestHooks }
 export interface ComparisonOptions { signal?: AbortSignal; onProgress?: (progress: { phase: "capturing" | "analyzing-left" | "analyzing-right" | "diffing" | "propagating" | "persisting"; completed: number; total: number; currentFile?: string }) => void; testOnlySecureReadHooks?: SecureReadTestHooks }
 
 interface IndexedSource { absolutePath: string; projectPath: string; content: string; contentHash: string; language: string }
@@ -482,6 +482,8 @@ export class XRayApplication {
     const configurationHash = configurationFingerprint(sourceFingerprint(sources.filter((item) => isAnalysisConfig(item.projectPath)).map((item) => ({ path: item.projectPath, content: item.content }))), policy);
     const analysisIdentity = { graphIrVersion: GRAPH_IR_VERSION, analyzerVersions, configurationHash, sourceFingerprint: sourceIdentity, ignorePolicy: policy };
     const snapshotId = stableId(repositoryId, sourceIdentity, GRAPH_IR_VERSION, JSON.stringify(analyzerVersions), configurationHash);
+    const parseScope = { repositoryId, rootPath: safeRoot, configurationHash, ignoreRevision: settings.revision, analyzerVersion: this.analyzers.find(item => item instanceof PythonAnalyzer)!.version };
+    const parseReuse = new PythonParseReuseSession(parseScope, options.testOnlyDisablePythonParseCache ? [] : settingsStore.loadAnalysisParseCache({ repositoryId, rootPath: safeRoot, configurationHash, sources: sources.filter(s => s.language === "Python").map(s => ({ filePath: s.projectPath, contentHash: s.contentHash })) }), !options.testOnlyDisablePythonParseCache);
     const rootNodeId = stableId(repositoryId, "repository-root");
     const nodes: GraphNode[] = [{ id: rootNodeId, snapshotId, kind: "repository", name: basename(safeRoot), qualifiedName: safeRoot, metadata: { sourceType } }];
     const edges: GraphEdge[] = []; const evidence: Evidence[] = []; const moduleIds = new Map<string, string>();
@@ -508,7 +510,7 @@ export class XRayApplication {
     }
     throwIfAborted(options.signal);
     if (pythonSources.length > 0) {
-      try { const result = await (this.analyzers.find((item): item is PythonAnalyzer => item instanceof PythonAnalyzer)!).analyzeProject(pythonSources, context); nodes.push(...result.nodes); edges.push(...result.edges); evidence.push(...result.evidence); failures.push(...(result.failures ?? []).map((failure) => failureFromAnalyzerResult(safeRoot, failure, "PYTHON_ANALYSIS_FAILED"))); }
+      try { const result = await (this.analyzers.find((item): item is PythonAnalyzer => item instanceof PythonAnalyzer)!).analyzeProject(pythonSources, context, parseReuse); nodes.push(...result.nodes); edges.push(...result.edges); evidence.push(...result.evidence); failures.push(...(result.failures ?? []).map((failure) => failureFromAnalyzerResult(safeRoot, failure, "PYTHON_ANALYSIS_FAILED"))); }
       catch (error) { if (isAbort(error)) throw error; failures.push(failureFromError(safeRoot, "<Python Project>", error, "PYTHON_ANALYSIS_FAILED")); }
     }
 
@@ -535,10 +537,20 @@ export class XRayApplication {
     if (drift.added.length || drift.removed.length || drift.changed.length || verified.discovery.failures.length) throw new SafeDiagnosticError("INDEX_SOURCE_CHANGED");
     throwIfAborted(options.signal);
     progress?.({ phase: "persisting", completed: sources.length, total: sources.length });
-    const store = this.storeForRepository(repositoryId);
-    const published = store.saveSnapshot(finalizeAnalysisSnapshot(snapshot), sources.map((item) => ({ filePath: item.projectPath, contentHash: item.contentHash, language: item.language, content: item.content })), true, settings.revision, this.currentActivation);
     throwIfAborted(options.signal);
-    this.snapshotStores.set(published.snapshotId, store); this.current = overviewFromSnapshot(published); this.currentActivation = store.getCurrentActivation(); this.semanticGeneration++; this.clearQuestions();
+    if (this.ownershipClosed) throw new Error("Application closed");
+    const store = this.storeForRepository(repositoryId);
+    const finalizeStart = performance.now(), finalized = finalizeAnalysisSnapshot(snapshot), finalizeMs = performance.now() - finalizeStart;
+    const publicationStart = performance.now();
+    const published = store.saveSnapshot(finalized, sources.map((item) => ({ filePath: item.projectPath, contentHash: item.contentHash, language: item.language, content: item.content })), true, settings.revision, this.currentActivation);
+    const graphPublicationMs = performance.now() - publicationStart;
+    const publicationActivation = store.getSnapshotPublicationActivation(published);
+    const activation = publicationActivation ?? store.getCurrentActivation();
+    this.snapshotStores.set(published.snapshotId, store); this.current = overviewFromSnapshot(published); this.currentActivation = activation; this.semanticGeneration++; this.clearQuestions();
+    const cacheStart = performance.now();
+    let cachePublished = false;
+    try { cachePublished = options.testOnlyDisablePythonParseCache || publicationActivation === undefined ? false : store.publishAnalysisParseCache({ repositoryId, snapshotId: published.snapshotId, activation: publicationActivation, configurationHash, ignoreRevision: settings.revision, records: parseReuse.records() }); } catch { /* Cache is disposable after the graph commit. */ }
+    try { options.onIndexWork?.({ ...parseReuse.stats, capturedFiles: discovery.files.length, verifiedFiles: verified.discovery.files.length, decodedBytes: sources.reduce((n, item) => n + Buffer.byteLength(item.content), 0) + verified.sources.reduce((n, item) => n + Buffer.byteLength(item.content), 0), typeScriptProgramCalls: typeScriptSources.length ? 1 : 0, typeScriptInputFiles: typeScriptSources.length, graphRowsPrepared: snapshot.nodes.length + snapshot.edges.length + snapshot.evidence.length + snapshot.sourceFiles.length, finalizeMs, graphPublicationMs, cachePublicationMs: performance.now() - cacheStart, cachePublished }); } catch { /* Optional observation cannot reverse a committed graph. */ }
     return published;
     } finally { secureScope.close(); }
   }

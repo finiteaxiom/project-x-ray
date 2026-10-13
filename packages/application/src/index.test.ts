@@ -330,8 +330,8 @@ describe("XRayApplication 可信快照闭环", () => {
         expect(snapshot.evidence.find((item) => item.id === call?.evidenceId)?.span).toMatchObject({ filePath: "nested.ts", startLine: callLine, startColumn: 2, endLine: callLine, endColumn: 10 });
       }
       const versions = snapshot.analysisIdentity.analyzerVersions;
-      expect(versions["typescript-program"]).toMatch(/\+xray\.3$/); expect(versions["python-ast"]).toBe("2.1.1");
-      const previousPythonVersion = { ...versions, "python-ast": "2.1.0" };
+      expect(versions["typescript-program"]).toMatch(/\+xray\.3$/); expect(versions["python-ast"]).toBe("2.2.0");
+      const previousPythonVersion = { ...versions, "python-ast": "2.1.1" };
       const previousPythonSnapshotId = stableId(snapshot.repositoryId, snapshot.analysisIdentity.sourceFingerprint, snapshot.analysisIdentity.graphIrVersion, JSON.stringify(previousPythonVersion), snapshot.analysisIdentity.configurationHash);
       expect(snapshot.snapshotId).not.toBe(previousPythonSnapshotId);
       const previousVersions = { ...versions, "typescript-program": versions["typescript-program"]!.replace("+xray.3", "+xray.2"), "python-ast": "2.0.0" };

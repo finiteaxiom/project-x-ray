@@ -129,7 +129,7 @@ function Close-XRayArtifactSession($Session) {
     if ($failed -or -not $Session.released) { throw 'HANDLE_CLOSE_UNCONFIRMED' }
 }
 
-function Open-XRayArtifactSession([string]$Path, [long]$MaxBytes = 2147483648) {
+function Open-XRayArtifactSession([string]$Path, [long]$MaxBytes = 2147483648, [bool]$DirectoryLeaf = $false) {
     # No path normalization, prefix comparison, link following, or share fallback.
     if ($Path -notmatch '^[A-Za-z]:\\[^\\]' -or $Path.Contains('/') -or $Path.Length -gt 32760 -or
         $MaxBytes -lt 0 -or $MaxBytes -gt 2147483648) { throw 'PATH_REJECTED' }
@@ -152,7 +152,7 @@ function Open-XRayArtifactSession([string]$Path, [long]$MaxBytes = 2147483648) {
         $rootMetadata = Get-XRayHandleMetadata $parent $true
         $session.chain.Add($rootMetadata)
         for ($index = 0; $index -lt $components.Count; $index++) {
-            $directory = $index -lt $components.Count - 1
+            $directory = $DirectoryLeaf -or $index -lt $components.Count - 1
             $parent = Open-XRayRelativeHandle $parent $components[$index] $directory
             $session.handles.Add($parent)
             $metadata = Get-XRayHandleMetadata $parent $directory
@@ -170,15 +170,18 @@ function Open-XRayArtifactSession([string]$Path, [long]$MaxBytes = 2147483648) {
     }
 }
 
-function Get-XRayArtifactObservation($Session) {
-    if ($Session.released -or $Session.readStarted -or $Session.leaf -eq [IntPtr]::Zero) { throw 'SESSION_INVALID' }
+function Get-XRayArtifactObservation($Session, [bool]$CapturePeHeader = $false) {
+    if ($Session.released -or $Session.readStarted -or $Session.before.directory -or $Session.leaf -eq [IntPtr]::Zero) { throw 'SESSION_INVALID' }
     $Session.readStarted = $true
     $bufferSize = 1048576
     $buffer = [IntPtr]::Zero; $bytes = $null; $hash = $null
     $total = [long]0; $reads = [long]0
+    # Internal opt-in capture; no second open, seek, or whole-file buffer.
+    $dos = $null; $pe = $null; $dosCopied = 0; $peCopied = 0; $peOffset = $null
     try {
         $buffer = New-XRayZeroBuffer $bufferSize
         $bytes = [byte[]]::new($bufferSize)
+        if ($CapturePeHeader) { $dos = [byte[]]::new(64); $pe = [byte[]]::new(24) }
         $hash = [Security.Cryptography.SHA256]::Create()
         $before = Get-XRayHandleMetadata $Session.leaf $false
         if (($before | ConvertTo-Json -Compress) -cne ($Session.before | ConvertTo-Json -Compress)) { throw 'FILE_CHANGED' }
@@ -190,6 +193,28 @@ function Get-XRayArtifactObservation($Session) {
             if ($count -lt 0 -or $count -gt $bufferSize -or $total -gt $Session.maxBytes - $count -or $total -gt $before.length - $count) { throw 'SIZE_OR_LENGTH_CHANGED' }
             if ($count -eq 0) { break }
             [Runtime.InteropServices.Marshal]::Copy($buffer, $bytes, 0, [int]$count)
+            if ($CapturePeHeader) {
+                if ($dosCopied -lt 64) {
+                    $copyCount = [int][Math]::Min(64 - $dosCopied, $count)
+                    [Array]::Copy($bytes, 0, $dos, $dosCopied, $copyCount)
+                    $dosCopied += $copyCount
+                    if ($dosCopied -eq 64 -and $dos[0] -eq 0x4d -and $dos[1] -eq 0x5a) {
+                        $candidate = [long][BitConverter]::ToUInt32($dos, 60)
+                        # Subtraction avoids overflow and binds the range to the held leaf length.
+                        if ($candidate -ge 64 -and $before.length -ge 24 -and $candidate -le $before.length - 24) { $peOffset = $candidate }
+                    }
+                }
+                if ($null -ne $peOffset) {
+                    $copyStart = [long][Math]::Max($total, $peOffset)
+                    $copyEnd = [long][Math]::Min($total + $count, $peOffset + 24)
+                    if ($copyEnd -gt $copyStart) {
+                        if ($peCopied -ne $copyStart - $peOffset) { throw 'READ_FAILED' }
+                        $copyCount = [int]($copyEnd - $copyStart)
+                        [Array]::Copy($bytes, [int]($copyStart - $total), $pe, $peCopied, $copyCount)
+                        $peCopied += $copyCount
+                    }
+                }
+            }
             [void]$hash.TransformBlock($bytes, 0, [int]$count, $null, 0)
             $total += $count
         }
@@ -204,19 +229,32 @@ function Get-XRayArtifactObservation($Session) {
                 $parentAfter.attributes -ne $parentBefore.attributes) { throw 'FILE_CHANGED' }
             # Directory times/length may change from member creation: no directory snapshot claim.
         }
-        return [pscustomobject]@{
+        $observation = [pscustomobject]@{
             status = 'observed'; snapshotStatus = 'incomplete'; signatureStatus = 'not-evaluated'
             identity = [pscustomobject]@{ volume = $before.volume; fileId = $before.fileId }
             bytesRead = $total; bufferBytes = $bufferSize; readCalls = $reads
             sha256 = ([BitConverter]::ToString($hash.Hash)).Replace('-', '').ToLowerInvariant()
             heldHandles = $Session.handles.Count
         }
+        if ($CapturePeHeader) {
+            if ($dosCopied -ne [Math]::Min(64, $total) -or
+                ($null -ne $peOffset -and $peCopied -ne 24) -or ($null -eq $peOffset -and $peCopied -ne 0)) { throw 'READ_FAILED' }
+            # Only publish after all original held-object/hash/length/parent checks.
+            $capture = [pscustomobject]@{ version = 1; fileBytes = $total
+                dosHex = ([BitConverter]::ToString($dos, 0, $dosCopied)).Replace('-', '').ToLowerInvariant()
+                peOffset = $peOffset
+                peHex = ([BitConverter]::ToString($pe, 0, $peCopied)).Replace('-', '').ToLowerInvariant() }
+            $observation | Add-Member -NotePropertyName peCapture -NotePropertyValue $capture
+        }
+        return $observation
     } catch {
         if ($_.Exception.Message -in @('FILE_CHANGED', 'READ_FAILED', 'SIZE_OR_LENGTH_CHANGED', 'SHORT_READ', 'NOT_DISK', 'METADATA_UNAVAILABLE', 'IDENTITY_UNAVAILABLE', 'REPARSE_REJECTED', 'TYPE_REJECTED')) { throw $_.Exception.Message }
         throw 'READ_FAILED'
     } finally {
         if ($null -ne $hash) { $hash.Dispose() }
         if ($null -ne $bytes) { [Array]::Clear($bytes, 0, $bytes.Length) }
+        if ($null -ne $dos) { [Array]::Clear($dos, 0, $dos.Length) }
+        if ($null -ne $pe) { [Array]::Clear($pe, 0, $pe.Length) }
         if ($buffer -ne [IntPtr]::Zero) { [Runtime.InteropServices.Marshal]::FreeHGlobal($buffer) }
     }
 }

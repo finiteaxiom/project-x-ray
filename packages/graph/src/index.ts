@@ -1,5 +1,7 @@
 import { RemoteTaskRecoveryStore } from "./remote-task-recovery-store.js";
 export type { RemoteRecoveryIssuer, RemoteRecoveryCapture, RemoteRecoveryPermit, RemoteRecoverySource } from "./remote-task-recovery-store.js";
+import { AnalysisParseCache, type AnalysisParseCacheQuery, type AnalysisParseCachePublication } from "./analysis-parse-cache.js";
+export type { AnalysisParseCacheRecord, AnalysisParseCacheQuery, AnalysisParseCachePublication } from "./analysis-parse-cache.js";
 import Database from "better-sqlite3";
 import { createHash } from "node:crypto";
 import { RemoteExplanationStore, type GraphStoreRole } from "./remote-explanation-store.js";
@@ -67,6 +69,8 @@ export class GraphStore {
   private readonly semanticReservations: OwnershipSemanticReservationStore;
   private readonly reservationAuthorities = new WeakMap<object, GraphStore>();
   private navigationGeneration: number | null = null;
+  private readonly parseCache: AnalysisParseCache;
+  private readonly publicationActivations = new WeakMap<ProjectSnapshot, string>();
 
   constructor(databasePath = ":memory:", role: GraphStoreRole = "project", ownershipGenerator?: OwnershipQuestionGeneratorPort, semanticPorts?: OwnershipSemanticTrustedPorts) {
     if (role !== "global" && role !== "project") throw new RemoteExplanationError("POLICY_INVALID");
@@ -84,10 +88,11 @@ export class GraphStore {
     this.semanticResults = new OwnershipSemanticResultStore(this.database, this);
     this.semanticReservations = new OwnershipSemanticReservationStore(this.database, this);
     this.remoteRecovery = new RemoteTaskRecoveryStore(this.database, this);
+    this.parseCache = new AnalysisParseCache(this.database, role === "project", (repositoryId, revision) => this.assertIgnoreRevision(repositoryId, revision));
     try {
       this.database.pragma("busy_timeout = 250");
       this.database.pragma("journal_mode = WAL");
-      this.migrate(); this.remote.migrate(); this.ownershipCapsules.migrate(); this.ownershipSemanticPolicy.migrate(); this.questionBindings.migrate();
+      this.migrate(); this.remote.migrate(); this.ownershipCapsules.migrate(); this.parseCache.migrate(); this.ownershipSemanticPolicy.migrate(); this.questionBindings.migrate();
       this.semanticResults.migrate();
       this.navigationGeneration = 0;
     } catch (error) { this.database.close(); throw error; }
@@ -105,6 +110,10 @@ export class GraphStore {
       return { status: "valid", dataVersion, localSnapshotGeneration: generation };
     } catch { return { status: "unavailable" }; }
   }
+
+  getSnapshotPublicationActivation(snapshot: ProjectSnapshot): string | undefined { return this.publicationActivations.get(snapshot); }
+  loadAnalysisParseCache(query: AnalysisParseCacheQuery) { return this.parseCache.load(query); }
+  publishAnalysisParseCache(publication: AnalysisParseCachePublication): boolean { return this.parseCache.publish(publication); }
 
   getActiveReference(): { repositoryId: string; snapshotId: string; activation: string } | null {
     return this.database.prepare("SELECT repository_id repositoryId,snapshot_id snapshotId,activated_at activation FROM snapshot_overviews WHERE is_current=1 ORDER BY activated_at DESC,snapshot_id LIMIT 1").get() as { repositoryId: string; snapshotId: string; activation: string } | undefined ?? null;
@@ -312,6 +321,7 @@ export class GraphStore {
 
   saveSnapshot(snapshot: ProjectSnapshot, sources: Array<{ filePath: string; contentHash: string; language: string; content: string }> = [], makeCurrent = true, ignoreRevision?: number, activationAfter?: string): ProjectSnapshot {
     snapshot = projectSnapshotSchema.parse(snapshot);
+    let publicationActivation: string | undefined;
     const save = this.database.transaction(() => {
       if (ignoreRevision !== undefined) this.assertIgnoreRevision(snapshot.repositoryId, ignoreRevision);
       if (snapshot.analysisIdentity.analysisResult && createHash("sha256").update(canonicalSnapshotResult(snapshot)).digest("hex") !== snapshot.analysisIdentity.analysisResult.fingerprint) throw new SafeDiagnosticError("SNAPSHOT_CONTENT_CONFLICT");
@@ -327,7 +337,7 @@ export class GraphStore {
         const savedSources = this.database.prepare("SELECT file_path AS filePath, content_hash AS contentHash, language, content FROM source_snapshots WHERE snapshot_id=? ORDER BY file_path").all(snapshot.snapshotId);
         const sortSources = (items: unknown[]): unknown[] => [...items].sort((x, y) => canonicalJson(x) < canonicalJson(y) ? -1 : canonicalJson(x) > canonicalJson(y) ? 1 : 0);
         if (canonicalSnapshotContent(saved) !== canonicalSnapshotContent(snapshot) || canonicalJson(sortSources(savedSources)) !== canonicalJson(sortSources(sources))) throw new SafeDiagnosticError("SNAPSHOT_CONTENT_CONFLICT");
-        if (makeCurrent) this.activateSnapshot(saved, activationAfter);
+        if (makeCurrent) { this.activateSnapshot(saved, activationAfter); publicationActivation = this.getCurrentActivation(); }
         return saved;
       }
       this.database.prepare(`
@@ -360,11 +370,12 @@ export class GraphStore {
       for (const source of sources) insertSource.run({ snapshotId: snapshot.snapshotId, ...source });
       const overview = overviewFromSnapshot(snapshot);
       this.database.prepare("INSERT INTO snapshot_overviews(snapshot_id, repository_id, created_at, is_current, payload) VALUES(?, ?, ?, ?, ?)").run(snapshot.snapshotId, snapshot.repositoryId, snapshot.createdAt, 0, JSON.stringify(overview));
-      if (makeCurrent) this.activateSnapshot(snapshot, activationAfter);
+      if (makeCurrent) { this.activateSnapshot(snapshot, activationAfter); publicationActivation = this.getCurrentActivation(); }
       return snapshot;
     });
     const nested = this.database.inTransaction;
     const saved = save.immediate();
+    if (!nested && publicationActivation !== undefined) this.publicationActivations.set(saved, publicationActivation);
     // A nested savepoint does not establish the outer commit; permanently stop comparing.
     const generation = this.navigationGeneration;
     this.navigationGeneration = nested || generation === null || !Number.isSafeInteger(generation) || generation < 0 || generation >= Number.MAX_SAFE_INTEGER - 1 ? null : generation + 1;

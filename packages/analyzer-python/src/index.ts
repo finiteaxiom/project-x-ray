@@ -1,5 +1,7 @@
+import { PythonParseReuseSession, parseHash } from "./parse-cache.js";
+export { PythonParseReuseSession, type PythonParseWork } from "./parse-cache.js";
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { extname, join } from "node:path";
 import { z } from "zod";
 import { diagnosticForError, safeDiagnostic, type Confidence, type Evidence, type GraphEdge, type GraphNode, type NodeKind, type SafeDiagnostic, type SourceSpan } from "@project-xray/contracts";
@@ -12,7 +14,7 @@ const callSchema = positionSchema.extend({ caller: z.string(), expression: z.str
 const accessSchema = positionSchema.extend({ caller: z.string(), target: z.string(), targetQualified: z.string().nullable().optional(), mode: z.enum(["read", "write"]) });
 const returnSchema = positionSchema.extend({ caller: z.string(), target: z.string(), targetQualified: z.string().nullable().optional() });
 const endpointSchema = positionSchema.extend({ framework: z.string(), method: z.string(), route: z.string(), handler: z.string() });
-const pythonResultSchema = z.object({ protocolVersion: z.literal("2.1.0"), symbols: z.array(symbolSchema), imports: z.array(importSchema), calls: z.array(callSchema), accesses: z.array(accessSchema), returns: z.array(returnSchema), endpoints: z.array(endpointSchema) });
+const pythonResultSchema = z.object({ protocolVersion: z.literal("2.2.0"), runtimeFingerprint: z.string().regex(/^[a-f0-9]{64}$/), workerDigest: z.string().regex(/^[a-f0-9]{64}$/), symbols: z.array(symbolSchema), imports: z.array(importSchema), calls: z.array(callSchema), accesses: z.array(accessSchema), returns: z.array(returnSchema), endpoints: z.array(endpointSchema) });
 type PythonResult = z.infer<typeof pythonResultSchema>;
 export interface PythonProjectSource { absolutePath: string; content: string }
 type PythonFailureKind = "syntax" | "environment" | "timeout" | "protocol" | "process";
@@ -44,10 +46,12 @@ function analyzerWorkerPath(): string {
   const found = candidates.find(existsSync); if (!found) throw new PythonAnalysisError("environment", "Python 分析 worker 不可用"); return found;
 }
 
+function workerDigest(): string { return parseHash(readFileSync(analyzerWorkerPath(), "utf8")); }
+
 function runPythonAnalyzer(filePath: string, source: string, signal?: AbortSignal, timeoutMs = 15_000): Promise<PythonResult> {
   return new Promise((resolve, reject) => {
-    throwIfAborted(signal); let worker: string;
-    try { worker = analyzerWorkerPath(); } catch (error) { reject(error); return; }
+    throwIfAborted(signal); let worker: string; let digest: string;
+    try { worker = analyzerWorkerPath(); digest = workerDigest(); } catch (error) { reject(error); return; }
     const child = spawn("python", ["-I", worker], { stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
     let stdout = ""; let stderr = ""; let settled = false;
     const finish = (operation: () => void): void => { if (settled) return; settled = true; clearTimeout(timeout); signal?.removeEventListener("abort", abort); operation(); };
@@ -60,6 +64,7 @@ function runPythonAnalyzer(filePath: string, source: string, signal?: AbortSigna
       if (settled) return;
       if (code !== 0) { const finalLine = stderr.trim().split(/\r?\n/).at(-1) ?? ""; const syntaxType = finalLine.match(/^(SyntaxError|IndentationError|TabError):/)?.[1] as PythonSyntaxCode | undefined; finish(() => reject(syntaxType ? new PythonAnalysisError("syntax", `Python 语法错误（${syntaxType}）`, syntaxType) : new PythonAnalysisError("process", `Python 分析器异常退出（${code ?? "无退出码"}）`))); return; }
       const parsed = (() => { try { return pythonResultSchema.safeParse(JSON.parse(stdout)); } catch { return { success: false } as const; } })();
+      try { if (workerDigest() !== digest || analyzerWorkerPath() !== worker || (parsed.success && parsed.data.workerDigest !== digest)) { finish(() => reject(new PythonAnalysisError("protocol", "Python 工具身份变化"))); return; } } catch { finish(() => reject(new PythonAnalysisError("environment", "Python 工具不可用"))); return; }
       finish(() => parsed.success ? resolve(parsed.data) : reject(new PythonAnalysisError("protocol", "Python 分析器返回了无效结果")));
     });
     child.stdin.end(JSON.stringify({ filePath, sourceBase64: Buffer.from(source, "utf8").toString("base64") }));
@@ -74,11 +79,15 @@ function resolveImportedModule(sourcePath: string, imported: string): string {
 }
 
 export class PythonAnalyzer implements LanguageAnalyzer {
-  readonly id = "python-ast"; readonly version = "2.1.1";
+  readonly id = "python-ast"; readonly version = "2.2.0";
   supports(filePath: string): boolean { return extname(filePath).toLowerCase() === ".py"; }
 
   async analyze(filePath: string, source: string, context: AnalyzerContext): Promise<FileAnalysis> {
-    const result = await runPythonAnalyzer(filePath, source, context.abortSignal); const projectPath = normalizeProjectPath(context.rootPath, filePath); const fileNodeId = stableId(context.repositoryId, "file", projectPath);
+    const result = await runPythonAnalyzer(filePath, source, context.abortSignal); return this.normalize(filePath, result, context);
+  }
+
+  private normalize(filePath: string, result: PythonResult, context: AnalyzerContext): FileAnalysis {
+    const projectPath = normalizeProjectPath(context.rootPath, filePath); const fileNodeId = stableId(context.repositoryId, "file", projectPath);
     const nodes: GraphNode[] = []; const edges: GraphEdge[] = []; const evidence: Evidence[] = []; const unresolvedCalls: string[] = []; const symbols = new Map<string, string>();
     const addEvidence = (kind: string, span: SourceSpan, reason: string, confidence: Confidence = "verified"): string => { const id = stableId(context.snapshotId, projectPath, kind, String(span.startLine), String(span.startColumn), reason); evidence.push({ id, snapshotId: context.snapshotId, analyzer: this.id, analyzerVersion: this.version, kind, confidence, reason, span }); return id; };
     const addEdge = (edge: Omit<GraphEdge, "id" | "snapshotId">, discriminator = ""): void => { edges.push({ ...edge, id: stableId(context.snapshotId, edge.source, edge.target, edge.kind, discriminator), snapshotId: context.snapshotId }); };
@@ -97,9 +106,14 @@ export class PythonAnalyzer implements LanguageAnalyzer {
     return { nodes: unique(nodes), edges: unique(edges), evidence: unique(evidence), unresolvedCalls };
   }
 
-  async analyzeProject(sources: PythonProjectSource[], context: AnalyzerContext): Promise<FileAnalysis> {
+  async analyzeProject(sources: PythonProjectSource[], context: AnalyzerContext, reuse?: PythonParseReuseSession): Promise<FileAnalysis> {
+    sources = sources.map(source => ({ ...source }));
+    const raw = reuse ? await reuse.prepare(sources, p => normalizeProjectPath(context.rootPath, p), (p, content) => runPythonAnalyzer(p, content, context.abortSignal), (json, content) => {
+      try { const result = pythonResultSchema.safeParse(JSON.parse(json)); if (!result.success) return undefined; const lines = content.split("\n"); for (const list of [result.data.symbols,result.data.imports,result.data.calls,result.data.accesses,result.data.returns,result.data.endpoints]) for (const item of list) if (item.line > lines.length || item.endLine > lines.length || item.endLine < item.line || item.column > Buffer.byteLength(lines[item.line-1]!) || item.endColumn > Buffer.byteLength(lines[item.endLine-1]!)) return undefined; return result.data; } catch { return undefined; }
+    }, workerDigest, () => throwIfAborted(context.abortSignal)) : undefined;
     const parts = new Array<FileAnalysis | undefined>(sources.length); const failures: NonNullable<FileAnalysis["failures"]> = []; let cursor = 0; const concurrency = Math.max(1, Math.min(4, sources.length));
-    await Promise.all(Array.from({ length: concurrency }, async () => { while (cursor < sources.length) { throwIfAborted(context.abortSignal); const index = cursor++; const source = sources[index]!; try { parts[index] = await this.analyze(source.absolutePath, source.content, context); } catch (error) { if (context.abortSignal?.aborted || isAbortError(error)) throw error; failures.push({ filePath: normalizeProjectPath(context.rootPath, source.absolutePath), ...pythonDiagnostic(error) }); } } }));
+    await Promise.all(Array.from({ length: concurrency }, async () => { while (cursor < sources.length) { throwIfAborted(context.abortSignal); const index = cursor++; const source = sources[index]!; try { const result = raw?.get(source.absolutePath); if (result instanceof Error) throw result; parts[index] = result ? this.normalize(source.absolutePath, result, context) : await this.analyze(source.absolutePath, source.content, context); if (reuse) reuse.stats.normalizedFiles++; } catch (error) { if (context.abortSignal?.aborted || isAbortError(error)) throw error; failures.push({ filePath: normalizeProjectPath(context.rootPath, source.absolutePath), ...pythonDiagnostic(error) }); } } }));
+    if (reuse) reuse.stats.semanticPasses++;
     const completed = parts.filter((part): part is FileAnalysis => Boolean(part)); const nodes = completed.flatMap((part) => part.nodes); const evidence = completed.flatMap((part) => part.evidence); const nodeById = new Map(nodes.map((node) => [node.id, node]));
     const moduleFiles = new Map<string, string>(); const symbolsByModule = new Map<string, Map<string, GraphNode>>();
     for (const [index, source] of sources.entries()) if (parts[index]) { const path = normalizeProjectPath(context.rootPath, source.absolutePath); const module = moduleName(path); moduleFiles.set(module, stableId(context.repositoryId, "file", path)); const map = new Map<string, GraphNode>(); for (const node of parts[index]!.nodes) if (["function", "method", "class"].includes(node.kind) && node.qualifiedName.startsWith(`${path}::`)) map.set(node.qualifiedName.slice(path.length + 2), node); symbolsByModule.set(module, map); }

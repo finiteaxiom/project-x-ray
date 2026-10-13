@@ -213,7 +213,7 @@ describe("source-owned ownership capsule transactions", () => {
     const result = await store.loadOwnershipCapsule("attempt"); expect(result).toMatchObject({ status: "ready", questionBinding: "prepare-only", attempt: input.attempt, capsule: input.capsule });
     expect(store.loadOwnershipQuestionBinding("attempt")).toMatchObject({ status: "unavailable", currentness: "not-checked", record: { reason: "untrusted-issuance" } });
     expect((db(store).prepare("PRAGMA foreign_key_check").all())).toEqual([]); expect(db(store).pragma("foreign_keys", { simple: true })).toBe(1);
-    expect(db(store).prepare("SELECT version FROM schema_migrations ORDER BY version").all()).toEqual([...Array.from({ length: 11 }, (_, index) => ({ version: index + 1 })), { version: 15 }, { version: 18 }]);
+    expect(db(store).prepare("SELECT version FROM schema_migrations ORDER BY version").all()).toEqual([...Array.from({ length: 12 }, (_, index) => ({ version: index + 1 })), { version: 15 }, { version: 18 }]);
   });
   it("not-evaluated完整大attempt与孤立代理JSON转义双写，不扩大胶囊或重解释旧数据", async () => {
     const path = await pathFixture("not-ready.sqlite"); let store = open(path); const large = await fixture(store, "original-large", false);

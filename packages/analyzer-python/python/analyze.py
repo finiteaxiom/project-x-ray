@@ -1,5 +1,12 @@
 """Deterministic Python syntax and lexical-binding worker; never imports target code."""
-import ast, base64, json, sys
+import ast, base64, json, sys, hashlib
+
+def tool_hash(path):
+    with open(path, "rb") as stream:
+        return hashlib.sha256(stream.read()).hexdigest()
+
+def runtime_fingerprint():
+    return hashlib.sha256(json.dumps([sys.version, sys.implementation.name, sys.implementation.cache_tag, tool_hash(sys.executable), tool_hash(ast.__file__)], separators=(",", ":")).encode()).hexdigest()
 
 class Scope:
     def __init__(self, qualified="", parent=None, kind="module"):
@@ -196,5 +203,5 @@ class Analyzer(ast.NodeVisitor):
 
 def main():
     payload=json.load(sys.stdin); source=base64.b64decode(payload["sourceBase64"]).decode("utf-8"); tree=ast.parse(source,filename=payload.get("filePath","<input>")); analyzer=Analyzer(source); analyzer.collect(tree.body,analyzer.root); analyzer.visit(tree)
-    json.dump({"protocolVersion":"2.1.0","symbols":analyzer.symbols,"imports":analyzer.imports,"calls":analyzer.calls,"accesses":analyzer.accesses,"returns":analyzer.returns,"endpoints":analyzer.endpoints},sys.stdout)
+    json.dump({"protocolVersion":"2.2.0","runtimeFingerprint":runtime_fingerprint(),"workerDigest":tool_hash(__file__),"symbols":analyzer.symbols,"imports":analyzer.imports,"calls":analyzer.calls,"accesses":analyzer.accesses,"returns":analyzer.returns,"endpoints":analyzer.endpoints},sys.stdout)
 if __name__=="__main__":main()
