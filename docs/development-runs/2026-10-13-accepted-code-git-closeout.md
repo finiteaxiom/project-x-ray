@@ -36,3 +36,8 @@ Windows 原 M13 两文件及 M12 消费预检在提交快照中 76/76 通过，5
 真实 GUI、真实远程 API 兼容与质量、完整材料 reader/私有路径 parser 编排、sidecar、完整 manifest、干净 Windows 安装、签名和运行门仍未验或未实现。本轮有限 header 捕获不能替代这些门，四批未全部完成。四批内后续仍按当前源码缺口继续，禁止自主启动第五批。
 
 本轮无新增 AGENTS 工程规则：检查快照漏复制既有产物是本次协调环境配置错误，已有来源/运行时验证要求足以覆盖，不添加临时错误为公共规则。
+
+
+## 实际 Git 结果
+
+代码提交 cc7d91791069b266b401e5a1f4dfffd70ed4d353 已通过 git push origin main 推送；随后 git ls-remote origin refs/heads/main 返回同一 SHA。提交后的原 567 文件 raw/hash 不变，剩余 78 条工作区状态保留；共享 application/graph 文件差异只剩原 held recovery / semantic desktop 接线。本段记录随后单独作为文档提交，不改变已验证代码树。执行队列、独立审查、交接与成员记录由协调方追加同一结果，既有 WIP 未整份纳入提交。
